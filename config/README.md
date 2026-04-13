@@ -7,6 +7,9 @@ This script will check for any discrepancies between the destination folders and
 
 The `conf-map.ini` should contain a section with header `conf-map`, which should contain key-value pairs of `<local-folder-name>=<destination-folder-path>`.
 
+### Requirements
+Note that the `g_mc.service` requires the `mysql.service` to already exist.
+
 ## Testing
 Running `sync.py test-map.ini` will map the folders to `./test/...`. You may need to create the destination folders beforehand. Then mess around whith files in the test folder to see that everything is working.
 

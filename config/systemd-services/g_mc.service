@@ -7,7 +7,6 @@ PartOf=mysql.service    # When mysql.service stops, this g_mc.service stops too.
 
 [Service]
 User=g_mc
-Group=g_mc
 WorkingDirectory=/var/lib/g_mc
 ExecStart=/opt/infra/g_mc/start_service.sh  # TODO: Add these files
 ExecStop=/opt/infra/g_mc/stop_service.sh
