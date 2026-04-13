@@ -13,4 +13,4 @@ rcon_password = $(grep "^rcon-password=" server.properties | cut -d"=" -f2-)
 
 # Stop the server
 echo "Stopping server..."
-/opt/infra/g_mc/mcrcon -P $rcon_port -p $rcon_password -w 5 "say Server is stopping!" stop  # Accounce server is restarting, wait five seconds, then stop the server
+/opt/infra/g_mc/mcrcon/mcrcon -P $rcon_port -p $rcon_password -w 5 "say Server is stopping!" stop  # Accounce server is restarting, wait five seconds, then stop the server
