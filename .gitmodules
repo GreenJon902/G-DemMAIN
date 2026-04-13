@@ -1,0 +1,3 @@
+[submodule "g_mc/mcrcon"]
+	path = g_mc/mcrcon
+	url = https://github.com/Tiiffi/mcrcon
