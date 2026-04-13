@@ -1,0 +1,13 @@
+[mysqld]
+# TODO: Store database on an external volume
+max_connections = 50
+bind-address = 127.0.0.1
+port = 3306
+
+# Optimizations: 
+innodb_buffer_pool_size = 4G
+innodb_log_file_size = 512M
+innodb_flush_log_at_trx_commit = 2
+innodb_file_per_table = 1
+innodb_flush_method = O_DIRECT
+skip-name-resolve = 1
