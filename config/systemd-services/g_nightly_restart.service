@@ -1,0 +1,12 @@
+[Unit]
+Description=Restart the g_mc and g_web services (if they are already running)
+
+[Service]
+Type=oneshot
+Restart=no
+# No user specified so this runs as root, hence we have access to systemctl
+# TODO: Restart g_web too (in a way that makes sense)
+ExecStart=systemctl try-restart g_mc
+ 
+[Install]
+WantedBy=multi-user.target

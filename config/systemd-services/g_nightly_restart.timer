@@ -1,0 +1,9 @@
+[Unit]
+Description=Restart the g_mc and g_web services nightly (if they are already running)
+
+[Timer]
+OnCalendar=*-*-* 00:00:00
+Persistent=false
+ 
+[Install]
+WantedBy=multi-user.target

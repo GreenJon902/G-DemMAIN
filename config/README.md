@@ -7,6 +7,10 @@ This script will check for any discrepancies between the destination folders and
 
 The `conf-map.ini` should contain a section with header `conf-map`, which should contain key-value pairs of `<local-folder-name>=<destination-folder-path>`.
 
+After updating systemd service config files, you'll need to run `systemctl daemon-reload`.
+After updating the sshd config, first validate the config is correct with `sshd -t`, if there are no errors (no output) then run `systemctl reload sshd`.
+After updating the mariadb config, run `systemctl restart mariadb`.
+
 ### Requirements
 Note that the `g_mc.service` requires the `mysql.service` to already exist.
 

@@ -15,16 +15,22 @@ StartLimitBurst=2
 
 [Service]
 User=g_mc
+Group=g_mc
 WorkingDirectory=/var/lib/g_mc
 ExecStart=/opt/infra/g_mc/start_service.sh  
 ExecStop=/opt/infra/g_mc/stop_service.sh
+
 # Restart only when it crashes, not on /stop
 Restart=on-failure
 RestartSec=10
+
+# Any files created will be read/writable by the user g_mc and the group g_mc
+UMask=0002
 
 # Security hardening:
 PrivateTmp=true
 # Blocks write access to certain folders
 ProtectSystem=full    
+
 [Install]
 WantedBy=multi-user.target

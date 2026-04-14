@@ -1,0 +1,38 @@
+# Initial Setup
+May be missing details!
+
+1. `apt install ufw fail2ban`
+
+2. ```
+ufw allow 25565
+ufw allow 80
+ufw allow 25575
+ufw allow 31415
+ufw enable
+systemctl enable fail2ban
+```
+
+3. ```
+adduser jon
+usermod -aG sudo jon        # You may need to relog for this to take effect
+```
+And add `jon ALL=(ALL) NOPASSWD: ALL` to the end of `visudo`.
+
+4. Login as jon and copy the SSH key. Use `scp` to copy the G-DemMAIN repo to the infra folder and apply SSH configurations. Use `sudo chmod 2755 -R *` to fix the permissions. Reload the SSH config on the server.
+
+5. `apt install mariadb-server mariadb-client openjdk-25-jdk-headless`
+
+6. Create service user (run all lines that are necessary): 
+```
+sudo groupadd g_mc
+sudo adduser --system --no-create-home -group g_mc
+sudo mkdir /var/lib/g_mc
+sudo chown g_mc:g_mc /var/lib/g_mc 
+sudo chmod 2775 /var/lib/g_mc
+sudo usermod -aG g_mc jon    # You may need to relog for this to take effect
+```
+
+
+TODO: Document how permissions work
+So ownership is not important. g\_mc group gives read/write access for jon and g\_mc. We have the setgid bit for all infra and var/lib folders. THen read access everywhere cause who cares. We have umask set to 0002 so that permissions work correctly
+
