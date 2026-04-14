@@ -14,6 +14,12 @@ elif [[ -z "$rcon_password" ]]; then  # Check if password length is equal to 0 (
     exit 1;
 fi
 
+# Check if server is actually on (as if the jar ends gracefully (e.g. /stop) then systemd runs ExecStop)
+if [[ -z "$(ss -tuln | grep :$rcon_port)" ]]; then
+    echo "Server appears to not be up, doing nothing..."
+    exit 0;
+fi
+
 # Stop the server
 echo "Stopping server..."
 /opt/infra/g_mc/mcrcon/mcrcon -P $rcon_port -p $rcon_password -w 5 "say Server is stopping!" stop  # Announce server is restarting, wait five seconds, then stop the server

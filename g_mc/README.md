@@ -7,3 +7,4 @@ To do this, navigate to `/opt/infra/mcrcon` and run `make`.
 
 You must also agree to the eula:
 `echo "eula=true" > /var/lib/g_mc/minecraft/eula.txt`
+

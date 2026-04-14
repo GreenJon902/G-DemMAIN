@@ -1,20 +1,30 @@
 [Unit]
 Description=Runner for the Minecraft Server
-After=mysql.service     # Require the database to have started so that block-logging works
-Requires=mysql.service  # If the database goes down, then we want to stop the minecraft server too
-                        # In mysql's config, we ensure that g_mc.service is stopped fully before mysql.service begins to stop 
-PartOf=mysql.service    # When mysql.service stops, this g_mc.service stops too. Ordering is defined in the mysql config
+
+# Require the database to have started so that block-logging works
+After=mysql.service     
+# If the database goes down, then we want to stop the minecraft server too
+# In mysql's config, we ensure that g_mc.service is stopped fully before mysql.service begins to stop 
+Requires=mysql.service  
+# When mysql.service stops, this g_mc.service stops too. Ordering is defined in the mysql config
+PartOf=mysql.service    
+
+# Limit to 2 restarts (in a 5m period), after that mark as failed
+StartLimitIntervalSec=5m  
+StartLimitBurst=2
 
 [Service]
 User=g_mc
 WorkingDirectory=/var/lib/g_mc
-ExecStart=/opt/infra/g_mc/start_service.sh  # TODO: Add these files
+ExecStart=/opt/infra/g_mc/start_service.sh  
 ExecStop=/opt/infra/g_mc/stop_service.sh
-Restart=always
+# Restart only when it crashes, not on /stop
+Restart=on-failure
 RestartSec=10
+
 # Security hardening:
 PrivateTmp=true
-ProtectSystem=full    # Blocks write access to certain folders
-
+# Blocks write access to certain folders
+ProtectSystem=full    
 [Install]
 WantedBy=multi-user.target
