@@ -1,9 +1,7 @@
-#!/bin/bash
-
 # Extract RCON settings from server.properties
-rcon_enabled=$(grep "^enable-rcon=" /var/lib/g_mc/minecraft/server.properties | cut -d"=" -f2-)
-rcon_port=$(grep "^rcon.port=" /var/lib/g_mc/minecraft/server.properties | cut -d"=" -f2-)
-rcon_password=$(grep "^rcon.password=" /var/lib/g_mc/minecraft/server.properties | cut -d"=" -f2-)
+rcon_enabled=$(grep "^enable-rcon=" /var/lib/g_mc/server.properties | cut -d"=" -f2-)
+rcon_port=$(grep "^rcon.port=" /var/lib/g_mc/server.properties | cut -d"=" -f2-)
+rcon_password=$(grep "^rcon.password=" /var/lib/g_mc/server.properties | cut -d"=" -f2-)
 
 # Check if RCON is enabled
 if [[ "$rcon_enabled" != "true" ]]; then
@@ -22,4 +20,4 @@ fi
 
 # Stop the server
 echo "Stopping server..."
-/opt/infra/g_mc/mcrcon/mcrcon -P $rcon_port -p $rcon_password -w 5 "say Server is stopping!" stop  # Announce server is restarting, wait five seconds, then stop the server
+/var/lib/g_mc/mcrcon -P $rcon_port -p $rcon_password -w 5 "say Server is stopping!" stop  # Announce server is restarting, wait five seconds, then stop the server

@@ -1,9 +1,7 @@
 # G-DemMAIN
 [![Diagram of the users, permissions, databases, tables, folders and systemd services that we create.](doc/infra-diagram-thumbnail.png)](doc/infra-diagram.pdf)
-TODO: Table of all users, groups, and file-permissions.  - Links to sudoers file and script to verify folders. We can have a source file and a script like setup\_users_and_folders.py which checks and makes any changes (ONLY FOR SERVICES THOUGH)
-TODO: Script that verifies folders and file-permissions are correct.
+
 TODO: Build deamon overview table from actual source files
-TODO: Note about avoiding deleting old users, but if you must then run `find / -uid <old_uid>` (uid vs user) (same for gid) to find files owned by that user or group. Also check no perms in sudoers or elsewhere
 
 | Service Name       | Description                                                                     | User                | After+Requires | Part Of        | Requires Mount For          | On Calender        | Restart                                   | On Fail        | WorkingDir, ExecStart, ExecStop                                                               | UMask |
 |--------------------|---------------------------------------------------------------------------------|---------------------|----------------|----------------|-----------------------------|--------------------|--------------------------|----------------|----------------|-----------------------------------------------------------------------------------------------|-------|
@@ -20,7 +18,6 @@ Note: If After+Requires is none then we set `After=network.target` and no `Requi
                                        
 
 TODO: Add documentation on use of fail2ban (brute force attacks)  
-TODO: Add documentation on the sudoers file
 
 # Ports
 | Port Number   | What is it for?                         | Blocked by the firewall? |
@@ -67,5 +64,32 @@ To view the status of a service, run `systemctl status <service_name>`.
 And to view the full logs you can use the journalctl utility. Using `journalctl -f` allows you to see logs as they happen, and by specificying `-u <service_name` you can filter specific services. Use `Ctrl-C` to exit.  
 Note: you may need to run this as `sudo` or be in the `systemd-journalctl` group (to add a user run `usermod -a -G systemd-journal <user_name>`).  
 You can also use `systemd-analyze verify <service_name>.service` to check for some errors.  
+
+
+# Syncing
+This module manages the contents and deployments of the synced files.
+
+## Deployment
+The `sync.py` script will copy the of the contents of folders specified in `sync-map.ini` to their respective destinations (also specified by that file).
+This script will check for any discrepancies between the destination folders and the local folders, and ask you what to do in each case. This will not make any changes without user-input.
+
+The `sync-map.ini` should contain a section with header `sync-map`, which should contain key-value pairs of `<local-folder-path (relative to root of repo)>=<destination-folder-path>`.
+
+After updating systemd service config files, you'll need to run `systemctl daemon-reload`.
+After updating the sshd config, first validate the config is correct with `sshd -t`, if there are no errors (no output) then run `systemctl reload sshd`.
+After updating the mariadb config, run `systemctl restart mariadb`.
+
+## Testing
+Running `sync.py test-map.ini` will map the folders to `./test/...`. You may need to create the destination folders beforehand. Then mess around whith files in the test folder to see that everything is working.
+
+You can also use the `-d`/`--dry-run` flag to test the program without making any changes.
+
+## Extra information
+Any files we copy have the following header pre-pended to them:
+```
+# This is a G-DemMAIN synced config file, and may be overwritten when sync is run. Please do not modify this line, and leave it as the first line of this file.
+```
+This line is used to check if a file is created by the `sync.py` script, and it is expected this is left as it is, on the first line.
+This means we cannot copy files with shebangs.
 
 

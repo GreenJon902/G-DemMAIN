@@ -13,39 +13,52 @@ PATH_COL = "\033[94m" if sys.stdout.isatty() else ""
 
 # Parse arguments
 parser = ArgumentParser(description="See README.md")
-parser.add_argument("confmap",
+parser.add_argument("syncmap",
                     nargs   = "?",  # Declare this argument as optional
-                    default = "conf-map.ini",
-                    help    = "The path of the config map to use, defaults to ./conf-map.ini")  # The name we refer
+                    default = "sync-map.ini",
+                    help    = "The path of the config map to use, defaults to ./sync-map.ini")  # The name we refer
 parser.add_argument("-d", "--dry-run",
                     action  = "store_true",  # This sets default value to false
                     help    = "Is this a dry run (e.g. if this flag is set then no changes will be made)")
+parser.add_argument("-v", "--verbose",
+                    action  = "store_true",  # This sets default value to false
+                    help    = "If set then we will print a lot more information")
 args = parser.parse_args()
+
+# Define verbose printing function
+def vprint(*pargs, **pkw):
+    if args.verbose:
+        print(*pargs, **pkw)
 
 # Log run-info
 print("Executing in", os.getcwd())
 print("Ran with args", sys.argv, "which parsed to", args)
 
-# Load conf-map
+# Load sync-map
 config = ConfigParser()
-if not os.path.exists(args.confmap):
-    raise Exception("Config map file does not exist - " + args.confmap)
-config.read(args.confmap)
-conf_map = dict(config["conf-map"])
-print("Loaded map:", conf_map)
+if not os.path.exists(args.syncmap):
+    raise Exception("Sync map file does not exist - " + args.syncmap)
+config.read(args.syncmap)
+sync_map = dict(config["sync-map"])
+print("Loaded map:", sync_map)
 
 # Check source and destination folders exist
-for (source, destination) in conf_map.items():
+for (source, destination) in sync_map.items():
     if not os.path.exists(source):
         raise Exception("Source folder does not exist - " + source)
     if not os.path.exists(destination):
         raise Exception("Destination folder does not exist - " + destination)
     
 # Check for any files that we have previously added to the destination folder that should no longer be there
-for (source, destination) in conf_map.items():
+for (source, destination) in sync_map.items():
     for (root, dirs, files) in os.walk(destination):
         for file in files:
             file = os.path.join(root, file)
+            
+            # If file is a symlink then ignore it
+            if os.path.islink(file):
+                vprint(f"Ignoring symlink at {PATH_COL}{file}{RESET}")
+                continue
             
             # Check if file exists in both source and destination
             relpath = os.path.relpath(file, destination)
@@ -53,27 +66,33 @@ for (source, destination) in conf_map.items():
             if not os.path.exists(expected_source_path):
                 
                 # Check if this script created the file (it has the header)
-                with open(file, "r") as f:
-                    header = f.readline(len(HEADER_LINE))
-                    if header == HEADER_LINE:
+                try:
+                    with open(file, "r") as f:
+                        header = f.readline(len(HEADER_LINE))
+                        if header != HEADER_LINE:
+                            vprint(f"Ignoring file with no header at {PATH_COL}{file}{RESET}")
+                            continue        
+                except UnicodeDecodeError:  # File isn't text so we didn't sync it
+                    vprint(f"Ignoring non-text file at {PATH_COL}{file}{RESET}")
+                    continue    
                         
-                        # Handle this file
-                        while True:
-                            action = input(f"{PATH_COL}{file}{RESET} has header, but was not found at {PATH_COL}{expected_source_path}{RESET}. Should this file be deleted[d] or ignored[i]? ")
-                            if action == "d":
-                                print(f"Removing {PATH_COL}{file}{RESET}")
-                                if not args.dry_run:
-                                    os.remove(file)
-                                break
-                            elif action == "i":
-                                print(f"Ignoring {PATH_COL}{file}{RESET}")
-                                break
-                            else:
-                                print("Invalid option, expected d or i")
-                                continue
+                # Handle this file
+                while True:
+                    action = input(f"{PATH_COL}{file}{RESET} has header, but was not found at {PATH_COL}{expected_source_path}{RESET}. Should this file be deleted[d] or ignored[i]? ")
+                    if action == "d":
+                        print(f"Removing {PATH_COL}{file}{RESET}")
+                        if not args.dry_run:
+                            os.remove(file)
+                        break
+                    elif action == "i":
+                        print(f"Ignoring {PATH_COL}{file}{RESET}")
+                        break
+                    else:
+                        print("Invalid option, expected d or i")
+                        continue
 
 # Check for any new or changed files
-for (source_folder, destination_folder) in conf_map.items():
+for (source_folder, destination_folder) in sync_map.items():
     for (root, dirs, files) in os.walk(source_folder):
         for source_file in files:
             

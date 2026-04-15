@@ -1,7 +1,5 @@
-#!/bin/bash
-
 # Agree to eula
-echo "eula=true" > /var/lib/g_mc/minecraft/eula.txt
+echo "eula=true" > /var/lib/g_mc/eula.txt
 
 # Start server
 java -Xms1G -Xmx3G \
@@ -20,4 +18,4 @@ java -Xms1G -Xmx3G \
 -XX:G1MixedGCLiveThresholdPercent=90 \
 -XX:+PerfDisableSharedMem \
 -XX:MaxTenuringThreshold=1 \
--jar /var/lib/g_mc/minecraft/minecraft_server.jar nogui
+-jar /var/lib/g_mc/minecraft_server.jar nogui

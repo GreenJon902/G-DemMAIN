@@ -17,8 +17,8 @@ StartLimitBurst=2
 User=g_mc
 Group=g_mc
 WorkingDirectory=/var/lib/g_mc
-ExecStart=/opt/infra/g_mc/start_service.sh  
-ExecStop=/opt/infra/g_mc/stop_service.sh
+ExecStart=/bin/bash /var/lib/g_mc/start_service.sh  
+ExecStop=/bin/bash /var/lib/g_mc/stop_service.sh
 
 # Restart only when it crashes, not on /stop
 Restart=on-failure
