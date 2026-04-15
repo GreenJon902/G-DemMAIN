@@ -15,7 +15,7 @@ StartLimitBurst=2
 
 # Status logging
 # We need to do it like this as OnFailure cannot run bash
-OnFailure=g_mc_failed.service
+OnFailure=g_service_failed@Minecraft-g_mc.service
 
 [Service]
 User=g_mc
@@ -28,8 +28,8 @@ ExecStop=/bin/bash /var/lib/g_mc/stop_service.sh
 EnvironmentFile=/etc/g-demmain/common.env
 
 # Status logging
-ExecStartPost=/bin/python3 /var/lib/g_mc/webhooks.py status Minecraft g_mc starting
-ExecStopPost=/bin/python3 /var/lib/g_mc/webhooks.py status Minecraft g_mc stopped
+ExecStartPost=/bin/python3 /usr/local/bin/webhooks.py status Minecraft g_mc starting
+ExecStopPost=/bin/python3 /usr/local/bin/webhooks.py status Minecraft g_mc stopped
 
 # Restart only when it crashes, not on /stop
 Restart=on-failure

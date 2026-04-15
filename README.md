@@ -95,4 +95,5 @@ Any files we copy have the following header pre-pended to them:
 This line is used to check if a file is created by the `sync.py` script, and it is expected this is left as it is, on the first line.
 This means we cannot copy files with shebangs.
 
+When changing destination folders, it might be a good idea to leave the destination folder as dummy, so that `sync.py` can find still find any old scripts and remove them.
 

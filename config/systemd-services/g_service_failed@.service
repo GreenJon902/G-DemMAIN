@@ -1,0 +1,13 @@
+# A service to sent a status=crashed webhook. We need this as OnFailed cannot directly run python.
+# The parameter is expected to be <readable_name>-<service_name>, e.g. Minecraft-g_mc.
+[Unit]
+Description=Failure handler for g_mc
+
+[Service]
+Type=oneshot
+
+# Get environment variables (we need this to get the github web url)
+EnvironmentFile=/etc/g-demmain/common.env
+
+# Separate paramaters up and run
+ExecStart=/bin/bash -c 'IFS="-" read -a separated <<< "%i"; /bin/python3 /usr/local/bin/webhooks.py status ${separated[@]} crashed'
