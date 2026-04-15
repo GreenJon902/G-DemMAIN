@@ -13,12 +13,23 @@ PartOf=mysql.service
 StartLimitIntervalSec=5m  
 StartLimitBurst=2
 
+# Status logging
+# We need to do it like this as OnFailure cannot run bash
+OnFailure=g_mc_failed.service
+
 [Service]
 User=g_mc
 Group=g_mc
 WorkingDirectory=/var/lib/g_mc
 ExecStart=/bin/bash /var/lib/g_mc/start_service.sh  
 ExecStop=/bin/bash /var/lib/g_mc/stop_service.sh
+
+# Get environment variables (we need this to get the github web url)
+EnvironmentFile=/etc/g-demmain/common.env
+
+# Status logging
+ExecStartPost=/bin/python3 /var/lib/g_mc/webhooks.py status Minecraft g_mc starting
+ExecStopPost=/bin/python3 /var/lib/g_mc/webhooks.py status Minecraft g_mc stopped
 
 # Restart only when it crashes, not on /stop
 Restart=on-failure

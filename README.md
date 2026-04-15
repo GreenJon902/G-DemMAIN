@@ -28,6 +28,9 @@ TODO: Add documentation on use of fail2ban (brute force attacks)
 | 31415         | SSH Access                              | Yes                      |
 | _All others_  |                                         | Yes                      |
 
+TODO: Convert the minecraft port to an evironment variable. Then do same with the rcon port and password.
+TODO: Put webhooks.py in a generally accesible location or copy it g_mc's folder
+
 # SSH
 We connect to the server through SSH. For security passwords are disabled, instead we use a public/private key pair.  
 If this is your first time, this is how we can set this up:  

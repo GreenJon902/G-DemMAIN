@@ -32,6 +32,8 @@ sudo chmod 2775 /var/lib/g_mc
 sudo usermod -aG g_mc jon    # You may need to relog for this to take effect
 ```
 
+7. Setup the environment files.
+
 
 TODO: Document how permissions work
 So ownership is not important. g\_mc group gives read/write access for jon and g\_mc. We have the setgid bit for all infra and var/lib folders. THen read access everywhere cause who cares. We have umask set to 0002 so that permissions work correctly

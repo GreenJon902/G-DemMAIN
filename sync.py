@@ -94,10 +94,10 @@ for (source, destination) in sync_map.items():
 # Check for any new or changed files
 for (source_folder, destination_folder) in sync_map.items():
     for (root, dirs, files) in os.walk(source_folder):
-        for source_file in files:
+        for source_file_just_name in files:
             
             # Paths
-            source_file = os.path.join(root, source_file)
+            source_file = os.path.join(root, source_file_just_name)
             relpath = os.path.relpath(source_file, source_folder)
             destination_file = os.path.join(destination_folder, relpath)
             
@@ -121,7 +121,7 @@ for (source_folder, destination_folder) in sync_map.items():
                     
                     if source != destination:
                         # Don't match so show diff and ask user if we want to replace it
-                        print("Diff (without header):")
+                        print(f"Diff (without header) for {PATH_COL}{source_file_just_name}{RESET}:")
                         
                         # Print files next to eachother with line numbers
                         source = source.split("\n")

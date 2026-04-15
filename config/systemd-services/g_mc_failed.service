@@ -1,0 +1,12 @@
+# TODO: Generalise this
+# We need this as it's own service as OnFailed cannot run python.
+[Unit]
+Description=Failure handler for g_mc
+
+[Service]
+Type=oneshot
+
+# Get environment variables (we need this to get the github web url)
+EnvironmentFile=/etc/g-demmain/common.env
+
+ExecStart=/bin/python3 /var/lib/g_mc/webhooks.py status Minecraft g_mc crashed
