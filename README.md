@@ -1,9 +1,23 @@
 # G-DemMAIN
 [![Diagram of the users, permissions, databases, tables, folders and systemd services that we create.](doc/infra-diagram-thumbnail.png)](doc/infra-diagram.pdf)
-TODO: Deamon settings for g_mc are more complex now, add those.  
-TODO: Move the deamon table to MARKDOWN as it doesn't need to be in the diagram.  
+TODO: Table of all users, groups, and file-permissions.  - Links to sudoers file and script to verify folders. We can have a source file and a script like setup\_users_and_folders.py which checks and makes any changes (ONLY FOR SERVICES THOUGH)
+TODO: Script that verifies folders and file-permissions are correct.
+TODO: Build deamon overview table from actual source files
+TODO: Note about avoiding deleting old users, but if you must then run `find / -uid <old_uid>` (uid vs user) (same for gid) to find files owned by that user or group. Also check no perms in sudoers or elsewhere
 
+| Service Name       | Description                                                                     | User                | After+Requires | Part Of        | Requires Mount For          | On Calender        | Restart                                   | On Fail        | WorkingDir, ExecStart, ExecStop                                                               | UMask |
+|--------------------|---------------------------------------------------------------------------------|---------------------|----------------|----------------|-----------------------------|--------------------|--------------------------|----------------|----------------|-----------------------------------------------------------------------------------------------|-------|
+| g\_mc              | Runs the Minecraft server jar.                                                  | g\_mc               | mysql          |                |                             |                    | on-failure (max 2 fails in five minutes)  | Send an email. | /var/lib/g\_mc, /opt/infra/g\_mc/start\_service.sh, /opt/infra/g\_mc/start\_service.sh        | 0002  |
+| g\_web             | Runs the website / node.js server - home, rules, hisdoc, dynmaps.               | g\_web              | mysql          |                |                             |                    | always                                    | Send an email. | /var/lib/g\_web, /opt/infra/g\_web/start\_service.sh, /opt/infra/g\_web/start\_service.sh     |       |
+| mysql              | Manages the databases. Note that this is provided by MariaDB.                   | mysql               |                | g\_web, g\_mc  | /mnt/<vol\_name>/mysql      |                    | no                                        | Send an email. | /var/lib/mysql, (Provided by MariaDB), (Provided by MariaDB)                                  |       |
+| g\_backup\_mc      | Backup certain folders from the Minecraft world.                                | g\_backup           |                |                |                             | *-*-01 02:00:00    | no                                        | Send an email. | N/A, /opt/infra/g\_backup/backup\_mc.sh, N/A                                                  |       |
+| g\_backup\_home    | Backup the personal homes.                                                      | g\_backup           |                |                |                             | *-*-01 02:00:00    | no                                        | Send an email. | N/A, /opt/infra/g\_backup/backup\_home.sh, N/A                                                |       |
+| g\_backup\_db      | Backup the databases.                                                           | g\_backup           |                |                |                             | *-*-01 02:00:00    | no                                        | Send an email. | N/A, /opt/infra/g\_backup/backup\_db.sh, N/A                                                  |       |
+| g\_check\_disk     | Check that there is sufficient remaining disk space. If not, disables services. | g\_check\_disk      |                |                |                             | *-*-* *:00/5:00    | no                                        | Send an email. | N/A, /opt/infra/g\_check\_dist/check\_disk.sh, N/A                                            |       |
+| g\_nightly\_restart| Restart g\_mc (required) and g\_web (if running) nightly.                       | g\_nightly\_restart |                |                |                             | *-*-* 00:00:00     | no                                        | Send an email. | N/A, /opt/infra/g\_check\_dist/run\_nightly\_restart.sh, N/A                                  |       |
 
+Note: If After+Requires is none then we set `After=network.target` and no `Requires`.
+                                       
 
 TODO: Add documentation on use of fail2ban (brute force attacks)  
 TODO: Add documentation on the sudoers file
