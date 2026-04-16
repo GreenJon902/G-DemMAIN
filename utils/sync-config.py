@@ -37,7 +37,7 @@ print("Ran with args", sys.argv, "which parsed to", args)
 # Load sync-map
 config = ConfigParser()
 if not os.path.exists(args.syncmap):
-    raise Exception("Sync map file does not exist - " + args.syncmap)
+    raise Exception("Sync map file does not exist - " + args.syncmap + " - are you sure you're in the right folder?")
 config.read(args.syncmap)
 sync_map = dict(config["sync-map"])
 print("Loaded map:", sync_map)

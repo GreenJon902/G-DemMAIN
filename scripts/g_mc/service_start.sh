@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Agree to eula
 echo "eula=true" > /var/lib/g_mc/eula.txt
 

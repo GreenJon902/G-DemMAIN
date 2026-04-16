@@ -14,10 +14,9 @@ TODO: Remove g\_nightly\_restart from the diagram.
 # Folders
 | Folder | Owner | Group | Permission | Notes |
 |---|---|---|---|---|
-| /var/lib/g\_mc/* | g\_mc | g\_mc | 2770 | The owner may also be jon or root, this is fine. 770 permissions so I can easily modify parts. SetGID bit so that all files created in there are added to the g\_mc group. This should apply to every child except the logs folder and it's children. |
-| /var/lib/g\_mc | g\_mc | g\_mc | 2771 | We need execute on the folder itself so everyone is able to access the logs folder. |
-| /var/lib/g\_mc/logs | g\_mc | g\_mc | 2755 | The owner should be the only one able to write to this folder. SetGID bit so created files inherit the g\_mc group. Anyone should be able to read these files (as that makes it easier for access elsewhere). |
-| /opt/infra/ | jon | jon | 0750 | Only I should be able to read and write here. |
+| /var/lib/g\_mc/* | g\_mc | g\_mc | 2775 | The owner may also be jon or root, this is fine. 775 permissions so I can easily modify parts, and that g_web and anything else can read logs and whitelist.json, etc.. SetGID bit so that all files created in there are added to the g\_mc group. |
+able to read these files (as that makes it easier for access elsewhere). |
+| /opt/infra/ | jon | jon | 0755 | Only I should be able to write here. Every user needs read access as (nearly) all the scripts are stored here. |
 
 TODO: Do we need a view_infra group?
 

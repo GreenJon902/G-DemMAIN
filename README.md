@@ -28,8 +28,7 @@ TODO: Add documentation on use of fail2ban (brute force attacks)
 | 31415         | SSH Access                              | Yes                      |
 | _All others_  |                                         | Yes                      |
 
-TODO: Convert the minecraft port to an evironment variable. Then do same with the rcon port and password.
-TODO: Put webhooks.py in a generally accesible location or copy it g_mc's folder
+TODO: Convert the minecraft port to an evironment variable. Then do same with the rcon port and password. I mean server.properties (and some plugin configs) can go in the repo anyway. Then have a script that runs in service_start.sh that copies and templates the configs.
 
 # SSH
 We connect to the server through SSH. For security passwords are disabled, instead we use a public/private key pair.  
@@ -69,31 +68,5 @@ Note: you may need to run this as `sudo` or be in the `systemd-journalctl` group
 You can also use `systemd-analyze verify <service_name>.service` to check for some errors.  
 
 
-# Syncing
-This module manages the contents and deployments of the synced files.
 
-## Deployment
-The `sync.py` script will copy the of the contents of folders specified in `sync-map.ini` to their respective destinations (also specified by that file).
-This script will check for any discrepancies between the destination folders and the local folders, and ask you what to do in each case. This will not make any changes without user-input.
-
-The `sync-map.ini` should contain a section with header `sync-map`, which should contain key-value pairs of `<local-folder-path (relative to root of repo)>=<destination-folder-path>`.
-
-After updating systemd service config files, you'll need to run `systemctl daemon-reload`.
-After updating the sshd config, first validate the config is correct with `sshd -t`, if there are no errors (no output) then run `systemctl reload sshd`.
-After updating the mariadb config, run `systemctl restart mariadb`.
-
-## Testing
-Running `sync.py test-map.ini` will map the folders to `./test/...`. You may need to create the destination folders beforehand. Then mess around whith files in the test folder to see that everything is working.
-
-You can also use the `-d`/`--dry-run` flag to test the program without making any changes.
-
-## Extra information
-Any files we copy have the following header pre-pended to them:
-```
-# This is a G-DemMAIN synced config file, and may be overwritten when sync is run. Please do not modify this line, and leave it as the first line of this file.
-```
-This line is used to check if a file is created by the `sync.py` script, and it is expected this is left as it is, on the first line.
-This means we cannot copy files with shebangs.
-
-When changing destination folders, it might be a good idea to leave the destination folder as dummy, so that `sync.py` can find still find any old scripts and remove them.
 

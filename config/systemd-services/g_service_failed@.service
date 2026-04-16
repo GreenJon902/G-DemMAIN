@@ -10,4 +10,4 @@ Type=oneshot
 EnvironmentFile=/etc/g-demmain/common.env
 
 # Separate paramaters up and run
-ExecStart=/bin/bash -c 'IFS="-" read -a separated <<< "%i"; /bin/python3 /usr/local/bin/webhooks.py status ${separated[@]} crashed'
+ExecStart=/bin/bash -c 'IFS="-"; set -- "%i"; /bin/python3 /opt/infra/scripts/webhooks.py status $@ crashed'

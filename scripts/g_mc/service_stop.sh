@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Extract RCON settings from server.properties
 rcon_enabled=$(grep "^enable-rcon=" /var/lib/g_mc/server.properties | cut -d"=" -f2-)
 rcon_port=$(grep "^rcon.port=" /var/lib/g_mc/server.properties | cut -d"=" -f2-)
@@ -20,4 +22,4 @@ fi
 
 # Stop the server
 echo "Stopping server..."
-/var/lib/g_mc/mcrcon -P $rcon_port -p $rcon_password -w 5 "say Server is stopping!" stop  # Announce server is restarting, wait five seconds, then stop the server
+/opt/infra/scripts/g_mc/mcrcon/mcrcon -P $rcon_port -p $rcon_password -w 5 "say Server is stopping!" stop  # Announce server is restarting, wait five seconds, then stop the server
