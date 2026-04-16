@@ -25,7 +25,7 @@ TODO: Add documentation on use of fail2ban (brute force attacks)
 | 25565         | Minecraft Server                        | No                       |
 |    80         | Website                                 | No                       |
 | 25575         | RCON management of the Minecraft Server | Yes                      |
-| 31415         | SSH Access                              | Yes                      |
+| 31415         | SSH Access                              | No                       |
 | _All others_  |                                         | Yes                      |
 
 TODO: Convert the minecraft port to an evironment variable. Then do same with the rcon port and password. I mean server.properties (and some plugin configs) can go in the repo anyway. Then have a script that runs in service_start.sh that copies and templates the configs.
