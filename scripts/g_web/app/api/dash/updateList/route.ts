@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const result = schema.safeParse(body);
 
-    // Check if validation was unsuccessfull
+    // Check if validation was unsuccessful
     if (!result.success) {  
         return Response.json({
             error: "Validation failed",
@@ -17,7 +17,7 @@ export async function POST(req: Request) {
         }, { status: 400 });
     }
 
-    // Validation was successfull so apply action and then respond to client
+    // Validation was unsuccessful so apply action and then respond to client
     const data = result.data;
     const actionSuccess = data.uuid.at(0) === "a";  // TODO: Do something with this
     if (actionSuccess) {
