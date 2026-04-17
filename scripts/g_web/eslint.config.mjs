@@ -24,7 +24,8 @@ const eslintConfig = defineConfig([
         rules: {
             semi: ["error", "always"],
             indent: ["warn", 4],
-            "comma-dangle": ["warn", "never"]
+            "comma-dangle": ["warn", "never"],
+            quotes: ["warn", "double", { avoidEscape: true }]
         }
     }
 ]);
