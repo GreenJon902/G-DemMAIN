@@ -20,7 +20,7 @@ async function openConfirmRemoveUserModal(account: Account, reloadCallback: () =
                 if (!res.ok) throw new Error(`HTTP error - ${res.status}`);
                 return res;
             })
-            .catch(err => { console.log(err); window.alert("An error occured") })  // Inform user
+            .catch(err => { console.log(err); window.alert("An error occured"); })  // Inform user
             .finally(() => reloadCallback());
 
     }
