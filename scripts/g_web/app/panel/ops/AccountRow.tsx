@@ -3,6 +3,7 @@
 import { Account } from "./page";
 import { XMarkIcon } from "@heroicons/react/20/solid";
 import { useRouter } from "next/navigation";
+import PlayerHead from "./PlayerHead";
 
 async function openConfirmRemoveUserModal(account: Account, reloadCallback: () => void) {
     if (window.confirm(`Are you sure you want to de-op ${account.name}?`)) {
@@ -31,7 +32,10 @@ export default function AccountRow({ account } : { account: Account }) {
 
     return (
         <div className="flex justify-between p-1 first:rounded-t-md last:rounded-b-md odd:bg-gray-700 even:bg-gray-800">
-            <span> {account.name} </span>
+            <div>
+                <PlayerHead account={account} />              
+                <span> {account.name} </span>
+            </div>
             <button type="button" className="rounded-md bg-red-600 hover:bg-red-800" 
                 onClick={() => openConfirmRemoveUserModal(account, () => router.refresh())}
             >

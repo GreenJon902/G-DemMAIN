@@ -1,5 +1,6 @@
 import fs from "fs/promises";
 import AccountRow from "./AccountRow";
+import AddAccountField from "./AddAccountField";
 
 export type Account = {
     name: string,
@@ -12,7 +13,10 @@ export default async function Page() {
         <>
             <h1 className="text-3xl font-bold underline decoration-4">Operators</h1>
             <div className="m-4">
-                {accounts.map(acc => <AccountRow key={acc.uuid} account={acc}/>)}
+                <div>
+                    {accounts.map(acc => <AccountRow key={acc.uuid} account={acc}/>)}
+                </div>
+                <AddAccountField />
             </div>
         </>
     );
