@@ -1,4 +1,4 @@
-name: Lint
+name: Lint and type-check g_web
 
 on:
   push:
@@ -30,3 +30,6 @@ jobs:
 
       - name: Run lint
         run: npm run lint -- --max-warnings=0
+
+      - name: Run lint
+        run: npm run typecheck
