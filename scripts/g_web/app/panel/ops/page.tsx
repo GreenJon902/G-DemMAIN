@@ -12,7 +12,7 @@ export default async function Page() {
     return (
         <>
             <h1 className="text-3xl font-bold underline decoration-4">Operators</h1>
-            <div className="m-4">
+            <div className="m-4 space-y-1">
                 <div>
                     {accounts.map(acc => <AccountRow key={acc.uuid} account={acc}/>)}
                 </div>
