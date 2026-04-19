@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import PlayerHead from "./PlayerHead";
-import { addOperator } from "./actions";
+import { addOperatorAction } from "./actions";
 import { useRouter } from "next/navigation";
 import { ArrowPathIcon } from "@heroicons/react/20/solid";
 
@@ -36,7 +36,7 @@ export default function AddAccountField() {
     const [isPending, startTransition] = useTransition();  // Is pending is true when we've sent the change to the server and are waiting for a response
     const triggerAction = () => {
         startTransition(async () => {
-            await addOperator(currentName);
+            await addOperatorAction(currentName);
             router.refresh();
         });
     };

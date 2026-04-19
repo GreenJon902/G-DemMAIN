@@ -4,7 +4,7 @@ import { Account } from "./page";
 import { ArrowPathIcon, XMarkIcon } from "@heroicons/react/20/solid";
 import { useRouter } from "next/navigation";
 import PlayerHead from "./PlayerHead";
-import { removeOperator } from "./actions";
+import { removeOperatorAction } from "./actions";
 import { useTransition } from "react";
 
 async function openConfirmRemoveUserModal(account: Account, callback: () => void) {
@@ -20,7 +20,7 @@ export default function AccountRow({ account } : { account: Account }) {
     const [isPending, startTransition] = useTransition();  // Is pending is true when we've sent the change to the server and are waiting for a response
     const handleConfirm = () => {
         startTransition(async () => {
-            await removeOperator(account.uuid);
+            await removeOperatorAction(account.uuid);
             router.refresh();
         });
     };
