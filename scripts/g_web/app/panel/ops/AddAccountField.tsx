@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState } from "react";
 import PlayerHead from "./PlayerHead";
 import { addOperatorAction } from "./actions";
 import { useRouter } from "next/navigation";
-import { ArrowPathIcon } from "@heroicons/react/20/solid";
+import ActionButton from "./ActionButton";
 
 
 /**
@@ -31,16 +31,6 @@ export default function AddAccountField() {
 
     const router = useRouter();
 
-    // Function to make change on server and refresh page afterwards
-    // TODO: This transition thing can be moved to a until and generalised
-    const [isPending, startTransition] = useTransition();  // Is pending is true when we've sent the change to the server and are waiting for a response
-    const triggerAction = () => {
-        startTransition(async () => {
-            await addOperatorAction(currentName);
-            router.refresh();
-        });
-    };
-
     // Debounce so we don't load an image for every key the user presses
     const debouncedCurrentName = useDebounce(currentName, 250);
 
@@ -66,13 +56,9 @@ export default function AddAccountField() {
                     onUpdate={found => setImageFound(found)}
                 />
             </div>
-            <button type="button" onClick={triggerAction} className="relative flex cursor-pointer justify-center rounded-md bg-green-600 px-1 text-nowrap outline-none hover:bg-green-800 focus-visible:bg-green-800">
-                { /* Render both at same time so size remains constant, but hide the one we don't need */ }
-                <ArrowPathIcon className={`size-6 animate-spin self-stretch stroke-2 text-white ${isPending ? "" : "invisible"} absolute`} />
-                <span className={`${isPending ? "invisible" : ""}`}> Add operator </span> 
-
-            </button> 
+            <ActionButton action={() => addOperatorAction(currentName).then(router.refresh)} normalColor="bg-green-600" effectColor="bg-green-800">
+                <span> Add operator </span> 
+            </ActionButton> 
         </div>
     );
-
 }

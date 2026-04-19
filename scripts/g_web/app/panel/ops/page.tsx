@@ -6,7 +6,7 @@ import * as z from "zod";
 const Account = z.object({
     name: z.string(),
     uuid: z.uuid()
-})
+});
 
 export type Account = z.infer<typeof Account>;
 

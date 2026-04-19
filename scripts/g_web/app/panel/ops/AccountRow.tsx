@@ -1,29 +1,15 @@
 "use client";
 
 import { Account } from "./page";
-import { ArrowPathIcon, XMarkIcon } from "@heroicons/react/20/solid";
+import { XMarkIcon } from "@heroicons/react/20/solid";
 import { useRouter } from "next/navigation";
 import PlayerHead from "./PlayerHead";
 import { removeOperatorAction } from "./actions";
-import { useTransition } from "react";
+import ActionButton from "./ActionButton";
 
-async function openConfirmRemoveUserModal(account: Account, callback: () => void) {
-    if (window.confirm(`Are you sure you want to de-op ${account.name}?`)) {
-        callback();
-    }
-}
 
 export default function AccountRow({ account } : { account: Account }) {
     const router = useRouter();
-
-    // Function to make the change on server and refresh page afterwards
-    const [isPending, startTransition] = useTransition();  // Is pending is true when we've sent the change to the server and are waiting for a response
-    const handleConfirm = () => {
-        startTransition(async () => {
-            await removeOperatorAction(account.uuid);
-            router.refresh();
-        });
-    };
 
     return (
         <div className="flex h-8 justify-between p-1 first:rounded-t-md last:rounded-b-md odd:bg-gray-700 even:bg-gray-800">
@@ -31,14 +17,15 @@ export default function AccountRow({ account } : { account: Account }) {
                 <div className="relative size-6 overflow-hidden rounded-md"><PlayerHead account={account} /></div>
                 <span title={account.uuid}> {account.name} </span>
             </div>
-            <button type="button" className="size-6 cursor-pointer rounded-md bg-red-600 outline-none hover:bg-red-800 focus-visible:bg-red-800" 
-                onClick={() => openConfirmRemoveUserModal(account, () => handleConfirm())}
+            <ActionButton
+                action={() => removeOperatorAction(account.uuid).then(router.refresh)} 
+                confirm={() => window.confirm(`Are you sure you want to de-op ${account.name}?`)}
+                normalColor="bg-red-600" 
+                effectColor="bg-red-800"
+                className="size-6"
             >
-                {isPending ?
-                    (<ArrowPathIcon className="size-6 animate-spin self-stretch stroke-2 text-white" />) :
-                    (<XMarkIcon className="size-6 self-stretch stroke-2 text-white" />)
-                }
-            </button>
+                <XMarkIcon className="size-6 self-stretch stroke-2 text-white" />
+            </ActionButton>
         </div>
     );
 }
