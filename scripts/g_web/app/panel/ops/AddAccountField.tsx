@@ -53,20 +53,20 @@ export default function AddAccountField() {
                 type="text" 
                 name="name"  // This could also be a UUID
                 placeholder="GamerGirl67..." 
-                className="flex-1 rounded-md bg-gray-600 px-1" 
+                className="flex-1 rounded-md bg-gray-600 px-1 outline-none focus:bg-gray-700" 
                 value={currentName} 
                 onChange={e => {
                     setCurrentName(e.target.value);
                     setImageFound(false);  // The new image (for this name) hasn't been found, so hide
                 }}
             />
-            <div className={`relative flex-none ${displayImage ? "w-6 opacity-100" : "w-0 opacity-0"} h-6 overflow-hidden rounded-md transition-all`}>
+            <div className={`relative flex-none m-r-0 ${displayImage ? "w-6 opacity-100" : "w-0 opacity-0 mr-0!"} h-6 overflow-hidden rounded-md transition-all`}>
                 <PlayerHead  
                     account={debouncedCurrentName}  
                     onUpdate={found => setImageFound(found)}
                 />
             </div>
-            <button type="button" onClick={triggerAction} className="relative flex justify-center rounded-md bg-green-600 px-1 text-nowrap hover:bg-green-800">
+            <button type="button" onClick={triggerAction} className="relative flex justify-center rounded-md bg-green-600 px-1 text-nowrap hover:bg-green-800 focus-visible:bg-green-800 outline-none cursor-pointer">
                 { /* Render both at same time so size remains constant, but hide the one we don't need */ }
                 <ArrowPathIcon className={`size-6 animate-spin self-stretch stroke-2 text-white ${isPending ? "" : "invisible"} absolute`} />
                 <span className={`${isPending ? "invisible" : ""}`}> Add operator </span> 

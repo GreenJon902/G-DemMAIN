@@ -31,7 +31,7 @@ export default function AccountRow({ account } : { account: Account }) {
                 <div className="relative size-6 overflow-hidden rounded-md"><PlayerHead account={account} /></div>
                 <span> {account.name} </span>
             </div>
-            <button type="button" className="size-6 cursor-pointer rounded-md bg-red-600 hover:bg-red-800" 
+            <button type="button" className="size-6 cursor-pointer rounded-md bg-red-600 hover:bg-red-800 focus-visible:bg-red-800 outline-none" 
                 onClick={() => openConfirmRemoveUserModal(account, () => handleConfirm())}
             >
                 {isPending ?
