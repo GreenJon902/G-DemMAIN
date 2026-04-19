@@ -1,11 +1,15 @@
 import type { NextConfig } from "next";
+import * as os from "os";
 
 // Find local ip address for use in dev-origins
-var os = require('os');
-var networkInterfaces = os.networkInterfaces();
-const allowedDevOrigins = [];
-Object.values(networkInterfaces).forEach(v => v.forEach(w => allowedDevOrigins.push(w.address)));
-console.log("Allowing dev origins", allowedDevOrigins);
+const env = process.env.NODE_ENV;
+const allowedDevOrigins: string[] = [];
+if (env == "development") {
+    const networkInterfaces = os.networkInterfaces();
+    Object.values(networkInterfaces).filter(v => v !== undefined).forEach(v => v.forEach(w => allowedDevOrigins.push(w.address)));
+    console.log("Detected in development mode, allowing dev origins", allowedDevOrigins);
+}
+
 
 
 const nextConfig: NextConfig = {
