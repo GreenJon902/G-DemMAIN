@@ -1,11 +1,14 @@
 import fs from "fs/promises";
 import AccountRow from "./AccountRow";
 import AddAccountField from "./AddAccountField";
+import * as z from "zod";
 
-export type Account = {
-    name: string,
-    uuid: string  // TODO: Is this right?
-}
+const Account = z.object({
+    name: z.string(),
+    uuid: z.uuid()
+})
+
+export type Account = z.infer<typeof Account>;
 
 export default async function Page() {
     const accounts = await loadAccounts();
@@ -25,6 +28,6 @@ export default async function Page() {
 
 async function loadAccounts() {
     const file = await fs.readFile("ops.json", "utf-8");  // TODO: Find the correct file for this
-    const data: Account[] = JSON.parse(file);
+    const data = z.array(Account).parse(JSON.parse(file));  // Parse an array of accounts. This will ignore any extra properties
     return data;
 }
