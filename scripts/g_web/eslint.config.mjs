@@ -19,13 +19,18 @@ const eslintConfig = defineConfig([
     // Tailwind
     tailwind.configs["flat/recommended"],
 
-    // Styling rules
+    // Rule modifications
     {
         rules: {
+            // Styling
             semi: ["error", "always"],
             indent: ["warn", 4],
             "comma-dangle": ["warn", "never"],
-            quotes: ["warn", "double", { avoidEscape: true }]
+            quotes: ["warn", "double", { avoidEscape: true }],
+
+            // Images
+            "@next/next/no-img-element": "off",
+            "jsx-a11y/alt-text": "off"
         }
     }
 ]);
