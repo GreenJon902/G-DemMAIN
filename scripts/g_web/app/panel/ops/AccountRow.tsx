@@ -29,7 +29,7 @@ export default function AccountRow({ account } : { account: Account }) {
         <div className="flex h-8 justify-between p-1 first:rounded-t-md last:rounded-b-md odd:bg-gray-700 even:bg-gray-800">
             <div className="flex space-x-1">
                 <div className="relative size-6 overflow-hidden rounded-md"><PlayerHead account={account} /></div>
-                <span> {account.name} </span>
+                <span title={account.uuid}> {account.name} </span>
             </div>
             <button type="button" className="size-6 cursor-pointer rounded-md bg-red-600 hover:bg-red-800 focus-visible:bg-red-800 outline-none" 
                 onClick={() => openConfirmRemoveUserModal(account, () => handleConfirm())}
