@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function Page() {
     return (
-        <div className="bg-neutral-900 p-5">
+        <div className="bg-neutral-900">
             <h1 className="flex justify-center transition-transform duration-200 hover:scale-110">
                 <span className="inline-flex flex-col">
                     <span className="bg-linear-80 from-green-700 to-green-400 bg-clip-text align-top text-3xl font-extrabold text-transparent">G-Dem</span>
