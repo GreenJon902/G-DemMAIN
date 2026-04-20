@@ -7,7 +7,7 @@ export default function Layout({
 }) {
     return (
         <html>
-            <body className="bg-gray-900 text-white">
+            <body className="p-4 bg-gray-900 text-white">
                 {children}
             </body>
         </html>
