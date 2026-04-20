@@ -1,4 +1,4 @@
-import "./globals.css";
+import "@/app/globals.css";
 
 export default function Layout({
     children
@@ -8,7 +8,9 @@ export default function Layout({
     return (
         <html>
             <body>
-                {children}
+                <main className="h-dvh bg-gray-900 p-4 text-white">
+                    {children}
+                </main>
             </body>
         </html>
     );
