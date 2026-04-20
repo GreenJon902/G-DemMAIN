@@ -1,1 +1,14 @@
 @import "tailwindcss";
+
+/** 
+ * These are for fading in the background on pages where the background changes (e.g. not found).
+ * We have to set the background in post due to limitations of NextJS. And so we animate it fading in so there there is no flash.
+ */
+@property --bg-opacity {
+    syntax: '<number>';
+    initial-value: 0;
+    inherits: false;
+}
+@keyframes bgFadeIn {
+    to {--bg-opacity: 1}
+} 
