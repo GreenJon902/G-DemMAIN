@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { List } from "./page";
 import PlayerHead from "./PlayerHead";
-import { addOperatorAction } from "./actions";
+import { addToListAction } from "./actions";
 import { useRouter } from "next/navigation";
 import ActionButton from "./ActionButton";
 
@@ -25,7 +26,7 @@ function useDebounce(value: string, delay: number) {
     return debounced;
 }
 
-export default function AddAccountField() {
+export default function AddAccountField({ list }: { list: List }) {
     const [imageFound, setImageFound] = useState(false);  // Was the playerhead associated with currentName found?
     const [currentName, setCurrentName] = useState("");
 
@@ -37,12 +38,13 @@ export default function AddAccountField() {
     // When we are currently debouncing, or if the image is not found, then we should not show the image
     const displayImage = imageFound && currentName == debouncedCurrentName;
 
+    // TODO: Validate input on client side
     return (
         <div className="flex h-6 flex-wrap space-x-1">
             <input 
                 type="text" 
-                name="name"  // This could also be a UUID
-                placeholder="GamerGirl67..." 
+                name="name"  
+                placeholder={list.lang.addPrompt} 
                 className="flex-1 rounded-md bg-gray-600 px-1 outline-none focus:bg-gray-700" 
                 value={currentName} 
                 onChange={e => {
@@ -50,14 +52,16 @@ export default function AddAccountField() {
                     setImageFound(false);  // The new image (for this name) hasn't been found, so hide
                 }}
             />
-            <div className={`relative flex-none ${displayImage ? "w-6 opacity-100" : "mr-0! w-0 opacity-0"} h-6 overflow-hidden rounded-md transition-all`}>
-                <PlayerHead  
-                    account={debouncedCurrentName}  
-                    onUpdate={found => setImageFound(found)}
-                />
-            </div>
-            <ActionButton action={() => addOperatorAction(currentName).then(router.refresh)} normalColor="bg-green-600" effectColor="bg-green-800">
-                <span> Add operator </span> 
+            {list.renderPlayerheads && (
+                <div className={`relative flex-none ${displayImage ? "w-6 opacity-100" : "mr-0! w-0 opacity-0"} h-6 overflow-hidden rounded-md transition-all`}>
+                    <PlayerHead  
+                        name={debouncedCurrentName}  
+                        onUpdate={found => setImageFound(found)}
+                    />
+                </div>
+            )}
+            <ActionButton action={() => addToListAction(list.filename, currentName).then(router.refresh)} normalColor="bg-green-600" effectColor="bg-green-800">
+                <span> {list.lang.addButton} </span> 
             </ActionButton> 
         </div>
     );
