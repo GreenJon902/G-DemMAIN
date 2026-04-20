@@ -36,7 +36,7 @@ export default function PlayerHead({
     }
 
     return (
-        <a target="_blank" href={`https://namemc.com/profile/${uniquename}`} className="group">  { /* Target blank opens in a new tab */ }
+        <a target="_blank" href={`https://namemc.com/profile/${uniquename}`} className="absolute group size-full">  { /* Target blank opens in a new tab */ }
             <Image 
                 src={`https://api.mcheads.org/head/${uniquename}/64/hat`} 
                 alt={`Player head for ${altname}`} 
