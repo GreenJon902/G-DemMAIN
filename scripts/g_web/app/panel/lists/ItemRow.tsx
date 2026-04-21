@@ -5,7 +5,7 @@ import { XMarkIcon } from "@heroicons/react/20/solid";
 import { useRouter } from "next/navigation";
 import PlayerHead from "./PlayerHead";
 import { removeFromListAction } from "./actions";
-import ActionButton from "./ActionButton";
+import { ActionButton, BUTTON_RED } from "../ui/Button";
 
 
 export default function ItemRow({ item, list }: { item: ListItem, list: List }) {
@@ -33,8 +33,7 @@ export default function ItemRow({ item, list }: { item: ListItem, list: List }) 
             <ActionButton
                 action={() => removeFromListAction(list.filename, item.uniquename).then(router.refresh)} 
                 confirm={() => window.confirm(`Are you sure you want to ${list.lang.remove} ${item.rendername}?`)}
-                normalColor="bg-red-600" 
-                effectColor="bg-red-800"
+                color={BUTTON_RED}
                 className="size-6"
             >
                 <XMarkIcon className="size-6 self-stretch stroke-2 text-white" />

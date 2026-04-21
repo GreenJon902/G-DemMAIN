@@ -5,7 +5,7 @@ import { List } from "./page";
 import PlayerHead from "./PlayerHead";
 import { addToListAction } from "./actions";
 import { useRouter } from "next/navigation";
-import ActionButton from "./ActionButton";
+import { ActionButton, BUTTON_GREEN } from "../ui/Button";
 
 
 /**
@@ -60,7 +60,7 @@ export default function AddAccountField({ list }: { list: List }) {
                     />
                 </div>
             )}
-            <ActionButton action={() => addToListAction(list.filename, currentName).then(router.refresh)} normalColor="bg-green-600" effectColor="bg-green-800">
+            <ActionButton action={() => addToListAction(list.filename, currentName).then(router.refresh)} color={BUTTON_GREEN}>
                 <span> {list.lang.addButton} </span> 
             </ActionButton> 
         </div>

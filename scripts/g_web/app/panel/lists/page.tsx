@@ -6,6 +6,7 @@ import fs from "fs/promises";
 import ItemRow from "./ItemRow";
 import AddItemField from "./AddItemField";
 import * as z from "zod";
+import PanelPageSection from "../ui/PanelPageSection";
 
 // Define or generic list item, this is what gets passed around and rendered
 export type ListItem = {
@@ -88,17 +89,16 @@ export default function Page() {
         <>
             {
                 LISTS_AND_SCHEMAS.map(async ({ list, itemSchema }) => (
-                    <div key={list.filename}>
-                        <h1 className="text-3xl font-bold underline decoration-4">{list.rendername}</h1>
-                        <div className="m-4 space-y-1">
-                            <div>
+                    <PanelPageSection title={list.rendername} key={list.filename} >
+                        <div className="space-y-1">
+                            <div> 
                                 {(await loadAccounts(list.filename, itemSchema)).map(item => (
                                     <ItemRow key={item.uniquename} item={item} list={list} />
                                 ))}
                             </div>
                             <AddItemField list={list} />
                         </div>
-                    </div>
+                    </PanelPageSection>
                 ))
             }
         </>
