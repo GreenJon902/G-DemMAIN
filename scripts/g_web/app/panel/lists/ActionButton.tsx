@@ -39,8 +39,8 @@ export default function ActionButton({
     };
     
     // Create a button that shows either a the content or the spinner
-    return (
-        <button type="button" onClick={buttonClicked} className={`relative flex cursor-pointer justify-center rounded-md ${normalColor} hover: px-1 text-nowrap outline-none${effectColor} focus-visible:${effectColor} ${className}`} disabled={isPending}>
+    return (  // TODO: We can't split the hover: from the actual color, cause now it doesn't work
+        <button type="button" onClick={buttonClicked} className={`relative flex cursor-pointer justify-center rounded-md ${normalColor} hover:${effectColor} px-1 text-nowrap outline-none focus-visible:${effectColor} ${className}`} disabled={isPending}>
             { /* Render both at same time so size remains constant, but hide the one we don't need */ }
             <ArrowPathIcon className={`size-6 animate-spin self-stretch stroke-2 text-white ${isPending ? "" : "invisible"} absolute`} />
             <div className={`${isPending ? "invisible" : ""}`}> {children} </div> 
