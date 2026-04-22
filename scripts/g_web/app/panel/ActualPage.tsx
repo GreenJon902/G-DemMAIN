@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { ActionButton, BUTTON_CYAN, BUTTON_GREEN, BUTTON_RED, BUTTON_YELLOW, LinkButton } from "./ui/Button";
 import PanelPageSection from "./ui/PanelPageSection";
 import { loadPanelDataAction, PanelData, Status, Unit, unitAction } from "./actions";
@@ -42,7 +42,7 @@ export default function ActualPage({ initialData }: { initialData: PanelData }) 
         return () => {
             clearTimeout(timeout);
             cancelled = true;
-        }
+        };
     }, []);
 
 
@@ -68,24 +68,24 @@ export default function ActualPage({ initialData }: { initialData: PanelData }) 
                 <table className="w-full overflow-hidden rounded-md"><tbody>
                     {
                         data.unitsStatuses.map(({ unit, status }) => (
-                                <tr className="odd:bg-gray-700 even:bg-gray-800" key={`${unit.name}.${unit.type}`}>
-                                    <td className="w-6 p-1">
-                                        <StatusIndicator unit={unit} status={status} />
-                                    </td>
-                                    <td className="p-1">
-                                        {unit.name}
-                                        <span className="text-xs text-gray-400">
+                            <tr className="odd:bg-gray-700 even:bg-gray-800" key={`${unit.name}.${unit.type}`}>
+                                <td className="w-6 p-1">
+                                    <StatusIndicator unit={unit} status={status} />
+                                </td>
+                                <td className="p-1">
+                                    {unit.name}
+                                    <span className="text-xs text-gray-400">
                                             .{unit.type}
-                                        </span>
-                                    </td>
-                                    <td className="p-1 flex gap-1"> {/* All changing controls go into the same <td> as the frequent changing causes firefox to get confused and not render backgrounds correctly */}
-                                        <UnitControls unit={unit} status={status} className="flex-1" /> 
-                                    </td>
-                                    <td className="w-0 p-1">  {/* w-0 makes it fit the width of the child */}
-                                        <LinkButton href={{ pathname: "panel/log", query: { name: unit.name } }} className="w-full" color={BUTTON_CYAN} newTab>View Log</LinkButton>  
-                                    </td>
-                                </tr>
-                            ))
+                                    </span>
+                                </td>
+                                <td className="flex gap-1 p-1"> {/* All changing controls go into the same <td> as the frequent changing causes firefox to get confused and not render backgrounds correctly */}
+                                    <UnitControls unit={unit} status={status} className="flex-1" /> 
+                                </td>
+                                <td className="w-0 p-1">  {/* w-0 makes it fit the width of the child */}
+                                    <LinkButton href={{ pathname: "panel/log", query: { name: unit.name } }} className="w-full" color={BUTTON_CYAN} newTab>View Log</LinkButton>  
+                                </td>
+                            </tr>
+                        ))
                     }
                 </tbody></table>
             </PanelPageSection>
@@ -136,7 +136,7 @@ function UnitControls({ unit, status, className="" }: { unit: Unit, status: Stat
         status === "deactivating" ||
         !unit.controllable  // This needs to be first as the other clauses don't check for controllable-ness
     ) {
-        return null // No controls
+        return null; // No controls
 
     } else if (
         status === "active" &&
