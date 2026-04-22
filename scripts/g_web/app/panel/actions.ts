@@ -46,7 +46,8 @@ export type PanelData = {
     unitsStatuses: {
         unit: Unit,
         status: Status
-    }[]
+    }[],
+    timestamp: number  // The time that this record was created, in ms since the epoch
 }
 
 /**
@@ -55,7 +56,8 @@ export type PanelData = {
  */
 export async function loadPanelDataAction(): Promise<PanelData> {
     return {
-        unitsStatuses: await getUnitsStatuses()
+        unitsStatuses: await getUnitsStatuses(),
+        timestamp: Date.now()
     };
 }
 
