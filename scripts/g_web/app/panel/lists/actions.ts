@@ -1,6 +1,8 @@
 "use server";
 
 
+// TODO: Make lists page routinely refresh using an action?
+
 /**
  * Adds an operator to operaters.
  * // TODO: REturn values
