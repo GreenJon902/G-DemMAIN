@@ -52,7 +52,9 @@ export default function ActualPage({ initialData }: { initialData: PanelData }) 
                                             .{unit.type}
                                         </span>
                                     </td>
-                                    <UnitControls unit={unit} status={status} />
+                                    <td className="p-1 flex gap-1"> {/* All changing controls go into the same <td> as the frequent changing causes firefox to get confused and not render backgrounds correctly */}
+                                        <UnitControls unit={unit} status={status} className="flex-1" /> 
+                                    </td>
                                     <td className="w-0 p-1">  {/* w-0 makes it fit the width of the child */}
                                         <LinkButton href={{ pathname: "panel/log", query: { name: unit.name } }} className="w-full" color={BUTTON_CYAN} newTab>View Log</LinkButton>  
                                     </td>
@@ -97,45 +99,44 @@ function StatusIndicator({ unit, status }: { unit: Unit, status: Status }) {
 
 /**
  * Create the controls for the given unit.
- * These will be wrapped in <td className="p-1"> tags so that it can be immediately placed into a table.
+ * @param className - This will be given to each child.
  */
-function UnitControls({ unit, status }: { unit: Unit, status: Status }) {
+function UnitControls({ unit, status, className="" }: { unit: Unit, status: Status, className?: string }) {
 
     if (
         status === "activating" ||
         status === "deactivating" ||
         !unit.controllable  // This needs to be first as the other clauses don't check for controllable-ness
     ) {
-        return <_Td colSpan={2} /> // No controls
+        return null // No controls
 
     } else if (
         status === "active" &&
         unit.type === "service"
     ) {
-        return <><_Td><_Restart unit={unit} /></_Td><_Td><_Stop unit={unit} /></_Td></>;
+        return <><_Restart unit={unit} className={className} /><_Stop unit={unit} className={className} /></>;
 
     } else if (
         status === "active" &&
         unit.type === "timer"
     ) {  
-        return <_Td colSpan={2}><_Stop unit={unit} /></_Td>;  // Restarting a timer doesn't make sense
+        return <_Stop unit={unit} className={className} />;  // Restarting a timer doesn't make sense
 
     } else if (
         status === "failed" ||
         status === "inactive"
     ) {
-        return <_Td colSpan={2}><_Start unit={unit} /></_Td>;
+        return <_Start unit={unit} className={className} />;
 
     } else  {
         console.error("Unrecognised status", status, "for unit of type", unit.type);
-        return <_Td colSpan={2}> <div className="text-center"> Unkown! </div> </_Td>;
+        return  <div className="text-center"> Unkown! </div> ;
     }
 }
 // Macro functions to create buttons
-const _Stop = ({ unit }: { unit: Unit }) => 
-    <ActionButton action={async () => await unitAction(unit, "stop")} className="w-full" color={BUTTON_RED}>Stop</ActionButton>;   // TODO: IMplement these actions
-const _Restart = ({ unit }: { unit: Unit }) => 
-    <ActionButton action={async () => await unitAction(unit, "start")} className="w-full" color={BUTTON_YELLOW}>Restart</ActionButton>;
-const _Start = ({ unit }: { unit: Unit }) => 
-    <ActionButton action={async () => await unitAction(unit, "restart")} className="w-full" color={BUTTON_GREEN}>Start</ActionButton>; 
-const _Td = ({ children, colSpan=1 }: { children?: ReactNode, colSpan?: number }) => <td colSpan={colSpan} className="p-1">{children}</td>;
+const _Stop = ({ unit, className }: { unit: Unit, className: string }) => 
+    <ActionButton action={async () => await unitAction(unit, "stop")} className={className} color={BUTTON_RED}>Stop</ActionButton>;   // TODO: IMplement these actions
+const _Restart = ({ unit, className }: { unit: Unit, className: string }) => 
+    <ActionButton action={async () => await unitAction(unit, "start")} className={className} color={BUTTON_YELLOW}>Restart</ActionButton>;
+const _Start = ({ unit, className }: { unit: Unit, className: string }) => 
+    <ActionButton action={async () => await unitAction(unit, "restart")} className={className} color={BUTTON_GREEN}>Start</ActionButton>; 
