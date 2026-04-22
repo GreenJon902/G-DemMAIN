@@ -4,8 +4,8 @@
  * The status of a systemd unit.
  * Note: there are technically more, but I don't think they'll come up.
  */
-const STATUS_VALUES = ["active", "inactive", "failed", "activating", "deactivating"] as const;
 export type Status = typeof STATUS_VALUES[number];
+const STATUS_VALUES = ["active", "inactive", "failed", "activating", "deactivating"] as const;
 
 /**
  * The js representation of a systemd unit.
@@ -42,11 +42,44 @@ async function getUnitsStatuses() {
     }));
 }
 
+/**
+ * The names of the data that we can graph on the main panel page.
+ */
+export type GraphKey = typeof GRAPH_KEYS[number];
+const GRAPH_KEYS = ["mc.tps", "g_mc.cpu", "g_mc.mem", "sys.cpu1", "sys.cpu2", "sys.cpu3", "sys.cpu4", "sys.mem"] as const;
+
+/**
+ * The data to plot on the graphs on the main page.
+ */
+export type GraphData = Record<GraphKey, number[]>;
+
+/**
+ * Gets the status of the units specified in {@link TRACKED_UNITS}.
+ */ 
+async function getGraphData(): Promise<GraphData> {
+    // TODO: Get actual data for this, and have it use the same time-span as the client.
+    // For now just use this array
+
+    if (_graphData === undefined) {
+        // Populate initial array
+        _graphData = Object.fromEntries(GRAPH_KEYS.map(key => [key, [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]])) as GraphData;
+    } else {
+        // Shift all values down and add a new one
+        Object.values(_graphData).forEach(data => {
+            data.push(Math.max(0, Math.min(1, (data.shift() ?? -1) + (Math.random() * 2 - 1) ** 17)));
+        });
+    }
+
+    return _graphData;
+}
+let _graphData: GraphData;
+
 export type PanelData = {
     unitsStatuses: {
         unit: Unit,
         status: Status
     }[],
+    graphData: GraphData,
     timestamp: number  // The time that this record was created, in ms since the epoch
 }
 
@@ -57,6 +90,7 @@ export type PanelData = {
 export async function loadPanelDataAction(): Promise<PanelData> {
     return {
         unitsStatuses: await getUnitsStatuses(),
+        graphData: await getGraphData(),
         timestamp: Date.now()
     };
 }

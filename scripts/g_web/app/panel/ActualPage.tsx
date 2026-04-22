@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ActionButton, BUTTON_CYAN, BUTTON_GREEN, BUTTON_RED, BUTTON_YELLOW, LinkButton } from "./ui/Button";
 import PanelPageSection from "./ui/PanelPageSection";
 import { loadPanelDataAction, PanelData, Status, Unit, unitAction } from "./actions";
+import Graph from "./ui/Graph";
 
 /**
  * This component has the content of the main dash page.
@@ -59,8 +60,8 @@ export default function ActualPage({ initialData }: { initialData: PanelData }) 
             { /* Resource monitors -------------------------------------------------- */ }
             <PanelPageSection title="Resources">
                 <div className="flex w-full flex-wrap gap-4">
-                    <div className="h-50 min-w-50 flex-1 bg-red-200 p-4 font-bold"> System CPU% (per core), MEM% usage, and network and disk stats</div>
-                    <div className="h-50 min-w-50 flex-1 bg-green-200 p-4 font-bold"> Minecraft, Node, MySQL CPU and MEM usage. <br/> THis should also render TPS </div>
+                    <Graph data={data.graphData} keys={["sys.cpu1", "sys.cpu2", "sys.cpu3", "sys.cpu4", "sys.mem"]} className="h-50 min-w-50 flex-1" />
+                    <Graph data={data.graphData} keys={["mc.tps", "g_mc.cpu", "g_mc.mem"]} className="h-50 min-w-50 flex-1" />
                 </div>
             </PanelPageSection>
             { /* Service status -------------------------------------------------- */ }
