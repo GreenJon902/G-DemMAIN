@@ -82,7 +82,7 @@ function StatusIndicator({ status }: { status: string }) {
 function ServiceControls({ service }: { service: { name: string, status: string } }) {
 
     if (service.status === "running") {
-        return <> <_Td><_Restart /></_Td> <_Td><_Stop /></_Td> </>;
+        return <><_Td><_Restart /></_Td><_Td><_Stop /></_Td></>;
     } else if (service.status === "waiting") {  // This is a timer
         return <_Td colSpan={2}><_Stop /></_Td>;
     } else if (service.status === "failed") {
