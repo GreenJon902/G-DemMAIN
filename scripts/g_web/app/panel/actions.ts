@@ -46,7 +46,27 @@ async function getUnitsStatuses() {
  * The names of the data that we can graph on the main panel page.
  */
 export type GraphKey = typeof GRAPH_KEYS[number];
-const GRAPH_KEYS = ["mc.tps", "g_mc.cpu", "g_mc.mem", "sys.cpu1", "sys.cpu2", "sys.cpu3", "sys.cpu4", "sys.mem"] as const;
+const GRAPH_KEYS = [
+    // Minecraft specific data
+    "mc.tps",  // Minecraft server TPS, [0,1], 0 is 0TPS and 1 is 20TPS 
+    "mc.mem",  // Percentage of the java heap used, [0,1] // TODO: Implement this, probably with jcmd?
+
+    // Data reported for the entire CGroup for that service
+    "g_mc.cpu",  // Percentage of system cpu that this service uses, [0,1]
+    "g_mc.mem",  // Percentage of system memory that this service uses, [0,1)  
+    "g_web.cpu",
+    "g_web.mem",
+    "mysql.cpu",
+    "mysql.mem",
+
+    // Data for the whole system
+    "sys.cpu",  // Percentage of total cpu usage, [0,1]
+    "sys.cpu1",  // Percentage for individual system cpu used, [0,1]
+    "sys.cpu2",
+    "sys.cpu3",
+    "sys.cpu4",
+    "sys.mem"  // Percentage of system memory used
+] as const;
 
 /**
  * The data to plot on the graphs on the main page.
@@ -62,7 +82,7 @@ async function getGraphData(): Promise<GraphData> {
 
     if (_graphData === undefined) {
         // Populate initial array
-        _graphData = Object.fromEntries(GRAPH_KEYS.map(key => [key, [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]])) as GraphData;
+        _graphData = Object.fromEntries(GRAPH_KEYS.map(key => [key, new Array(30).fill(0.5)])) as GraphData;
     } else {
         // Shift all values down and add a new one
         Object.values(_graphData).forEach(data => {
