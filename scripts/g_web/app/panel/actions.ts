@@ -84,6 +84,8 @@ const GRAPH_KEYS = [
     "sys.disk.write"
 ] as const;
 
+// TODO: We'll remove graph keys as a concept, and instead have an actual data structure that can be iterated though, to allow for programatic graph creation
+
 /**
  * The data to plot on the graphs on the main page.
  */

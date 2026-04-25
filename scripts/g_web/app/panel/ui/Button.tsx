@@ -3,6 +3,8 @@
  * So buttons obviously, but also links and stuff.
  */
 
+"use client";
+
 
 import { ArrowPathIcon } from "@heroicons/react/20/solid";
 import { Url } from "next/dist/shared/lib/router/router";
