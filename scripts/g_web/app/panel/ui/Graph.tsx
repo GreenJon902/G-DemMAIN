@@ -226,5 +226,5 @@ export const NLineGraph = ({
             )).reverse()  // Reverse so labels are shown in the order they are given
         }
         {...props}
-    />
+    />;
 };

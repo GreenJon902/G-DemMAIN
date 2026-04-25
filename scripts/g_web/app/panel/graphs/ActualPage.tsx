@@ -9,7 +9,7 @@ export default function ActualPage({ initialData }: { initialData: PanelData }) 
     
     // TODO: Can this idea be generalised with the panel/ActualPage.tsx
     // Keep track of the current timestamp so we can indicate how out of data data is
-    const [currentTimestamp, setCurrentTimestamp] = useState(initialData.timestamp);
+    const [currentTimestamp, setCurrentTimestamp] = useState(initialData.timestamp);  // TODO: We don't actually use this
     useEffect(() => {
         const interval = setInterval(async () => {
             setCurrentTimestamp(Date.now());
@@ -45,7 +45,7 @@ export default function ActualPage({ initialData }: { initialData: PanelData }) 
     return (
         <>
             <PanelPageSection title="System">
-                <div className="grid lg:grid-cols-4 md:grid-cols-2 sm:grid-cols-1 gap-4 w-full">  {/* TODO: Generalise this div? */}
+                <div className="grid w-full gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4">  {/* TODO: Generalise this div? */}
                     {/* Total CPU and sysem RAM  // TODO: This is the same as renders on the main panel page, we shouldn't duplicate this?*/}
                     <PointAndFillGraph 
                         pointData={data.graphData["sys.cpu"]} pointLabel="CPU" pointColor={LINE_CYAN}
@@ -95,7 +95,7 @@ export default function ActualPage({ initialData }: { initialData: PanelData }) 
             </PanelPageSection>
             {/* Services */}
             <PanelPageSection title="Services">
-                <div className="grid md:grid-cols-3 sm:grid-cols-1 gap-4 w-full">  {/* TODO: Generalise this div? */}
+                <div className="grid w-full gap-4 sm:grid-cols-1 md:grid-cols-3">  {/* TODO: Generalise this div? */}
                     {["g_mc", "g_web", "mysql"].map(service => (
                         <Fragment key={service}>
                             {/* CPU and Memory */}
@@ -141,7 +141,7 @@ export default function ActualPage({ initialData }: { initialData: PanelData }) 
  */
 function normalizeData(units: string, ...datas: number[][]) {
     const max = Math.max(...datas.map(data => Math.max(...data)));
-    const labels = [0.25, 0.5, 0.75].map(n => `${(n*max).toFixed(2)}` + units)
+    const labels = [0.25, 0.5, 0.75].map(n => `${(n*max).toFixed(2)}` + units);
     const normalized = datas.map(data => data.map(n => n / max));
-    return { datas: normalized, yTicks: { left: labels } }
+    return { datas: normalized, yTicks: { left: labels } };
 }

@@ -1,4 +1,3 @@
-import { init } from "next/dist/compiled/webpack/webpack";
 import { loadPanelDataAction } from "../actions";
 import ActualPage from "./ActualPage";
 
