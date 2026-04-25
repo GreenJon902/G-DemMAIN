@@ -10,6 +10,10 @@ const LineColor = (stroke: string, fill: string, bg: string): LineColor => ({ st
 export const LINE_GRAY = LineColor("stroke-gray-600", "fill-gray-600", "bg-gray-600");
 export const LINE_CYAN = LineColor("stroke-cyan-500", "fill-cyan-500", "bg-cyan-500");
 export const LINE_LIME = LineColor("stroke-lime-500", "fill-lime-500", "bg-lime-500");
+export const LINE_ROSE = LineColor("stroke-rose-500", "fill-rose-500", "bg-rose-500");
+export const LINE_FUCHSIA = LineColor("stroke-fuchsia-500", "fill-fuchsia-500", "bg-fuchsia-500");
+export const LINE_VIOLET = LineColor("stroke-violet-500", "fill-violet-500", "bg-violet-500");
+export const LINE_BLUE = LineColor("stroke-blue-500", "fill-blue-500", "bg-blue-500");
 
 
 
@@ -197,3 +201,30 @@ export const PointAndFillGraph = ({
         {...props}
     />
 );
+
+/**
+ * A graph with a variable number of lines.
+ * The ith item in datas will be drawn with the ith color in colors and given the ith label in labels.
+ * @param datas  - The data to plot.
+ * @param colors - The colors of the lines to draw.
+ * @param labels - The labels to assing to the given datas.
+ * @param underFill - Should each line have a translucent fill underneath. Default: False.
+ * @param points - Should we draw points on each vertex. Default: False.
+ * @param props - See {@link Graph}.
+ */
+export const NLineGraph = ({
+    datas, colors, labels, underFill=false, points=false, ...props
+}: { 
+    datas: number[][], colors: LineColor[], labels: string[], underFill?: boolean, points?: boolean
+} & Omit<ComponentProps<typeof Graph>, "lines">
+) => {
+    if (datas.length != colors.length || datas.length != labels.length) throw "Given arrays must be of the same length";
+    return <Graph
+        lines={
+            datas.map((data, i) => (
+                { data: data, color: colors[i], label: labels[i], underFill, points }
+            )).reverse()  // Reverse so labels are shown in the order they are given
+        }
+        {...props}
+    />
+};

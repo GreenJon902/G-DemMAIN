@@ -54,18 +54,34 @@ const GRAPH_KEYS = [
     // Data reported for the entire CGroup for that service
     "g_mc.cpu",  // Percentage of system cpu that this service uses, [0,1]
     "g_mc.mem",  // Percentage of system memory that this service uses, [0,1)  
+    "g_mc.network.up",  // In MB/s
+    "g_mc.network.down",
+    "g_mc.disk.read",  // In MB/s
+    "g_mc.disk.write",
     "g_web.cpu",
     "g_web.mem",
+    "g_web.network.up",
+    "g_web.network.down",
+    "g_web.disk.read", 
+    "g_web.disk.write",
     "mysql.cpu",
     "mysql.mem",
+    "mysql.network.up",  
+    "mysql.network.down",
+    "mysql.disk.read",  
+    "mysql.disk.write",
 
     // Data for the whole system
     "sys.cpu",  // Percentage of total cpu usage, [0,1]
-    "sys.cpu1",  // Percentage for individual system cpu used, [0,1]
-    "sys.cpu2",
-    "sys.cpu3",
-    "sys.cpu4",
-    "sys.mem"  // Percentage of system memory used
+    "sys.cpu.1",  // Percentage for individual system cpu used, [0,1]
+    "sys.cpu.2",
+    "sys.cpu.3",
+    "sys.cpu.4",
+    "sys.mem",  // Percentage of system memory used
+    "sys.network.up",  // In MB/s
+    "sys.network.down",
+    "sys.disk.read",  // In MB/s
+    "sys.disk.write"
 ] as const;
 
 /**
