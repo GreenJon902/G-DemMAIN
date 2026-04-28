@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ActionButton, BUTTON_CYAN, BUTTON_GREEN, BUTTON_RED, BUTTON_YELLOW, LinkButton } from "./ui/Button";
 import PanelPageSection from "./ui/PanelPageSection";
 import { loadPanelDataAction, PanelData, Status, Unit, unitAction } from "./actions";
-import { LINE_CYAN, LINE_GRAY, LINE_LIME, PointAndFillGraph } from "./ui/Graph";
+import { CpuRamGraph, MinecraftTpsHeapGraph } from "./ui/Graphs";
 
 /**
  * This component has the content of the main dash page.
@@ -52,19 +52,16 @@ export default function ActualPage({ initialData }: { initialData: PanelData }) 
             { /* Resource monitors -------------------------------------------------- */ }
             <PanelPageSection title="Important Graphs">
                 <div className="flex w-full flex-wrap gap-4">
-                    <PointAndFillGraph 
-                        pointData={data.graphData["sys.cpu"]} pointLabel="System CPU" pointColor={LINE_CYAN}
-                        fillData={data.graphData["sys.mem"]} fillLabel="System RAM" fillColor={LINE_GRAY}
-                        xTicks={{ bottom: ["-3m", "-2m", "-1m"] }}
-                        yTicks={{ left: ["25%", "50%", "75%"] }}
-                        containerClassName="min-w-50 flex-1" graphClassName="h-50"
+                    <CpuRamGraph
+                        data={data.graphData.sys}
+                        totMem={data.graphData.meta.totMem}
+                        what={"System"}
+                        timeSpan={data.graphData.meta.timeSpan}
                     />
-                    <PointAndFillGraph 
-                        pointData={data.graphData["mc.tps"]} pointLabel="Minecraft TPS" pointColor={LINE_LIME}
-                        fillData={data.graphData["mc.mem"]} fillLabel="Minecraft Heap" fillColor={LINE_GRAY}
-                        xTicks={{ bottom: ["-3m", "-2m", "-1m"] }}
-                        yTicks={{ left: ["5TPS", "10TPS", "15TPS"], right: ["25%", "50%", "75%"] }}
-                        containerClassName="min-w-50 flex-1" graphClassName="h-50"
+                    <MinecraftTpsHeapGraph
+                        data={data.graphData.mc}
+                        allocated={data.graphData.meta.mc.totMem}
+                        timeSpan={data.graphData.meta.timeSpan}
                     />
                 </div>
             </PanelPageSection>

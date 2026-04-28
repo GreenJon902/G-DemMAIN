@@ -43,53 +43,43 @@ async function getUnitsStatuses() {
 }
 
 /**
- * The names of the data that we can graph on the main panel page.
+ * A group of graph data pieces that are all about the same service/thing.
  */
-export type GraphKey = typeof GRAPH_KEYS[number];
-const GRAPH_KEYS = [
-    // Minecraft specific data
-    "mc.tps",  // Minecraft server TPS, [0,1], 0 is 0TPS and 1 is 20TPS 
-    "mc.mem",  // Percentage of the java heap used, [0,1] // TODO: Implement this, probably with jcmd?
-
-    // Data reported for the entire CGroup for that service
-    "g_mc.cpu",  // Percentage of system cpu that this service uses, [0,1]
-    "g_mc.mem",  // Percentage of system memory that this service uses, [0,1)  
-    "g_mc.network.up",  // In MB/s
-    "g_mc.network.down",
-    "g_mc.disk.read",  // In MB/s
-    "g_mc.disk.write",
-    "g_web.cpu",
-    "g_web.mem",
-    "g_web.network.up",
-    "g_web.network.down",
-    "g_web.disk.read", 
-    "g_web.disk.write",
-    "mysql.cpu",
-    "mysql.mem",
-    "mysql.network.up",  
-    "mysql.network.down",
-    "mysql.disk.read",  
-    "mysql.disk.write",
-
-    // Data for the whole system
-    "sys.cpu",  // Percentage of total cpu usage, [0,1]
-    "sys.cpu.1",  // Percentage for individual system cpu used, [0,1]
-    "sys.cpu.2",
-    "sys.cpu.3",
-    "sys.cpu.4",
-    "sys.mem",  // Percentage of system memory used
-    "sys.network.up",  // In MB/s
-    "sys.network.down",
-    "sys.disk.read",  // In MB/s
-    "sys.disk.write"
-] as const;
-
-// TODO: We'll remove graph keys as a concept, and instead have an actual data structure that can be iterated though, to allow for programatic graph creation
-
+export type GraphDataGroup = {
+    cpu: number[],  // Percentage [0,1]
+    mem: number[],  // In GB
+    network: {
+        up: number[],  // In MB/s
+        down: number[]  // In MB/s  
+    },
+    disk: {
+        read: number[],  // In MB/s
+        write: number[]  // In MB/s
+    }
+}
 /**
  * The data to plot on the graphs on the main page.
  */
-export type GraphData = Record<GraphKey, number[]>;
+type GraphData = {
+    sys: GraphDataGroup & {
+        cpus: number[][]  // Percentages [0,1] for each cpu individually
+    }
+    services: {
+        [name: string]: GraphDataGroup  // These should only be services in TRACKED_UNITS
+    }
+    mc: {
+        tps: number[],  // In range [0,20]
+        mem: number[]  // In GB
+    }
+    meta: {
+        timeSpan: number,  // How long the data spans over. In seconds
+        totMem: number,   // The total amount of RAM installed into the computer
+        mc: {
+            totMem: number  // The total amount of RAM that is allocated to the heap
+        }
+    }
+    
+}
 
 /**
  * Gets the status of the units specified in {@link TRACKED_UNITS}.
@@ -97,20 +87,73 @@ export type GraphData = Record<GraphKey, number[]>;
 async function getGraphData(): Promise<GraphData> {
     // TODO: Get actual data for this, and have it use the same time-span as the client.
     // For now just use this array
-
-    if (_graphData === undefined) {
-        // Populate initial array
-        _graphData = Object.fromEntries(GRAPH_KEYS.map(key => [key, new Array(30).fill(0.5)])) as GraphData;
-    } else {
-        // Shift all values down and add a new one
-        Object.values(_graphData).forEach(data => {
-            data.push(Math.max(0, Math.min(1, (data.shift() ?? -1) + (Math.random() * 2 - 1) ** 17)));
+    
+    const stuff: object[] = [_graphData];
+    while (stuff.length > 0) {
+        const obj = stuff.pop() as object;
+        Object.entries(obj).forEach(([key, value]) => {
+            let max;
+            if (key === "meta") {
+                return;  // Ignore this
+            } else if (key === "mem") {
+                max = 8;
+            } else if (key === "cpu") {
+                max = 1;
+            } else if (["up", "down", "read", "write"].includes(key)) {
+                max = 100;
+            } else if (parseInt(key) + "" === key) {
+                max = 1;
+            } else if (key === "tps") {
+                max = 20;
+            } else if (["sys", "network", "disk", "mc", "cpus"].includes(key)) {
+                stuff.push(value);
+                return;
+            } else if (key === "services") {
+                Object.values(value as { string: object }).forEach(serv => stuff.push(serv));
+                return;
+            } else {
+                console.log("Skipping", key);
+                return;
+            }
+            value.push(Math.max(0, Math.min(max, value.shift() + max * 0.1 * (Math.random() - 0.5) * 2)));
         });
     }
 
     return _graphData;
 }
-let _graphData: GraphData;
+const _initGroupData = JSON.stringify({
+    cpu: new Array(30).fill(0),
+    mem: new Array(30).fill(0),
+    network: {
+        up: new Array(30).fill(0),
+        down: new Array(30).fill(0)
+    },
+    disk: {
+        read: new Array(30).fill(0),
+        write: new Array(30).fill(0)
+    }
+});
+const _graphData: GraphData = {
+    sys: Object.assign(
+        JSON.parse(_initGroupData), // Deep copy object
+        { cpus: [new Array(30).fill(0), new Array(30).fill(0), new Array(30).fill(0), new Array(30).fill(0)] }),
+    services: {
+        g_mc: JSON.parse(_initGroupData),
+        g_web: JSON.parse(_initGroupData),
+        mysql: JSON.parse(_initGroupData)
+    },
+    mc: {
+        tps: new Array(30).fill(0),
+        mem: new Array(30).fill(0)
+    },
+    meta: {
+        timeSpan: 240,
+        totMem: 8,
+        mc: {
+            totMem: 3
+        }
+    }
+};
 
 export type PanelData = {
     unitsStatuses: {

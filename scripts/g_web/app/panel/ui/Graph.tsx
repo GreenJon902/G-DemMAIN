@@ -1,3 +1,7 @@
+/**
+ * This file contains the components and methods to actually create/render graphs.
+ */
+
 "use_client";
 
 import { ComponentProps, Fragment, ReactNode } from "react";
@@ -14,11 +18,12 @@ export const LINE_ROSE = LineColor("stroke-rose-500", "fill-rose-500", "bg-rose-
 export const LINE_FUCHSIA = LineColor("stroke-fuchsia-500", "fill-fuchsia-500", "bg-fuchsia-500");
 export const LINE_VIOLET = LineColor("stroke-violet-500", "fill-violet-500", "bg-violet-500");
 export const LINE_BLUE = LineColor("stroke-blue-500", "fill-blue-500", "bg-blue-500");
+export const LINE_COLORS = [LINE_ROSE, LINE_FUCHSIA, LINE_VIOLET, LINE_BLUE, LINE_CYAN, LINE_LIME, LINE_GRAY];  
 
 
 
 type Line = {
-    data: number[],  // The datapoints to plot. These should be in the interval [0,1] and cover a range of 60s
+    data: number[],  // The datapoints to plot. These should be in the interval [0,1], where 0 is the bottom edge and 1 is the maximum on the top edge.
     color: LineColor,
     underFill?: boolean,  // Do we fill in an opaque area under the line?
     points?: boolean,  // Do we draw circles on each vertex?
@@ -99,7 +104,7 @@ function Graph({
                             >
                                 {line.underFill && (
                                     <polygon 
-                                        points={`0,1 ${line.data.map((n, i) => `${i/(line.data.length-1)},${n}`).join(" ")} 1,1`} 
+                                        points={`0,1 ${line.data.map((n, i) => `${i/(line.data.length-1)},${1 - n}`).join(" ")} 1,1`} 
                                         className={`${line.color.fill} opacity-30`}
                                     />
                                 )}
@@ -114,8 +119,8 @@ function Graph({
                                     key={line.label} 
                                     vectorEffect="non-scaling-stroke"
                                     className={`fill-none ${line.color.stroke} stroke-2`}
-                                    d={`M0 ${line.data[0]} ` +
-                                        line.data.slice(1).map((n, i, a) => `L${(i + 1)/a.length} ${n}`).join(" ")} 
+                                    d={`M0 ${1 - line.data[0]} ` +
+                                        line.data.slice(1).map((n, i, a) => `L${(i + 1)/a.length} ${1 - n}`).join(" ")} 
                                 />
                             </svg>
                             {/* Points (if applicable) --- */}
@@ -127,7 +132,7 @@ function Graph({
                                     {line.data.map((n, i) => (
                                         <circle 
                                             cx={(i/(line.data.length - 1) * 100) + "%"} 
-                                            cy={n * 100 + "%"} 
+                                            cy={(1 - n) * 100 + "%"} 
                                             r="0.2rem" 
                                             className={`${line.color.fill}`}
                                             key={i}
