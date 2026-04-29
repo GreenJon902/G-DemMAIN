@@ -36,8 +36,6 @@ type Line = {
  * Underfills are drawn with 30% opacity.
  * The lines are drawn in the order given, so the last line is drawn on top. The legend is ordered in the opposite direction.
  *
- * // TODO: Second className that goes to the graph so we can set a specific graph size
- *
  * @param lines - The lines to draw.
  * @param className - Optional className data to give to the returned component. E.g. "h-50"
  * @param containerClassName - Optional className to be given to the returned node.

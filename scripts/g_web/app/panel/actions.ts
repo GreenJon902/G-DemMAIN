@@ -182,5 +182,4 @@ export async function loadPanelDataAction(): Promise<PanelData> {
 export async function unitAction(unit: Unit, status: "start"|"stop"|"restart") {  // TODO: IMplement this
     console.log(`${status}ing ${unit.name}.${unit.type}`);
     await new Promise(r => setTimeout(r, 500));
-
 }

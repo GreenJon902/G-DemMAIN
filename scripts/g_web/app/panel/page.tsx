@@ -1,10 +1,16 @@
 import { loadPanelDataAction } from "./actions";
-import ActualPage from "./ActualPage";
+import PanelPageContent from "./PanelPageContent";
+import RefreshingPage from "./ui/RefreshingPage";
 
 
 export default async function Page() {
-    const initialData = await loadPanelDataAction();
-    return <ActualPage initialData={initialData} />;
+    return (
+        <RefreshingPage
+            loadNewDataAction={loadPanelDataAction}
+            refreshRate={6000}
+            Component={PanelPageContent}
+        />
+    );
 }
 
 

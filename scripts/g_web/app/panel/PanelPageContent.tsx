@@ -1,52 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { ActionButton, BUTTON_CYAN, BUTTON_GREEN, BUTTON_RED, BUTTON_YELLOW, LinkButton } from "./ui/Button";
 import PanelPageSection from "./ui/PanelPageSection";
-import { loadPanelDataAction, PanelData, Status, Unit, unitAction } from "./actions";
+import { loadPanelDataAction, Status, Unit, unitAction } from "./actions";
 import { CpuRamGraph, MinecraftTpsHeapGraph } from "./ui/Graphs";
 
-/**
- * This component has the content of the main dash page.
- * We need to separate this from the main page as we want to send the client an already populated page, however we can't load that data while in "use_client";
- */
-export default function ActualPage({ initialData }: { initialData: PanelData }) {
-
-    // Keep track of the current timestamp so we can indicate how out of data data is
-    const [currentTimestamp, setCurrentTimestamp] = useState(initialData.timestamp);
-    useEffect(() => {
-        const interval = setInterval(async () => {
-            setCurrentTimestamp(Date.now());
-        }, 1000);
-        return () => clearInterval(interval);
-    }, []);
-
-    // Keep the state of the units and system-resources up to date
-    const [data, setData] = useState(initialData);
-    useEffect(() => {
-        // Use a timeout for this so we don't get behind if the internet is bad
-        let timeout: ReturnType<typeof setTimeout>;
-        let cancelled = false;  // If pullData is running when it get's cancelled, then we would clear the wrong timeout id. This handles that case
-
-        const pullData = async () => {
-            if (cancelled) return;
-            try {
-                setData(await loadPanelDataAction());
-                setCurrentTimestamp(Date.now());  // Refresh here too as otherwise data.timestamp will be larger than currentTimestamp
-            } catch (e) {
-                console.error(e);
-            }
-            timeout = setTimeout(pullData, 6000);
-        };
-        timeout = setTimeout(pullData, 6000);
-
-        return () => {
-            clearTimeout(timeout);
-            cancelled = true;
-        };
-    }, []);
-
-
+export default function PanelPageContent(
+    { data }: { data: Awaited<ReturnType<typeof loadPanelDataAction>> }
+) {
     return ( 
         <>
             { /* Resource monitors -------------------------------------------------- */ }
@@ -91,8 +52,6 @@ export default function ActualPage({ initialData }: { initialData: PanelData }) 
                     }
                 </tbody></table>
             </PanelPageSection>
-
-            <span className="text-gray-600">Last updated {Math.floor((currentTimestamp - data.timestamp) / 1000)} seconds ago</span>
         </>
     );
 
