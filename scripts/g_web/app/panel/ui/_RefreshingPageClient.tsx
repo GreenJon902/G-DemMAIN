@@ -11,7 +11,7 @@ import { TimeStamped } from "./RefreshingPage";
  * @param refreshRate - How often to reload the data, in ms.
  * @param Component - The component who's data is refreshing.
  */
-export default function _RefreshingPageClient<T extends TimeStamped>({
+export default function RefreshingPageClient<T extends TimeStamped>({
     initialData,
     loadNewDataAction,
     refreshRate,
@@ -29,7 +29,7 @@ export default function _RefreshingPageClient<T extends TimeStamped>({
             setCurrentTimestamp(Date.now());
         }, 1000);
         return () => clearInterval(interval);
-    }, []);
+    });
 
     // Routinely refresh the data from the serveraction
     const [data, setData] = useState(initialData);
@@ -54,7 +54,7 @@ export default function _RefreshingPageClient<T extends TimeStamped>({
             clearTimeout(timeout);
             cancelled = true;
         };
-    }, []);
+    });
 
     // Render component and time-indicator
     return (
@@ -62,5 +62,5 @@ export default function _RefreshingPageClient<T extends TimeStamped>({
             <Component data={data} />
             <span className="text-gray-600">Last updated {Math.floor((currentTimestamp - data.timestamp) / 1000)} seconds ago</span>
         </>
-    )
+    );
 }

@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import _RefreshingPageClient from "./_RefreshingPageClient";
+import RefreshingPageClient from "./_RefreshingPageClient";
 
 export type TimeStamped = { timestamp: number };  // Seconds since the epoch
 
@@ -22,11 +22,11 @@ export default async function RefreshingPage<T extends TimeStamped>({
 }) {
     const initialData = await loadNewDataAction();  // Load the data on the server initially, so the client recieves the full page
     return (
-        <_RefreshingPageClient
+        <RefreshingPageClient
             initialData={initialData}
             loadNewDataAction={loadNewDataAction}
             refreshRate={refreshRate}
             Component={Component}
         />
-    )
+    );
 }
