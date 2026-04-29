@@ -54,7 +54,7 @@ export default function RefreshingPageClient<T extends TimeStamped>({
             clearTimeout(timeout);
             cancelled = true;
         };
-    });
+    }, [refreshRate, loadNewDataAction]);
 
     // Render component and time-indicator
     return (
