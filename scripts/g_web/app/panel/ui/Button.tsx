@@ -99,3 +99,29 @@ export function ActionButton({
         </button> 
     );
 }
+
+/**
+ * A button that runs a function on the client.
+ *
+ * @param children - The normal content to display inside the button.
+ * @param callback - The function to call when this is clicked.
+ * @param color - The {@link ButtonColor} of this button.
+ * @param className - Optional extra class names for the button, e.g. size-6.
+ */
+export function SimpleButton({
+    children,
+    callback,
+    color,
+    className = "",
+}: {
+    children: ReactNode,
+    callback: () => void,
+    color: ButtonColor,
+    className?: string,
+}) {
+    return ( 
+        <button onClick={callback} className={getButtonClass(color, className)} >
+            {children} 
+        </button> 
+    );
+}
