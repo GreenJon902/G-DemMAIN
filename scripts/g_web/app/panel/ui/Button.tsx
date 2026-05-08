@@ -112,7 +112,7 @@ export function SimpleButton({
     children,
     callback,
     color,
-    className = "",
+    className = ""
 }: {
     children: ReactNode,
     callback: () => void,

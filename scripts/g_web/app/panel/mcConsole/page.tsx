@@ -72,9 +72,9 @@ export default function Console() {
 
     return (
         <PanelPageSection title="Console">
-            <div className="gap-1 flex flex-col max-h-[70dvh]">
+            <div className="flex max-h-[70dvh] flex-col gap-1">
                 <div 
-                    className="bg-gray-950 p-1 rounded-md w-full flex-1 overflow-scroll"
+                    className="w-full flex-1 overflow-scroll rounded-md bg-gray-950 p-1"
                     ref={consoleDivRef}
                 >
                     {
@@ -91,7 +91,7 @@ export default function Console() {
                         placeholder="Message or /command to run..."
                         className="flex-1 rounded-md bg-gray-600 px-1 outline-none focus:bg-gray-700" 
                         ref={commandBoxRef}
-                        onKeyDown={event => {if (event.code === "Enter") sendCommand()}}  // Run command when enter pressed
+                        onKeyDown={event => {if (event.code === "Enter") sendCommand();}}  // Run command when enter pressed
                     />
                     <SimpleButton callback={sendCommand} color={BUTTON_GREEN}>Run</SimpleButton>
                 </div>
