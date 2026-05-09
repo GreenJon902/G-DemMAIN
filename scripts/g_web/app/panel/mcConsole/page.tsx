@@ -22,12 +22,10 @@ export default function Console() {
         socket.addEventListener("open", (event) => {
             console.log("OPEN:", event);
             pushConsoleContent("META: Connected!");
-            console.log(consoleContent);
         });
         socket.addEventListener("message", (event) => {
             console.log("MESSAGE:", event);
             pushConsoleContent(event.data);
-            console.log(consoleContent);
         });
         socket.addEventListener("error", (event) => {
             console.log("ERROR:", event);
