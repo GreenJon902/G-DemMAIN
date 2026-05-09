@@ -19,6 +19,7 @@ export const BUTTON_GREEN:  ButtonColor = ButtonColor("bg-green-600",  "focus-vi
 export const BUTTON_YELLOW: ButtonColor = ButtonColor("bg-yellow-600", "focus-visible:bg-yellow-800", "hover:bg-yellow-800");
 export const BUTTON_RED:    ButtonColor = ButtonColor("bg-red-600",    "focus-visible:bg-red-800",    "hover:bg-red-800");
 export const BUTTON_CYAN:    ButtonColor = ButtonColor("bg-cyan-600",    "focus-visible:bg-cyan-800",    "hover:bg-cyan-800");
+export const BUTTON_INDIGO:    ButtonColor = ButtonColor("bg-indigo-600",    "focus-visible:bg-indigo-800",    "hover:bg-indigo-800");
 
 /**
  *  Gets the `className` that all button-like components will use.
