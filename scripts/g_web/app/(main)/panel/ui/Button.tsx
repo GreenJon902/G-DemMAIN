@@ -9,7 +9,7 @@
 import { ArrowPathIcon } from "@heroicons/react/20/solid";
 import { Url } from "next/dist/shared/lib/router/router";
 import Link from "next/link";
-import { ReactNode, useTransition } from "react";
+import { ReactNode, Ref, useTransition } from "react";
 
 // Since we need to specify tailwind colors in full (including "hover:bg-green-123123"), we will use constants
 // This also means colors will be fixed and must hence be consistent
@@ -67,19 +67,22 @@ export function LinkButton({
  * @param confirm - an optional function to call when the button is clicked to confirm that we want to execute the action. this returns true to run the action, and false otherwise.
  * @param color - The {@link ButtonColor} of this button.
  * @param classname - optional extra class names for the button, e.g. size-6.
+ * @param ref - An optional reference to the actual button element.
  */ 
 export function ActionButton({
     children,
     action,
     confirm = () => true,
     color,
-    className = ""
+    className = "",
+    ref  // defaults to undefined
 }: {
     children: ReactNode,
     action: () => Promise<void>,
     confirm?: () => boolean,
     color: ButtonColor,
-    className?: string
+    className?: string,
+    ref?: Ref<HTMLButtonElement>
 }) {
     // Function to make change on server 
     const [isPending, startTransition] = useTransition();  // Is pending is true when we've sent the change to the server and are waiting for a response
@@ -93,7 +96,7 @@ export function ActionButton({
     
     // Create a button that shows either a the content or the spinner
     return ( 
-        <button type="button" onClick={buttonClicked} className={getButtonClass(color, className)} disabled={isPending}>
+        <button type="button" onClick={buttonClicked} className={getButtonClass(color, className)} disabled={isPending} ref={ref}>
             { /* Render both at same time so size remains constant, but hide the one we don't need */ }
             <ArrowPathIcon className={`size-6 animate-spin self-stretch stroke-2 text-white ${isPending ? "" : "invisible"} absolute`} />
             <div className={`${isPending ? "invisible" : ""}`}> {children} </div> 

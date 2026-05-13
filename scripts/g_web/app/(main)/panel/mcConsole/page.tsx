@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import PanelPageSection from "../ui/PanelPageSection";
 import { BUTTON_GREEN, SimpleButton } from "../ui/Button";
+import TextInput from "../ui/TextInput";
 
 export default function Console() {
     // Store the messages from MCCWSS
@@ -84,10 +85,8 @@ export default function Console() {
                     }
                 </div>
                 <div className="flex gap-1">
-                    <input
-                        type="text"
+                    <TextInput
                         placeholder="Message or /command to run..."
-                        className="flex-1 rounded-md bg-gray-600 px-1 outline-none focus:bg-gray-700" 
                         ref={commandBoxRef}
                         onKeyDown={event => {if (event.code === "Enter") sendCommand();}}  // Run command when enter pressed
                     />

@@ -1,4 +1,4 @@
-"use server"
+"use server";
 
 import { getIronSession } from "iron-session";
 import { cookies } from "next/headers";
@@ -34,17 +34,33 @@ export async function optimisticCheckUser(area: keyof SessionData["optimistic"])
 
 
 /**
- * Creates a session for the given user.
- * TODO: Implement this to authenticate the user.
+ * Returns true if the user has an active session.
  */
-export async function createSessionAction() {
+export async function hasSession() {
+    return (await getSessionData()) !== null;
+}
+
+/**
+ * Checks if a user exists, and if they do then creates a session for that user.
+ * @returns True if the session was sucessfully created, and false otherwise.
+ */
+export async function attemptCreateSession(username: string, password: string) {
+    // TODO: What to do if a session already exists
+
+    // TODO: Validate username and password
+    const userExists = password === "bar";
+    if (!userExists) return false;
+
+    // TODO: Load a real session
     const session = await getIronSession<WrappedSessionData>(await cookies(), { password: PASSWORD, cookieName: COOKIE_NAME }); 
     session.hasSession = true;
     session.data = {
         username: "test",
         optimistic: {
-            panel: true
+            panel: username === "foo"
         }
-    }
+    };
     await session.save();
+    return true;
 }
+
