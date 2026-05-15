@@ -15,6 +15,8 @@ export default function Console() {
     const socketRef = useRef<WebSocket>(null);
     useEffect(() => {
         // NOTE: In development mode, this may try and connect twice
+
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         pushConsoleContent("META: Connecting...");
         const socket = new WebSocket("ws://localhost:8001");  // TODO: Use the correct url
         socketRef.current = socket;

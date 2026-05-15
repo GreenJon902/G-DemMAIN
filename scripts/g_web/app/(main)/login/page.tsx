@@ -12,6 +12,6 @@ export default async function Page({
     // If the user is already authenticated then skip this page
     if (await hasSession()) redirect(nextPath);
 
-    return <LoginForm nextPath=""/>
+    return <LoginForm nextPath=""/>;
 }
 

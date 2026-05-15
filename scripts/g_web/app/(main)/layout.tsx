@@ -18,7 +18,7 @@ export default async function Layout({
             </head>
             <body className="bg-gray-900 text-white">
                 <header><nav>
-                    <div className="flex flex-row bg-gray-700 p-1 flex-wrap">
+                    <div className="flex flex-row flex-wrap bg-gray-700 p-1">
                         <Link href="/" className="size-6">
                             <Image
                                 src={icon}
@@ -26,20 +26,20 @@ export default async function Layout({
                                 alt={"Logo"}
                             />
                         </Link>
-                        <Link href="/rules" className="ml-1 px-1 border-x border-gray-500 hover:bg-gray-600">
+                        <Link href="/rules" className="ml-1 border-x border-gray-500 px-1 hover:bg-gray-600">
                             Rules
                         </Link>
-                        <Link href="/hisDoc" className="px-1 border-r border-gray-500 hover:bg-gray-600">
+                        <Link href="/hisDoc" className="border-r border-gray-500 px-1 hover:bg-gray-600">
                             HisDoc
                         </Link>
-                        <Link href="/map" className="px-1 border-r border-gray-500 hover:bg-gray-600">
+                        <Link href="/map" className="border-r border-gray-500 px-1 hover:bg-gray-600">
                             Dynmap
                         </Link>
-                        <Link href="/panel" className="px-1 border-r border-gray-500 hover:bg-gray-600">
+                        <Link href="/panel" className="border-r border-gray-500 px-1 hover:bg-gray-600">
                             Panel
                         </Link>
                         <div className="flex-1">
-                            <div className="size-6 relative float-right text-white hover:text-gray-400">
+                            <div className="relative float-right size-6 text-white hover:text-gray-400">
                                 {  
                                     (await hasSession()) ? (
                                         <Link href="account" >
