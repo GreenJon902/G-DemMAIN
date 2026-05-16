@@ -1,13 +1,13 @@
 
 import { getUserData, hasSession } from "@/lib/auth";
-import { redirect } from "next/navigation";
 import { ActionButton, BUTTON_RED } from "../ui/Button";
 import { logoutAction } from "./actions";
+import { redirectLogin } from "../login/util";
 
 export default async function Page() {
     // If user not logged in then log them in
     
-    //if (!await hasSession()) redirect("/login?next=/account");
+    if (!await hasSession()) redirectLogin("/account");
 
     // Render user page
     const user = await getUserData();
@@ -26,5 +26,5 @@ export default async function Page() {
                 Log out
             </ActionButton>
         </div>
-    )
+    );
 }
