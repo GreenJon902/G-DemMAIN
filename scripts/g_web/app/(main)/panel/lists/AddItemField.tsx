@@ -5,7 +5,7 @@ import { List } from "./page";
 import PlayerHead from "./PlayerHead";
 import { addToListAction } from "./actions";
 import { useRouter } from "next/navigation";
-import { ActionButton, BUTTON_GREEN } from "../ui/Button";
+import { ActionButton, BUTTON_GREEN } from "../../ui/Button";
 
 
 /**

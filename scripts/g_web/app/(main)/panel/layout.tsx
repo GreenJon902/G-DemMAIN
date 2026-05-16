@@ -1,6 +1,6 @@
 import "@/app/globals.css";
 
-import { BUTTON_CYAN, BUTTON_GREEN, BUTTON_INDIGO, BUTTON_RED, BUTTON_YELLOW, LinkButton } from "./ui/Button";
+import { BUTTON_CYAN, BUTTON_GREEN, BUTTON_INDIGO, BUTTON_RED, BUTTON_YELLOW, LinkButton } from "../ui/Button";
 import Link from "next/link";
 
 export default function Layout({

@@ -7,7 +7,7 @@ export default async function Page({
 }: {
     searchParams: Promise<{ next: string }>
 }) {
-    const nextPath = (await searchParams).next ?? "/";  // If no next page supplied then go to the home page
+    const nextPath = (await searchParams).next ?? "/account";  // If no next page supplied then go to the home page
 
     // If the user is already authenticated then skip this page
     if (await hasSession()) redirect(nextPath);

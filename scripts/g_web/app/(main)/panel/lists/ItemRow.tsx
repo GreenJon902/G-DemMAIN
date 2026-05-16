@@ -5,7 +5,7 @@ import { XMarkIcon } from "@heroicons/react/20/solid";
 import { useRouter } from "next/navigation";
 import PlayerHead from "./PlayerHead";
 import { removeFromListAction } from "./actions";
-import { ActionButton, BUTTON_RED } from "../ui/Button";
+import { ActionButton, BUTTON_RED } from "../../ui/Button";
 
 
 export default function ItemRow({ item, list }: { item: ListItem, list: List }) {

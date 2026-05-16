@@ -42,11 +42,11 @@ export default async function Layout({
                             <div className="relative float-right size-6 text-white hover:text-gray-400">
                                 {  
                                     (await hasSession()) ? (
-                                        <Link href="account" >
+                                        <Link href="/account" >
                                             <UserCircleIconSolid className="size-full" />
                                         </Link>
                                     ) : (
-                                        <Link href="login?next=account" >
+                                        <Link href="/login?next=account" >
                                             <UserCircleIconOutline className="size-full stroke-1" />
                                         </Link>
                                     )

@@ -1,7 +1,7 @@
 "use client";
 
-import TextInput from "../panel/ui/TextInput";
-import { ActionButton, BUTTON_GREEN } from "../panel/ui/Button";
+import TextInput from "../ui/TextInput";
+import { ActionButton, BUTTON_GREEN } from "../ui/Button";
 import { useRef, useState } from "react";
 import { attemptLoginAction } from "./actions";
 import { redirect } from "next/navigation";

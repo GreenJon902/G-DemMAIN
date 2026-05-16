@@ -1,6 +1,6 @@
 import { loadPanelDataAction } from "./actions";
 import PanelPageContent from "./PanelPageContent";
-import RefreshingPage from "./ui/RefreshingPage";
+import RefreshingPage from "../ui/RefreshingPage";
 
 
 export default async function Page() {

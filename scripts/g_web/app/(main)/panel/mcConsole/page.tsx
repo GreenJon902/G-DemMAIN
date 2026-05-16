@@ -3,8 +3,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import PanelPageSection from "../ui/PanelPageSection";
-import { BUTTON_GREEN, SimpleButton } from "../ui/Button";
-import TextInput from "../ui/TextInput";
+import { BUTTON_GREEN, SimpleButton } from "../../ui/Button";
+import TextInput from "../../ui/TextInput";
 
 export default function Console() {
     // Store the messages from MCCWSS

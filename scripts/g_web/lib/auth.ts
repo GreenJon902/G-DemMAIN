@@ -55,7 +55,7 @@ export async function attemptCreateSession(username: string, password: string) {
     const session = await getIronSession<WrappedSessionData>(await cookies(), { password: PASSWORD, cookieName: COOKIE_NAME }); 
     session.hasSession = true;
     session.data = {
-        username: "test",
+        username: username,
         optimistic: {
             panel: username === "foo"
         }
@@ -64,3 +64,23 @@ export async function attemptCreateSession(username: string, password: string) {
     return true;
 }
 
+/**
+ * Remove the session from the current user if they have one.
+ */
+export async function dropSession() {
+    const session = await getIronSession<WrappedSessionData>(await cookies(), { password: PASSWORD, cookieName: COOKIE_NAME }); 
+    await session.destroy();
+}
+
+/**
+ * Gets the data of the current logged-in user.
+ * Note, this expects the user to be logged in.
+ * // TODO: Document return data
+ */
+export async function getUserData() {
+    const session = await getSessionData();
+    if (session === null) throw "Expected current user to have a session";
+    return {
+        username: session.username
+    };
+}
