@@ -10,10 +10,7 @@
     "lint": "eslint",
     "typecheck": "tsc",
 
-    "build": "next build",
-    "start:next": "next start",
-    "start:mcConsole": "tsx mcConsole/server.ts",
-    "start": "concurrently --kill-others -n NEXT,MCC \"npm run start:next\" \"npm run start:mcConsole\""
+    "build": "tsc -p mcConsole/tsconfig.json && next build"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

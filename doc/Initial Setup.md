@@ -33,7 +33,14 @@ sudo usermod -aG g_mc jon    # You may need to relog for this to take effect
 ```
 
 7. Setup the environment files.
-
+Use `npm ci` and `npm run build` in the infra folder.
+Create the g_web user.
+```
+sudo rsync -a .next/standalone/ /var/lib/g_web/next/
+sudo rsync -a .next/static/ /var/lib/g_web/next/.next/static/
+sudo rsync -a dist-mcConsole/ /var/lib/g_web/mcc/
+chown -R g_web:g_web /var/lib/g_web
+```
 
 TODO: Document how permissions work
 So ownership is not important. g\_mc group gives read/write access for jon and g\_mc. We have the setgid bit for all infra and var/lib folders. THen read access everywhere cause who cares. We have umask set to 0002 so that permissions work correctly

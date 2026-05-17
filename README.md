@@ -23,7 +23,8 @@ TODO: Add documentation on use of fail2ban (brute force attacks)
 | Port Number   | What is it for?                         | Blocked by the firewall? |
 |---------------|-----------------------------------------|--------------------------|
 | 25565         | Minecraft Server                        | No                       |
-|    80         | Website                                 | No                       |
+|  3000         | Website  # TODO Make this port 80       | No                       |
+|  3001         | Website Websocket                       | No                       |
 | 25575         | RCON management of the Minecraft Server | Yes                      |
 | 31415         | SSH Access                              | No                       |
 | _All others_  |                                         | Yes                      |
