@@ -1,0 +1,5 @@
+STATUS_WEBHOOK
+# The webhook url for sending system status updates to discord. 
+# This should be formatted something like https://discord.com/api/webhooks/___/___.
+
+
