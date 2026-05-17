@@ -18,7 +18,7 @@ type SessionData = {  // Wrapping it again makes it easier to set the whole thin
     }
 } 
 
-const getIronSession = async () => await getIronSession_<WrappedSessionData>(await cookies(), { password: C().SESSION_PASSWORD, cookieName: COOKIE_NAME });
+const getIronSession = async () => await getIronSession_<WrappedSessionData>(await cookies(), { password: C().SESSION_PASSWORD, cookieName: COOKIE_NAME, cookieOptions: { secure: false } });  // TODO: Set secure to true
 
 /**
  * Gets the session data of the current user, or null if there is no session.

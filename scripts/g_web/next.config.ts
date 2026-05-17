@@ -18,7 +18,8 @@ const nextConfig: NextConfig = {
     images: {
         remotePatterns: [new URL("https://api.mcheads.org/head/**/256/hat")]
     },
-    allowedDevOrigins: allowedDevOrigins
+    allowedDevOrigins: allowedDevOrigins,
+    output: "standalone"
 };
 
 export default nextConfig;
