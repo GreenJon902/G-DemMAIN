@@ -1,8 +1,8 @@
 import WebSocket, { WebSocketServer } from "ws";
-import { MCCWSS_PORT } from "@/lib/environPublic";
+import { C } from "@/lib/environ";
 
 // Create WebSocketServer
-const wss = new WebSocketServer({ port: MCCWSS_PORT });  // TODO: Use HTTPS
+const wss = new WebSocketServer({ port: C().MCCWSS_PORT });  // TODO: Use HTTPS
 wss.on("connection", (ws: WebSocket) => {
     console.log("Connection from client..");
     ws.on("error", console.error);

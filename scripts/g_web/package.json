@@ -11,8 +11,9 @@
     "typecheck": "tsc",
 
     "build": "next build",
-    "run:next": "next run",
-    "run:mcConsole": "tsx mcConsole/server.ts"
+    "start:next": "next start",
+    "start:mcConsole": "tsx mcConsole/server.ts",
+    "start": "concurrently --kill-others -n NEXT,MCC \"npm run start:next\" \"npm run start:mcConsole\""
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

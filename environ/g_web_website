@@ -9,6 +9,6 @@ PANEL_USER
 PANEL_PASSWORD
 # See PANEL_USER. Expects same number of passwords as usernames.
 
-NEXT_PUBLIC_MCCWSS_PORT
+MCCWSS_PORT
 # The port that the minecraft console webserver socket should be opened on.
-# This is annotated as NEXT_PUBLIC_ to allow it to be sent to the client.
+

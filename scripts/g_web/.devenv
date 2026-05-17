@@ -1,4 +1,4 @@
 SESSION_PASSWORD=testingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtesting
-NEXT_PUBLIC_MCCWSS_PORT=8001
+MCCWSS_PORT=8001
 PANEL_USER=green,jon
 PANEL_PASSWORD=bar,baz

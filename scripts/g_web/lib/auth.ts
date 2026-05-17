@@ -2,7 +2,7 @@
 
 import { getIronSession as getIronSession_ } from "iron-session";
 import { cookies } from "next/headers";
-import { PANEL_PASSWORD, PANEL_USER, SESSION_PASSWORD } from "./environ";
+import { C } from "./environ";
 import { sendWebloginWebhook } from "./webhook";
 
 const COOKIE_NAME = "auth";  // Name of the cookie that auth data is stored in
@@ -18,7 +18,7 @@ type SessionData = {  // Wrapping it again makes it easier to set the whole thin
     }
 } 
 
-const getIronSession = async () => await getIronSession_<WrappedSessionData>(await cookies(), { password: SESSION_PASSWORD, cookieName: COOKIE_NAME });
+const getIronSession = async () => await getIronSession_<WrappedSessionData>(await cookies(), { password: C().SESSION_PASSWORD, cookieName: COOKIE_NAME });
 
 /**
  * Gets the session data of the current user, or null if there is no session.
@@ -52,9 +52,9 @@ export async function attemptCreateSession(username: string, password: string) {
 
     // TODO: Load sessions from a database
 
-    const i = PANEL_USER.indexOf(username);
+    const i = C().PANEL_USER.indexOf(username);
     if (i === -1) return false;  // User not found
-    if (password !== PANEL_PASSWORD[i]) return false;  // Invalid password
+    if (password !== C().PANEL_PASSWORD[i]) return false;  // Invalid password
 
     const session = await getIronSession(); 
     session.hasSession = true;
