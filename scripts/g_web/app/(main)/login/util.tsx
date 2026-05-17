@@ -5,5 +5,9 @@ import { redirect } from "next/navigation";
  * @param next - The optional page to go to after.
  */
 export function redirectLogin(next?: string) {
-    redirect(`/login?next=${next}`);
+    if (next) {
+        redirect(`/login?next=${next}`);
+    } else {
+        redirect(`/login`);
+    }
 }

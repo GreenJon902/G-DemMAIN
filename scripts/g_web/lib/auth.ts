@@ -1,9 +1,9 @@
 "use server";
 
-import { getIronSession } from "iron-session";
+import { getIronSession as getIronSession_ } from "iron-session";
 import { cookies } from "next/headers";
+import { PANEL_PASSWORD, PANEL_USER, SESSION_PASSWORD } from "./environ";
 
-const PASSWORD = "testingtestingtestingtestingtestingtestingtestingtestingtestingtestingtesting";  // The password used to encrypt the password cookies // TODO: Load from environ
 const COOKIE_NAME = "auth";  // Name of the cookie that auth data is stored in
 
 type WrappedSessionData = {
@@ -17,11 +17,13 @@ type SessionData = {  // Wrapping it again makes it easier to set the whole thin
     }
 } 
 
+const getIronSession = async () => await getIronSession_<WrappedSessionData>(await cookies(), { password: SESSION_PASSWORD, cookieName: COOKIE_NAME });
+
 /**
  * Gets the session data of the current user, or null if there is no session.
  */
 async function getSessionData(): Promise<SessionData|null> {
-    const session = await getIronSession<WrappedSessionData>(await cookies(), { password: PASSWORD, cookieName: COOKIE_NAME });
+    const session = await getIronSession();
     if (session.hasSession !== true) return null;  // If user has no session then return null
     return session.data;
 }
@@ -47,17 +49,18 @@ export async function hasSession() {
 export async function attemptCreateSession(username: string, password: string) {
     // TODO: What to do if a session already exists
 
-    // TODO: Validate username and password
-    const userExists = password === "bar";
-    if (!userExists) return false;
+    // TODO: Load sessions from a database
 
-    // TODO: Load a real session
-    const session = await getIronSession<WrappedSessionData>(await cookies(), { password: PASSWORD, cookieName: COOKIE_NAME }); 
+    const i = PANEL_USER.indexOf(username);
+    if (i === -1) return false;  // User not found
+    if (password !== PANEL_PASSWORD[i]) return false;  // Invalid password
+
+    const session = await getIronSession(); 
     session.hasSession = true;
     session.data = {
         username: username,
         optimistic: {
-            panel: username === "foo"
+            panel: true
         }
     };
     await session.save();
@@ -68,8 +71,8 @@ export async function attemptCreateSession(username: string, password: string) {
  * Remove the session from the current user if they have one.
  */
 export async function dropSession() {
-    const session = await getIronSession<WrappedSessionData>(await cookies(), { password: PASSWORD, cookieName: COOKIE_NAME }); 
-    await session.destroy();
+    const session = await getIronSession(); 
+    session.destroy();
 }
 
 /**

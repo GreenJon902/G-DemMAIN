@@ -4,10 +4,15 @@
   "private": true,
   "scripts": {
     "dev": "concurrently --kill-others -n NEXT,MCC \"npm run dev:next\" \"npm run dev:mcConsole\"",
-    "dev:next": "next dev -p 8000",
-    "dev:mcConsole": "MCCWSS_PORT=8001 tsx mcConsole/server.ts",
+    "dev:next": "dotenv -e .devenv -- next dev -p 8000",
+    "dev:mcConsole": "dotenv -e .devenv -- tsx mcConsole/server.ts",
+    
     "lint": "eslint",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+
+    "build": "next build",
+    "run:next": "next run",
+    "run:mcConsole": "tsx mcConsole/server.ts"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
@@ -26,6 +31,7 @@
     "@types/ws": "^8.18.1",
     "babel-plugin-react-compiler": "1.0.0",
     "concurrently": "^9.2.1",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
     "eslint-plugin-tailwindcss": "^3.18.3",

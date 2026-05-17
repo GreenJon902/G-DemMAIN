@@ -5,8 +5,10 @@ import { useEffect, useRef, useState } from "react";
 import PanelPageSection from "../ui/PanelPageSection";
 import { BUTTON_GREEN, SimpleButton } from "../../ui/Button";
 import TextInput from "../../ui/TextInput";
+import { MCCWSS_PORT } from "@/lib/environPublic";
 
 export default function Console() {
+
     // Store the messages from MCCWSS
     const [consoleContent, setConsoleContent] = useState<Array<string>>([]);
     const pushConsoleContent = (text: string) => setConsoleContent(prev => [...prev, text]);  // Function to push to the array
@@ -18,7 +20,7 @@ export default function Console() {
 
         // eslint-disable-next-line react-hooks/set-state-in-effect
         pushConsoleContent("META: Connecting...");
-        const socket = new WebSocket("ws://localhost:8001");  // TODO: Use the correct url
+        const socket = new WebSocket(`ws://${window.location.hostname}:${MCCWSS_PORT}`);  // TODO: Use the correct url
         socketRef.current = socket;
 
         // Append to the array in a way that makes react update
