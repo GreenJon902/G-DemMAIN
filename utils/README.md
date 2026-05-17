@@ -4,6 +4,7 @@ This file contains the utility scripts that are used for managing the server.
 ## Syncing Configs - `sync-static-config.py`
 This module manages the contents and deployments of the synced static-config files.
 This script should be executed in the `<repo_root>/static-config` folder.
+Note, some copied config files have environment variables hardcoded, so this should be ran whenever environ-files are updated.
 
 ### Deployment
 The `sync-static-config.py` script will copy the of the contents of folders specified in `sync-map.ini` to their respective destinations (also specified by that file).
@@ -14,6 +15,11 @@ The `sync-map.ini` should contain a section with header `sync-map`, which should
 After updating systemd service config files, you'll need to run `systemctl daemon-reload`.
 After updating the sshd config, first validate the config is correct with `sshd -t`, if there are no errors (no output) then run `systemctl reload sshd`.
 After updating the mariadb config, run `systemctl restart mariadb`.
+
+### Templates
+A file named `<file_name.ext>.template` will be copied to `<file_name.ext>`. 
+Any occurances of `${<file>/<var>}` found will be replaced with the corresponding environment variable `<var>` that is defined in `<file>`. Note that this will not validate if the destination is actually supposed to be allowed access.
+Template files will have a note appended underneath the header when copied over.
 
 ### Testing
 Running `sync-static-config.py test-map.ini` will map the folders to `./test/...`. You may need to create the destination folders beforehand. Then mess around whith files in the test folder to see that everything is working.

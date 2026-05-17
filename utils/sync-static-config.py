@@ -2,10 +2,15 @@ from configparser import ConfigParser
 from argparse import ArgumentParser
 import os
 import sys
+import re
 
 
 # Constants
 HEADER_LINE = "# This is a G-DemMAIN synced config file, and may be overwritten when sync is run. Please do not modify this line, and leave it as the first line of this file."
+TEMPLATE_EXT = ".template"
+TEMPLATE_ITEM_PATTERN = r"\${([a-zA-Z_-]+)\/([a-zA-Z_-]+)}"
+ENVVAR_PATTERN = r"^{VAR_NAME}=(.*)$"  # {VAR_NAME} should be replaced
+ENVVAR_PATTERN_FLAGS = re.MULTILINE
 DIFF_IND_LENGTH = 50
 
 RESET = "\033[0m" if sys.stdout.isatty() else ""     # If we are in a terminal then colors probably work
@@ -20,6 +25,10 @@ parser.add_argument("syncmap",
 parser.add_argument("-d", "--dry-run",
                     action  = "store_true",  # This sets default value to false
                     help    = "Is this a dry run (e.g. if this flag is set then no changes will be made)")
+parser.add_argument("-e", "--environ",
+                    nargs   = "?",  # Declare this argument as optional
+                    default = "/etc/g-demmain",
+                    help    = "The path where populated environment files are stored when in production. Used for templating. Defaults to /etc/g-demmain")
 parser.add_argument("-v", "--verbose",
                     action  = "store_true",  # This sets default value to false
                     help    = "If set then we will print a lot more information")
@@ -48,6 +57,28 @@ for (source, destination) in sync_map.items():
         raise Exception("Source folder does not exist - " + source)
     if not os.path.exists(destination):
         raise Exception("Destination folder does not exist - " + destination)
+
+# Define the template function
+def possible_template_open(path):
+    # Reads a file that may be a template file. If it is then we copy in the environment variables and add a sub-header.
+
+    if not path.endswith(TEMPLATE_EXT):
+        return open(path, "r").read()
+
+    print(f"Populating {PATH_COL}{path}{RESET} with environment variables")
+    contents = open(path, "r").read()
+    contents = "# This file was populated with environment variables.\n" + contents  # Add header
+    def sub(match):
+        file, var = match.groups()
+        pattern = ENVVAR_PATTERN.replace("{VAR_NAME}", var)
+        match = re.search(pattern, open(os.path.join(args.environ, file + ".env"), "r").read(), ENVVAR_PATTERN_FLAGS)
+        assert match is not None, f"Could not find {var} in {file} using {repr(pattern)}"
+        value = match.groups()[0]
+        vprint(f"Substituting {var} with {repr(value)}")
+        return value
+    populated = re.sub(TEMPLATE_ITEM_PATTERN, sub, contents)
+    return populated
+
     
 # Check for any files that we have previously added to the destination folder that should no longer be there
 for (source, destination) in sync_map.items():
@@ -63,7 +94,7 @@ for (source, destination) in sync_map.items():
             # Check if file exists in both source and destination
             relpath = os.path.relpath(file, destination)
             expected_source_path = os.path.join(source, relpath)
-            if not os.path.exists(expected_source_path):
+            if not os.path.exists(expected_source_path) and not os.path.exists(expected_source_path + TEMPLATE_EXT):
                 
                 # Check if this script created the file (it has the header)
                 try:
@@ -99,7 +130,7 @@ for (source_folder, destination_folder) in sync_map.items():
             # Paths
             source_file = os.path.join(root, source_file_just_name)
             relpath = os.path.relpath(source_file, source_folder)
-            destination_file = os.path.join(destination_folder, relpath)
+            destination_file = os.path.join(destination_folder, relpath.removesuffix(".template"))
             
             # Find (if we need to) what to ask the user
             if not os.path.exists(destination_file):  # If the destination does not exist then ask the user if we want to copy the file
@@ -115,7 +146,7 @@ for (source_folder, destination_folder) in sync_map.items():
                     # We created the destination file, so compare if their contents are the same
                     
                     # Load files
-                    source = open(source_file, "r").read()
+                    source = possible_template_open(source_file)
                     destination_fo.readline()
                     destination = destination_fo.read()
                     
@@ -167,7 +198,7 @@ for (source_folder, destination_folder) in sync_map.items():
                             print(f"Making parent folder {PATH_COL}{parent}{RESET}")
                             os.makedirs(parent)
                         # Add header to source file, then write to destination_file
-                        open(destination_file, "w").write(HEADER_LINE + "\n" + open(source_file, "r").read())
+                        open(destination_file, "w").write(HEADER_LINE + "\n" + possible_template_open(source_file))
                     break
                 elif action == "i":
                     print(f"Ignoring {PATH_COL}{source_file}{RESET}")

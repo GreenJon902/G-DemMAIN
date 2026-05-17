@@ -1,3 +1,4 @@
+// TODO: Set up management-server instead of rcon for minecraft.
 
 ### Requirements
 Note that the `g_mc.service` requires the `mysql.service` to already exist.

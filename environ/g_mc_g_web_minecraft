@@ -1,0 +1,5 @@
+MINECRAFT_PORT
+# The port to open the actual minecraft "server" on. So the one that we expose to the internet and players connect to.
+
+MINECRAFT_RCON_PORT
+# The port we open internally for management via RCON.
