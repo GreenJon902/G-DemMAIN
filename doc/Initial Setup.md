@@ -39,7 +39,7 @@ Create the g_web user.
 sudo rsync -a .next/standalone/ /var/lib/g_web/next/
 sudo rsync -a .next/static/ /var/lib/g_web/next/.next/static/
 sudo rsync -a dist-mcConsole/ /var/lib/g_web/mcc/
-chown -R g_web:g_web /var/lib/g_web
+sudo chown -R g_web:g_web /var/lib/g_web
 ```
 
 TODO: Document how permissions work
