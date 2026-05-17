@@ -17,6 +17,7 @@ TODO: Remove g\_nightly\_restart from the diagram.
 | /var/lib/g\_mc/* | g\_mc | g\_mc | 2775 | The owner may also be jon or root, this is fine. 775 permissions so I can easily modify parts, and that g_web and anything else can read logs and whitelist.json, etc.. SetGID bit so that all files created in there are added to the g\_mc group. |
 able to read these files (as that makes it easier for access elsewhere). |
 | /opt/infra/ | jon | jon | 0755 | Only I should be able to write here. Every user needs read access as (nearly) all the scripts are stored here. |
+| /etc/g-demmain/ | root | root | 0600 | Only root should be able to read or write here, as there are secrets stored here. |
 
 TODO: Do we need a view_infra group?
 
