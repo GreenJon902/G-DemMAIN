@@ -5,7 +5,7 @@
 import { spawn } from "child_process";
 import { existsSync } from "fs";
 
-const WEBHOOKS_FILE = "/home/greenjon902/Desktop/G-DemMAIN/scripts/webhooks.py";  // Path to the webhooks python file
+const WEBHOOKS_FILE = "/opt/infra/scripts/webhooks.py";  // Path to the webhooks python file
 if (!existsSync(WEBHOOKS_FILE)) throw "Webhooks file does not exist";  // Ensure that it exists
 
 /**
