@@ -1,5 +1,7 @@
 STATUS_WEBHOOK
-# The webhook url for sending system status updates to discord. 
+# The webhook url for sending minecraft-server status updates to discord. 
 # This should be formatted something like https://discord.com/api/webhooks/___/___.
 
-
+WEBLOGIN_WEBHOOK
+# The webhook url for sending notifications when a user logs into the website. 
+# This should be formatted something like https://discord.com/api/webhooks/___/___.

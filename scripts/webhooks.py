@@ -36,6 +36,17 @@ def generate_status(name, service_name, status, service_result, exit_code, exit_
                 }]
     }
 
+def generate_weblogin(name):
+    # Generate the json for a message about someone logging into the website.
+    # Name should be the username of the user.
+    
+    return {
+            "username": "G-DemMAIN - G-Web",
+            "embeds": [{
+                "title": f"'{name}' logged in"
+                }]
+    }
+
 def generate_test(intended_recipient):
     # Content for a testing webhook.
     return {"username": "G-DemMAIN",
@@ -55,7 +66,10 @@ def _get_webhook(name):
     if (hook_url := os.environ.get(name)) is None:
         raise NoWebhookInEnviron(f"Needs environment variable {name}=...")
     return hook_url
-webhook_getters = {"STATUS": lambda: _get_webhook("STATUS_WEBHOOK")}
+webhook_getters = {
+    "STATUS": lambda: _get_webhook("STATUS_WEBHOOK"),
+    "WEBLOGIN": lambda: _get_webhook("WEBLOGIN_WEBHOOK")
+}
 
 # Parse arguments
 parser = ArgumentParser(description="Send messages to the discord using webhooks")
@@ -64,6 +78,8 @@ status_parser = subparsers.add_parser("status", help="Send a service status upda
 status_parser.add_argument("name", help="The name of what this update pertains to, e.g. Minecraft")
 status_parser.add_argument("service", help="The name of the service this update pertains to, e.g. g_mc")
 status_parser.add_argument("status", choices=["starting", "stopped", "crashed"], help="What actually happened")
+weblogin_parser = subparsers.add_parser("weblogin", help="Send a notification that someone logged into the website")
+weblogin_parser.add_argument("name", help="The username of the user that logged in")
 test_parser = subparsers.add_parser("test", help="Test that the webhooks are working")
 args = parser.parse_args()
 
@@ -80,6 +96,12 @@ if args.action == "status":
     invocation_id = os.environ.get("INVOCATION_ID")
     # Send webhook
     send(webhook_getters["STATUS"](), generate_status(name, service_name, status, service_result, exit_code, exit_status, invocation_id))
+
+elif args.action == "weblogin":
+    # Extract args
+    name = args.name
+    # Send webhook
+    send(webhook_getters["WEBLOGIN"](), generate_weblogin(name))
 
 elif args.action == "test":
     # Just try and call all webhooks

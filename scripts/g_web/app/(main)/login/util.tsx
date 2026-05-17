@@ -8,6 +8,6 @@ export function redirectLogin(next?: string) {
     if (next) {
         redirect(`/login?next=${next}`);
     } else {
-        redirect(`/login`);
+        redirect("/login");
     }
 }

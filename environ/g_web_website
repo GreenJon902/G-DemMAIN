@@ -1,0 +1,14 @@
+SESSION_PASSWORD
+# The password used to encrypt the ironsession cookie.
+# It has to be at least 32 characters long. Use https://1password.com/password-generator/ to generate strong passwords.
+
+PANEL_USER
+# This is a temporary field that stores the username of the accounts allowed to log in. You can have multiple users by splitting names with commas.
+# TODO: Store this in the database
+
+PANEL_PASSWORD
+# See PANEL_USER. Expects same number of passwords as usernames.
+
+NEXT_PUBLIC_MCCWSS_PORT
+# The port that the minecraft console webserver socket should be opened on.
+# This is annotated as NEXT_PUBLIC_ to allow it to be sent to the client.

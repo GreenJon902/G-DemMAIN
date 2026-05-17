@@ -3,6 +3,7 @@
 import { getIronSession as getIronSession_ } from "iron-session";
 import { cookies } from "next/headers";
 import { PANEL_PASSWORD, PANEL_USER, SESSION_PASSWORD } from "./environ";
+import { sendWebloginWebhook } from "./webhook";
 
 const COOKIE_NAME = "auth";  // Name of the cookie that auth data is stored in
 
@@ -64,6 +65,7 @@ export async function attemptCreateSession(username: string, password: string) {
         }
     };
     await session.save();
+    sendWebloginWebhook(username);
     return true;
 }
 
