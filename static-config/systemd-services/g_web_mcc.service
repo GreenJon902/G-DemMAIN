@@ -1,5 +1,5 @@
 [Unit]
-Description=Runner for the website 
+Description=Runner for the console websocket for the website 
 
 After=network.target
 
@@ -9,12 +9,12 @@ StartLimitBurst=2
 
 # Status logging
 # We need to do it like this as OnFailure cannot run bash
-OnFailure=g_service_failed@Website-g_web.service
+OnFailure=g_service_failed@ConsoleWebsocket-g_web_mcc.service
 
 [Service]
 User=g_web
 Group=g_web
-WorkingDirectory=/var/lib/g_web/next
+WorkingDirectory=/var/lib/g_web/mcc
 ExecStart=/usr/bin/node server.js
 
 Environment=NODE_ENV=production
@@ -29,8 +29,8 @@ RestartSec=10
 UMask=0002
 
 # Status logging
-ExecStartPost=/bin/python3 /opt/infra/scripts/webhooks.py status Website g_web starting
-ExecStopPost=/bin/python3 /opt/infra/scripts/webhooks.py status Website g_web stopped
+ExecStartPost=/bin/python3 /opt/infra/scripts/webhooks.py status "Console Websocket" g_web_mcc starting
+ExecStopPost=/bin/python3 /opt/infra/scripts/webhooks.py status "Console Websocket" g_web_mcc stopped
 
 # Security hardening:
 PrivateTmp=true
