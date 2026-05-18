@@ -70,7 +70,7 @@ async function getMCMS(force: boolean=false) {
         const connection = await WebSocketConnection.connect(url, C().MINECRAFT_MS_SECRET);
         _mcms_connection = new MinecraftServer(connection);
     } else {
-	_mcms_connection.getStatus(true);  // Force get status to check that the connection is valid
+	await _mcms_connection.getStatus(true);  // Force get status to check that the connection is valid
     }
 
     return _mcms_connection;

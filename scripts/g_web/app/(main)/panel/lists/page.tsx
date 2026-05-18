@@ -6,6 +6,7 @@ import ItemRow from "./ItemRow";
 import AddItemField from "./AddItemField";
 import PanelPageSection from "../ui/PanelPageSection";
 import { ListType, MCMSError, queryList } from "@/lib/panelUtils";
+import { Suspense } from "react";
 
 // Define or generic list item, this is what gets passed around and rendered
 export type ListItem = {
@@ -41,7 +42,9 @@ export default function Page() {
             {
                 LISTS.map(async (list) => (
                     <PanelPageSection title={list.rendername} key={list.what} >
-                        <SafeList list={list} />
+		    	<Suspense fallback={<div className="italic">Loading...</div>}>  { /* Suspense causes the contents to lazily load (as connecting can take some time. */ }
+                        	<SafeList list={list} />
+			</Suspense>
                     </PanelPageSection>
                 ))
             }
@@ -54,7 +57,7 @@ export default function Page() {
  */
 async function SafeList({ list }: { list: List }) {
     try {
-        return (
+        return  (
             <div className="space-y-1">
                 <div> 
                     {(await queryList(list.what)).map(item => (
