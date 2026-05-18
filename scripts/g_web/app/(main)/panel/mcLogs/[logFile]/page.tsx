@@ -1,4 +1,4 @@
-import { loadLogContent } from "@/lib/mcLogs";
+import { loadLogContent } from "@/lib/panelUtils";
 import { notFound } from "next/navigation";
 import PanelPageSection from "../../ui/PanelPageSection";
 import Link from "next/link";

@@ -56,7 +56,7 @@ export type ListType = "whitelist" | "bans" | "ipbans" | "operators";
  */
 export async function queryList(list: ListType) {
     // TODO: Cache the connection
-    const connection = await WebSocketConnection.connect(`wss://localhost:${C().MINECRAFT_MS_PORT}`, C().MINECRAFT_MS_SECRET);
+    const connection = await WebSocketConnection.connect(`ws://localhost:${C().MINECRAFT_MS_PORT}`, C().MINECRAFT_MS_SECRET);
     const server = new MinecraftServer(connection);
 
     // Return the contents of the appropriate list

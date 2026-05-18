@@ -1,4 +1,4 @@
-import { listLogs } from "@/lib/mcLogs";
+import { listLogs } from "@/lib/panelUtils";
 import PanelPageSection from "../ui/PanelPageSection";
 import Link from "next/link";
 
