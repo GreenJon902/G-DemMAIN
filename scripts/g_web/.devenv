@@ -2,3 +2,6 @@ SESSION_PASSWORD=testingtestingtestingtestingtestingtestingtestingtestingtesting
 MCCWSS_PORT=8001
 PANEL_USER=green,jon
 PANEL_PASSWORD=bar,baz
+MINECRAFT_LOG_PATH=./logs
+MINECRAFT_MS_PORT=25585
+MINECRAFT_MS_SECRET=KI7Hr2rsp8AuOidYDJ5cmZR2DNM8Wx8EQz6jkAec
