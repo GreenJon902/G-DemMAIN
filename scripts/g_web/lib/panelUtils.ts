@@ -51,44 +51,83 @@ export async function loadLogContent(logName: string): Promise<string | undefine
 
 export type ListType = "whitelist" | "bans" | "ipbans" | "operators";
 
+export class MCMSError extends Error { constructor() { super("Failed to connect to the minecraft management server"); } }
+let _mcms_connection: MinecraftServer | null = null;
+/**
+ * Returns a wrapper of the minecraft server's management server.
+ * This will try to reuse the same connection as previous calls.
+ * If force is given, then a new connection will be created.
+ * Note that this does not check if the current cached connection is still open.
+ * @param force - Should a new connection be made regardless of the old one.
+ */
+async function getMCMS(force: boolean=false) {
+    if (_mcms_connection === null || force) {
+        const url = `ws://localhost:${C().MINECRAFT_MS_PORT}`;
+        console.log(`Attempting to establish new connection to MCMS at ${url}`);
+        const connection = await WebSocketConnection.connect(url, C().MINECRAFT_MS_SECRET);
+        _mcms_connection = new MinecraftServer(connection);
+    }
+
+    return _mcms_connection;
+}
+
+/**
+ * Runs the given function with the current connection (if it exists), and if it fails attempts it once more with a forced new connection.
+ * Any errors thrown will be given to the console, and then MCMSError will be thrown instead.
+ * @throws MCMSError
+ */
+async function mcmsRetryFunctionCallWrapper<T>(func: (server: MinecraftServer) => T) {
+    try {
+        return await func(await getMCMS());
+    } catch (e) {
+        console.log(`Got ${e} while attempting to make an mcms call. Retrying with a new connection...`);
+        try {
+            return await func(await getMCMS(true));  // Run with a forced new connection
+        } catch(e2) {
+            console.error(e2);
+            throw new MCMSError();
+        }
+    }
+}
+
 /**
  * Returns an array of the players in the given list.
+ * @throws MCMSError
  */
 export async function queryList(list: ListType) {
-    // TODO: Cache the connection
-    const connection = await WebSocketConnection.connect(`ws://localhost:${C().MINECRAFT_MS_PORT}`, C().MINECRAFT_MS_SECRET);
-    const server = new MinecraftServer(connection);
-
-    // Return the contents of the appropriate list
-    if (list === "whitelist") {
-        const allowlist = await server.allowlist().get();
-        return allowlist.map(player => ({
-            rendername: player.name,
-            uniquename: player.id,
-            meta: {}
-        }));
-    } else if (list === "operators") {
-        const operators = await server.operatorList().get();
-        return operators.map(operator => ({
-            rendername: operator.player.name,
-            uniquename: operator.player.id,
-            meta: {}
-        }));
-    } else if (list === "bans") {
-        const banlist = await server.banList().get();
-        return banlist.map(ban => ({
-            rendername: ban.player.name,
-            uniquename: ban.player.id,
-            meta: { "created-by": ban.source, "expires-on": ban.expires, "reason": ban.reason }
-        }));
-    } else if (list === "ipbans") {
-        const banlist = await server.ipBanList().get();
-        return banlist.map(ban => ({
-            rendername: ban.ip,
-            uniquename: ban.ip,
-            meta: { "created-by": ban.source, "expires-on": ban.expires, "reason": ban.reason }
-        }));
-    } else {
-        throw "Unknown list " + list;
-    }
+    // TODO: Cache this result for an amount of time (as nextjs seems trigger happy sometimes).
+    return await mcmsRetryFunctionCallWrapper(async server => {
+        // Return the contents of the appropriate list
+        if (list === "whitelist") {
+            const allowlist = await server.allowlist().get();
+            return allowlist.map(player => ({
+                rendername: player.name,
+                uniquename: player.id,
+                meta: {}
+            }));
+        } else if (list === "operators") {
+            const operators = await server.operatorList().get();
+            return operators.map(operator => ({
+                rendername: operator.player.name,
+                uniquename: operator.player.id,
+                meta: {}
+            }));
+        } else if (list === "bans") {
+            const banlist = await server.banList().get();
+            return banlist.map(ban => ({
+                rendername: ban.player.name,
+                uniquename: ban.player.id,
+                meta: { "created-by": ban.source, "expires-on": ban.expires, "reason": ban.reason }
+            }));
+        } else if (list === "ipbans") {
+            const banlist = await server.ipBanList().get();
+            return banlist.map(ban => ({
+                rendername: ban.ip,
+                uniquename: ban.ip,
+                meta: { "created-by": ban.source, "expires-on": ban.expires, "reason": ban.reason }
+            }));
+        } else {
+            throw "Unknown list " + list;
+        }
+    });
 }

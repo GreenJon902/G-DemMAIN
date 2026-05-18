@@ -5,7 +5,7 @@
 import ItemRow from "./ItemRow";
 import AddItemField from "./AddItemField";
 import PanelPageSection from "../ui/PanelPageSection";
-import { ListType, queryList } from "@/lib/panelUtils";
+import { ListType, MCMSError, queryList } from "@/lib/panelUtils";
 
 // Define or generic list item, this is what gets passed around and rendered
 export type ListItem = {
@@ -41,14 +41,7 @@ export default function Page() {
             {
                 LISTS.map(async (list) => (
                     <PanelPageSection title={list.rendername} key={list.what} >
-                        <div className="space-y-1">
-                            <div> 
-                                {(await queryList(list.what)).map(item => (
-                                    <ItemRow item={item as ListItem} list={list} />
-                                ))}
-                            </div>
-                            <AddItemField list={list} />
-                        </div>
+                        <SafeList list={list} />
                     </PanelPageSection>
                 ))
             }
@@ -56,4 +49,25 @@ export default function Page() {
     );
 }
 
-
+/**
+ * Renders the content for the given list. However will return error text if data cannot be loaded.
+ */
+async function SafeList({ list }: { list: List }) {
+    try {
+        return (
+            <div className="space-y-1">
+                <div> 
+                    {(await queryList(list.what)).map(item => (
+                        <ItemRow item={item as ListItem} list={list} />
+                    ))}
+                </div>
+                <AddItemField list={list} />
+            </div>
+        );
+    } catch (e) {
+        if (e instanceof MCMSError) {
+            return (<span> An error occured while loading this data. Is the server up? </span>)
+        }
+        throw e;
+    }
+}
