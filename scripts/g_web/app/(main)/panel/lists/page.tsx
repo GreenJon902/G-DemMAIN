@@ -44,7 +44,7 @@ export default function Page() {
                     <PanelPageSection title={list.rendername} key={list.what} >
 		    	<Suspense fallback={<div className="italic">Loading...</div>}>  { /* Suspense causes the contents to lazily load (as connecting can take some time. */ }
                         	<SafeList list={list} />
-			</Suspense>
+                        </Suspense>
                     </PanelPageSection>
                 ))
             }
@@ -56,21 +56,24 @@ export default function Page() {
  * Renders the content for the given list. However will return error text if data cannot be loaded.
  */
 async function SafeList({ list }: { list: List }) {
+    let listData;
     try {
-        return  (
-            <div className="space-y-1">
-                <div> 
-                    {(await queryList(list.what)).map(item => (
-                        <ItemRow item={item as ListItem} list={list} />
-                    ))}
-                </div>
-                <AddItemField list={list} />
-            </div>
-        );
+        listData = await queryList(list.what);
     } catch (e) {
         if (e instanceof MCMSError) {
-            return (<span> An error occured while loading this data. Is the server up? </span>)
+            return (<span> An error occured while loading this data. Is the server up? </span>);
         }
         throw e;
     }
+
+    return (
+        <div className="space-y-1">
+	    <div> 
+	        {listData.map(item => (
+		     <ItemRow item={item as ListItem} list={list} />
+	        ))}
+	    </div>
+	    <AddItemField list={list} />
+        </div>
+    );
 }

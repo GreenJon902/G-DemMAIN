@@ -3,7 +3,7 @@ import C from "@/lib/environ";
 
 // Create WebSocketServer
 const wss = new WebSocketServer({ port: C().MCCWSS_PORT });  // TODO: Use HTTPS.
-                                                             // TODO: Require actually logged into the console
+// TODO: Require actually logged into the console
 wss.on("connection", (ws: WebSocket) => {
     console.log("Connection from client..");
     ws.on("error", console.error);
