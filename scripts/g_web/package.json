@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "concurrently --kill-others -n NEXT,MCC \"npm run dev:next\" \"npm run dev:mcConsole\"",
-    "dev:next": "dotenv -e .devenv -- next dev -p 8000",
+    "dev:next": "dotenv -e .devenv -- next dev",
     "dev:mcc": "dotenv -e .devenv -- tsx mcConsole/server.ts",
     "lint": "eslint",
     "typecheck": "tsc",

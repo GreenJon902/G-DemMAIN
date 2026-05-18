@@ -61,6 +61,7 @@ let _mcms_connection: MinecraftServer | null = null;
  * @param force - Should a new connection be made regardless of the old one.
  */
 async function getMCMS(force: boolean=false) {
+    // TODO: This isn't threadsafe. We should look into promise based locking.
     optimisticRequireUser("panel"); // TODO: This probably shouldn't be optimistic
 
     if (_mcms_connection === null || force) {
@@ -68,6 +69,8 @@ async function getMCMS(force: boolean=false) {
         console.log(`Attempting to establish new connection to MCMS at ${url}`);
         const connection = await WebSocketConnection.connect(url, C().MINECRAFT_MS_SECRET);
         _mcms_connection = new MinecraftServer(connection);
+    } else {
+	_mcms_connection.getStatus(true);  // Force get status to check that the connection is valid
     }
 
     return _mcms_connection;
@@ -82,11 +85,11 @@ async function mcmsRetryFunctionCallWrapper<T>(func: (server: MinecraftServer) =
     try {
         return await func(await getMCMS());
     } catch (e) {
-        console.log(`Got ${e} while attempting to make an mcms call. Retrying with a new connection...`);
+        console.log(`Got '${e}' while attempting to make an mcms call. Retrying with a new connection...`);
         try {
             return await func(await getMCMS(true));  // Run with a forced new connection
         } catch(e2) {
-            console.error(e2);
+            console.error("Got this when retrying mcms call: ", e2);
             throw new MCMSError();
         }
     }
@@ -138,17 +141,18 @@ export async function queryList(list: ListType) {
 
 // TODO: DOcument this
 export async function addToList(list: ListType, name: string) {
+    // TODO: Some sort of error reporting (name not existing) for this
     optimisticRequireUser("panel"); // TODO: This probably shouldn't be optimistic
 
     await mcmsRetryFunctionCallWrapper(async server => {
         if (list === "whitelist") {
-            server.allowlist().add(name);
+            await server.allowlist().add(name);
         } else if (list === "bans") {
-            server.banList().add(name);
+            await server.banList().add(name);
         } else if (list === "ipbans") {
-            server.ipBanList().add(name);
+            await server.ipBanList().add(name);
         } else if (list === "operators") {
-            server.operatorList().add(name);
+            await server.operatorList().add(name);
         } else {
             throw "Unknown list " + list;
         }
