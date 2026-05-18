@@ -1,3 +1,5 @@
+# TODO: Make this follow the g_web service
+
 [Unit]
 Description=Runner for the console websocket for the website 
 
