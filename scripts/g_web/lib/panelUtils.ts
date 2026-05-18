@@ -61,6 +61,8 @@ let _mcms_connection: MinecraftServer | null = null;
  * @param force - Should a new connection be made regardless of the old one.
  */
 async function getMCMS(force: boolean=false) {
+    optimisticRequireUser("panel"); // TODO: This probably shouldn't be optimistic
+
     if (_mcms_connection === null || force) {
         const url = `ws://localhost:${C().MINECRAFT_MS_PORT}`;
         console.log(`Attempting to establish new connection to MCMS at ${url}`);
@@ -95,6 +97,8 @@ async function mcmsRetryFunctionCallWrapper<T>(func: (server: MinecraftServer) =
  * @throws MCMSError
  */
 export async function queryList(list: ListType) {
+    optimisticRequireUser("panel"); // TODO: This probably shouldn't be optimistic
+
     // TODO: Cache this result for an amount of time (as nextjs seems trigger happy sometimes).
     return await mcmsRetryFunctionCallWrapper(async server => {
         // Return the contents of the appropriate list
@@ -131,3 +135,23 @@ export async function queryList(list: ListType) {
         }
     });
 }
+
+// TODO: DOcument this
+export async function addToList(list: ListType, name: string) {
+    optimisticRequireUser("panel"); // TODO: This probably shouldn't be optimistic
+
+    await mcmsRetryFunctionCallWrapper(async server => {
+        if (list === "whitelist") {
+            server.allowlist().add(name);
+        } else if (list === "bans") {
+            server.banList().add(name);
+        } else if (list === "ipbans") {
+            server.ipBanList().add(name);
+        } else if (list === "operators") {
+            server.operatorList().add(name);
+        } else {
+            throw "Unknown list " + list;
+        }
+    });
+}
+
