@@ -5,6 +5,8 @@ import * as zlib from "zlib";
 import C from "@/lib/environ";
 import { optimisticRequireUser } from "./auth";
 import { MinecraftServer, WebSocketConnection } from "mc-server-management";
+import { CachedObject } from "@/lib/asyncUtils";
+import { compactOutput } from "@/lib/logUtils";
 
 // --- Logs ---------------------------------------------------------------------------
 
@@ -94,7 +96,11 @@ async function mcmsRetryFunctionCallWrapper<T>(func: (server: MinecraftServer) =
         try {
             return await func(await getMCMS(true));  // Run with a forced new connection
         } catch(e2) {
-            console.error("Got this when retrying mcms call: ", e2);
+	    compactOutput({ 
+	   	message: "Got error when retrying mcms call. If g_mc is not running then this is not a bug: ",
+		obj: e2,
+		stream: console.warn
+	    });
             throw new MCMSError();
         }
     }

@@ -1,7 +1,7 @@
 /**
  * A thread-safe cached object. So if someone tries to get the object while it is still generating, it won't start generating twice.
  */
-class CachedObject<T> {
+export class CachedObject<T> {
     #value?: T;  // The actual cached object
     #promise: Promise<void> | null = null;  // The promise that is generating the object. This acts as the lock
     #loader: () => Promise<T>;  // The function that loads the object
