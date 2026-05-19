@@ -52,7 +52,19 @@ export async function loadLogContent(logName: string): Promise<string | undefine
 export type ListType = "whitelist" | "bans" | "ipbans" | "operators";
 
 export class MCMSError extends Error { constructor() { super("Failed to connect to the minecraft management server"); } }
-let _mcms_connection: MinecraftServer | null = null;
+let _mcms_connection = new CachedObject<MinecraftServer>(createNewMCMSConnection);
+
+/**
+ * Creates a new mcms connection.
+ * Note you should use the cached and checked value that is returned by getMCMS.
+ */
+async function createNewMCMSConnection() {
+    const url = `ws://localhost:${C().MINECRAFT_MS_PORT}`;
+    console.log(`Attempting to establish new connection to MCMS at ${url}`);
+    const connection = await WebSocketConnection.connect(url, C().MINECRAFT_MS_SECRET);
+    return new MinecraftServer(connection);
+}
+
 /**
  * Returns a wrapper of the minecraft server's management server.
  * This will try to reuse the same connection as previous calls.
@@ -64,16 +76,9 @@ async function getMCMS(force: boolean=false) {
     // TODO: This isn't threadsafe. We should look into promise based locking.
     optimisticRequireUser("panel"); // TODO: This probably shouldn't be optimistic
 
-    if (_mcms_connection === null || force) {
-        const url = `ws://localhost:${C().MINECRAFT_MS_PORT}`;
-        console.log(`Attempting to establish new connection to MCMS at ${url}`);
-        const connection = await WebSocketConnection.connect(url, C().MINECRAFT_MS_SECRET);
-        _mcms_connection = new MinecraftServer(connection);
-    } else {
-        await _mcms_connection.getStatus(true);  // Force get status to check that the connection is valid
-    }
-
-    return _mcms_connection;
+    const value = await _mcms_connection.get(force);
+    await value.getStatus(true);  // Force get status to check that the connection is (still) valid
+    return value;
 }
 
 /**

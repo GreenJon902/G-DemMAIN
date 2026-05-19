@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently --kill-others -n NEXT,MCC \"npm run dev:next\" \"npm run dev:mcConsole\"",
+    "dev": "concurrently --kill-others -n NEXT,MCC \"npm run dev:next\" \"npm run dev:mcc\"",
     "dev:next": "dotenv -e .devenv -- next dev",
     "dev:mcc": "dotenv -e .devenv -- tsx mcConsole/server.ts",
     "lint": "eslint",
