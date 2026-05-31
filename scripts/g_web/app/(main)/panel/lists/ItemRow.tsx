@@ -31,7 +31,7 @@ export default function ItemRow({ item, list }: { item: ListItem, list: List }) 
                 )}
             </div>
             <ActionButton
-                action={() => removeFromListAction(list.what, item.uniquename).then(router.refresh)} 
+                action={() => removeFromListAction(list.filename, item.uniquename).then(router.refresh)} 
                 confirm={() => window.confirm(`Are you sure you want to ${list.lang.remove} ${item.rendername}?`)}
                 color={BUTTON_RED}
                 className="size-6"

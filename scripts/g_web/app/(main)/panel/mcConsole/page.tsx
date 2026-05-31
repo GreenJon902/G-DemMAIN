@@ -1,4 +1,4 @@
-import C from "@/lib/environ";
+import { C } from "@/lib/environ";
 import ClientConsole from "./ClientPage";
 
 export default function Page() {

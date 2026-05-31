@@ -60,7 +60,7 @@ export default function AddAccountField({ list }: { list: List }) {
                     />
                 </div>
             )}
-            <ActionButton action={() => addToListAction(list.what, currentName).then(router.refresh)} color={BUTTON_GREEN}>
+            <ActionButton action={() => addToListAction(list.filename, currentName).then(router.refresh)} color={BUTTON_GREEN}>
                 <span> {list.lang.addButton} </span> 
             </ActionButton> 
         </div>

@@ -2,7 +2,7 @@
 
 import { getIronSession as getIronSession_ } from "iron-session";
 import { cookies } from "next/headers";
-import C from "./environ";
+import { C } from "./environ";
 import { sendWebloginWebhook } from "./webhook";
 
 const COOKIE_NAME = "auth";  // Name of the cookie that auth data is stored in
@@ -33,13 +33,6 @@ export async function optimisticCheckUser(area: keyof SessionData["optimistic"])
     const session = await getSessionData();
     if (session === null) return false;
     return session.optimistic[area] === true;
-}
-
-/**
- * Like optimisticCheckUser but throws an error if the test fails.
- */
-export async function optimisticRequireUser(area: keyof SessionData["optimistic"]) {
-    if (!optimisticCheckUser(area)) throw "User has no permission to access " + area;
 }
 
 
