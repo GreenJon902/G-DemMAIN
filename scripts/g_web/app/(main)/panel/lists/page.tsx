@@ -5,6 +5,7 @@
 import ItemRow from "./ItemRow";
 import PanelPageSection from "../ui/PanelPageSection";
 import { BANNEDIP_LIST, BANNEDPLAYER_LIST, loadListItems, OPERATOR_LIST, List as PUList, WHITELIST_LIST } from "@/lib/panelUtils";
+import LabelSinceLastRefresh from "../../ui/LabelSinceLastRefresh";
 
 
 // Define the lists (e.g. whitelist or banned-players) that we want to render
@@ -37,6 +38,7 @@ export default function Page() {
                     </PanelPageSection>
                 ))
             }
+            <LabelSinceLastRefresh timestamp={Date.now()} />
         </>
     );
 }

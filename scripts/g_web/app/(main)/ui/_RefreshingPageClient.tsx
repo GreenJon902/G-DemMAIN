@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, ReactNode } from "react";
+import { useState, useEffect, ReactNode, useRef } from "react";
 import { TimeStamped } from "./RefreshingPage";
+import LabelSinceLastRefresh from "./LabelSinceLastRefresh";
 
 
 /**
@@ -22,14 +23,7 @@ export default function RefreshingPageClient<T extends TimeStamped>({
     refreshRate: number,
     Component: (props: { data: T }) => ReactNode
 }) {
-    // Keep track of the current timestamp so we can indicate how out of data data is
-    const [currentTimestamp, setCurrentTimestamp] = useState(initialData.timestamp);  
-    useEffect(() => {
-        const interval = setInterval(async () => {
-            setCurrentTimestamp(Date.now());
-        }, 1000);
-        return () => clearInterval(interval);
-    });
+    const updateCurrentTimestampRef = useRef<() => void>(null);
 
     // Routinely refresh the data from the serveraction
     const [data, setData] = useState(initialData);
@@ -42,7 +36,9 @@ export default function RefreshingPageClient<T extends TimeStamped>({
             if (cancelled) return;
             try {
                 setData(await loadNewDataAction());
-                setCurrentTimestamp(Date.now());  // Refresh here too as otherwise data.timestamp will be larger than currentTimestamp
+                if (updateCurrentTimestampRef.current !== null) {
+                    updateCurrentTimestampRef.current();  // Refresh here too as otherwise data.timestamp will be larger than currentTimestamp
+                }
             } catch (e) {
                 console.error(e);
             }
@@ -60,7 +56,7 @@ export default function RefreshingPageClient<T extends TimeStamped>({
     return (
         <>
             <Component data={data} />
-            <span className="text-gray-600">Last updated {Math.floor((currentTimestamp - data.timestamp) / 1000)} seconds ago</span>
+            <LabelSinceLastRefresh timestamp={data.timestamp} updateCurrentTimestampRef={updateCurrentTimestampRef} />
         </>
     );
 }
