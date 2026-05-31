@@ -1,6 +1,5 @@
-"use client";
-
-import { ListItem, List } from "./page";
+import { ListItem } from "@/lib/panelUtils";
+import { List } from "./page";
 import PlayerHead from "./PlayerHead";
 
 

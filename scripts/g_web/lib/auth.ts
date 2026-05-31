@@ -35,6 +35,12 @@ export async function optimisticCheckUser(area: keyof SessionData["optimistic"])
     return session.optimistic[area] === true;
 }
 
+/**
+ * Like optimisticCheckUser but throws an error if the test fails.
+ */
+export async function optimisticRequireUser(area: keyof SessionData["optimistic"]) {
+    if (!optimisticCheckUser(area)) throw "User has no permission to access " + area;
+}
 
 /**
  * Returns true if the user has an active session.

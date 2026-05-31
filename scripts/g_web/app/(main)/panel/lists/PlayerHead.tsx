@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { ListItem } from "./page";
+import { ListItem } from "@/lib/panelUtils";
 
 
 /**
