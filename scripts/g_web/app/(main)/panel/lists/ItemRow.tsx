@@ -1,16 +1,10 @@
 "use client";
 
 import { ListItem, List } from "./page";
-import { XMarkIcon } from "@heroicons/react/20/solid";
-import { useRouter } from "next/navigation";
 import PlayerHead from "./PlayerHead";
-import { removeFromListAction } from "./actions";
-import { ActionButton, BUTTON_RED } from "../../ui/Button";
 
 
 export default function ItemRow({ item, list }: { item: ListItem, list: List }) {
-    const router = useRouter();
-
     return (
         <div className="flex justify-between p-1 first:rounded-t-md last:rounded-b-md odd:bg-gray-700 even:bg-gray-800">
             <div>
@@ -30,14 +24,6 @@ export default function ItemRow({ item, list }: { item: ListItem, list: List }) 
                     </div>
                 )}
             </div>
-            <ActionButton
-                action={() => removeFromListAction(list.filename, item.uniquename).then(router.refresh)} 
-                confirm={() => window.confirm(`Are you sure you want to ${list.lang.remove} ${item.rendername}?`)}
-                color={BUTTON_RED}
-                className="size-6"
-            >
-                <XMarkIcon className="size-6 self-stretch stroke-2 text-white" />
-            </ActionButton>
         </div>
     );
 }

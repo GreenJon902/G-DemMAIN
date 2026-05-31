@@ -44,9 +44,6 @@ export default function PanelPageContent(
                                 <td className="flex gap-1 p-1"> {/* All changing controls go into the same <td> as the frequent changing causes firefox to get confused and not render backgrounds correctly */}
                                     <UnitControls unit={unit} status={status} className="flex-1" /> 
                                 </td>
-                                <td className="w-0 p-1">  {/* w-0 makes it fit the width of the child */}
-                                    <LinkButton href={{ pathname: "panel/log", query: { name: unit.name } }} className="w-full" color={BUTTON_CYAN} newTab>View Log</LinkButton>  
-                                </td>
                             </tr>
                         ))
                     }

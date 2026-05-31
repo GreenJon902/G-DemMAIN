@@ -4,7 +4,6 @@
 
 import fs from "fs/promises";
 import ItemRow from "./ItemRow";
-import AddItemField from "./AddItemField";
 import * as z from "zod";
 import PanelPageSection from "../ui/PanelPageSection";
 
@@ -96,7 +95,6 @@ export default function Page() {
                                     <ItemRow key={item.uniquename} item={item} list={list} />
                                 ))}
                             </div>
-                            <AddItemField list={list} />
                         </div>
                     </PanelPageSection>
                 ))
