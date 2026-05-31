@@ -1,7 +1,8 @@
-import { loadLogContent } from "@/lib/mcLogs";
+import { loadLogContent } from "@/lib/panelUtils";
 import { notFound } from "next/navigation";
 import PanelPageSection from "../../ui/PanelPageSection";
 import Link from "next/link";
+import LabelSinceLastRefresh from "@/app/(main)/ui/LabelSinceLastRefresh";
 
 export default async function Page({
     params
@@ -39,6 +40,7 @@ export default async function Page({
                     </pre>
                 </div>
             </PanelPageSection>
+            <LabelSinceLastRefresh timestamp={Date.now()} />
         </>
     );
 }

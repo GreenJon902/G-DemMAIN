@@ -16,9 +16,10 @@ const generate = () => {
     const DONT_REQUIRE_WEBHOOKS_FILE = zod.coerce.boolean().default(false).parse(process.env.DONT_REQUIRE_WEBHOOKS_FILE);
 
     const LIST_FOLDER = zod.string().default("/var/lib/g_mc").parse(process.env.LIST_FOLDER);  // For testing we can override this. This folder contains whitelist.json and ...
+    const MC_LOG_FOLDER = zod.string().default("/var/lib/g_mc/logs").parse(process.env.MC_LOG_FOLDER);  // For testing we can override this 
 
     return {
-        MCCWSS_PORT, SESSION_PASSWORD, PANEL_USER, PANEL_PASSWORD, DONT_REQUIRE_WEBHOOKS_FILE, LIST_FOLDER
+        MCCWSS_PORT, SESSION_PASSWORD, PANEL_USER, PANEL_PASSWORD, DONT_REQUIRE_WEBHOOKS_FILE, LIST_FOLDER, MC_LOG_FOLDER
     };
 };
 

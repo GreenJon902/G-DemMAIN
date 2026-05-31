@@ -1,8 +1,15 @@
+/**
+ * This file provides the utilities for the panel pages.
+ * All exported functions should check for authentication.
+ */
+
 import fs from "fs/promises";
 import * as path from "node:path";
 import * as z from "zod";
 import { C } from "./environ";
 import { optimisticRequireUser } from "./auth";
+import { existsSync } from "fs";
+import * as zlib from "zlib";
 
 // Lists ------------------------------------------------------------------------
 
@@ -81,3 +88,45 @@ export async function loadListItems(list: List) {
     const data = z.array(list.itemSchema).parse(JSON.parse(file));  // Parse an array of accounts. This will ignore any extra properties
     return data;
 }
+
+
+// Minecrtaft logs ------------------------------------------------------------------------------------
+
+/**
+ * Lists the minecraft logs which are available to view.
+ * @returns A string[] of the file names formatted. These will include file-extensions.
+ */
+export async function listLogs() {
+    optimisticRequireUser("panel");
+    return await fs.readdir(C().MC_LOG_FOLDER);
+}
+
+/**
+ * Loads the content of a log file and returns it to the user.
+ * @param logName - The name of the log file, this will be sanitized. If the log does not exist then undefined is returned.
+ * @returns The content of the file.
+ */
+export async function loadLogContent(logName: string): Promise<string | undefined> {
+    optimisticRequireUser("panel");
+
+    // Sanitize path
+    if (logName.includes("..") || logName.includes("/") || logName.includes("\\")) {
+        console.log("log-file-name failed sanitization:", logName);
+        return undefined;
+    }
+
+    // Check file exists
+    const full_path = path.join(C().MC_LOG_FOLDER, logName);
+    if (!existsSync(full_path)) return undefined;
+
+    // Load the file
+    let content;
+    if (logName.endsWith(".gz")) {  // Decompress
+        content = zlib.gunzipSync(await fs.readFile(full_path)).toString();
+    } else {  // Assume it is plain-text
+        content = await fs.readFile(full_path, "utf-8");
+    }
+
+    return content;
+}
+
