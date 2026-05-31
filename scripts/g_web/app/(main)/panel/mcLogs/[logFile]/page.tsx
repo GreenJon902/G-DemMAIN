@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import PanelPageSection from "../../ui/PanelPageSection";
 import Link from "next/link";
 import LabelSinceLastRefresh from "@/app/(main)/ui/LabelSinceLastRefresh";
+import LogView from "../../ui/LogView";
 
 export default async function Page({
     params
@@ -24,21 +25,10 @@ export default async function Page({
                 Return to log list...
             </Link>
             <PanelPageSection title={logFile}>
-                <div className="min-w-150 rounded-md bg-gray-950 p-1">
-                    <pre className="text-wrap break-all">
-                        {logContents.split("\n").map((line, i, a) => (
-                            <span 
-                                key={i}
-                                className="block"
-                            >
-                                <span className="text-gray-700">
-                                    {String(i).padStart(String(a.length).length)}.
-                                </span>
-                                {line}
-                            </span>
-                        ))}
-                    </pre>
-                </div>
+                <LogView 
+                    lines={logContents.split("\n")} 
+                    className="min-w-150"
+                />
             </PanelPageSection>
             <LabelSinceLastRefresh timestamp={Date.now()} />
         </>

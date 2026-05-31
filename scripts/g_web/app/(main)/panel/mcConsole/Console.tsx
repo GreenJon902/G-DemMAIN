@@ -2,11 +2,10 @@
 // TODO: Implement colouring text
 
 import { useEffect, useRef, useState } from "react";
-import PanelPageSection from "../ui/PanelPageSection";
 import { BUTTON_GREEN, SimpleButton } from "../../ui/Button";
 import TextInput from "../../ui/TextInput";
 
-export default function ClientConsole({ mccwss_port }: { mccwss_port: number }) {
+export default function Console({ mccwss_port }: { mccwss_port: number }) {
     /**
      * We need to pass mccwss_port from the server to the client-component as a prop as client can't access environ.
      */
@@ -76,29 +75,27 @@ export default function ClientConsole({ mccwss_port }: { mccwss_port: number }) 
 
 
     return (
-        <PanelPageSection title="Console">
-            <div className="flex max-h-[70dvh] flex-col gap-1">
-                <div 
-                    className="w-full flex-1 overflow-scroll rounded-md bg-gray-950 p-1"
-                    ref={consoleDivRef}
-                >
-                    {
-                        consoleContent.map((text, i) => (
-                            <span key={i} className="block">
-                                {text}
-                            </span>
-                        ))
-                    }
-                </div>
-                <div className="flex gap-1">
-                    <TextInput
-                        placeholder="Message or /command to run..."
-                        ref={commandBoxRef}
-                        onKeyDown={event => {if (event.code === "Enter") sendCommand();}}  // Run command when enter pressed
-                    />
-                    <SimpleButton callback={sendCommand} color={BUTTON_GREEN}>Run</SimpleButton>
-                </div>
+        <div className="flex max-h-[30dvh] flex-col gap-1">
+            <div 
+                className="w-full flex-1 overflow-scroll rounded-md bg-gray-950 p-1"
+                ref={consoleDivRef}
+            >
+                {
+                    consoleContent.map((text, i) => (
+                        <span key={i} className="block">
+                            {text}
+                        </span>
+                    ))
+                }
             </div>
-        </PanelPageSection>
+            <div className="flex gap-1">
+                <TextInput
+                    placeholder="Message or /command to run..."
+                    ref={commandBoxRef}
+                    onKeyDown={event => {if (event.code === "Enter") sendCommand();}}  // Run command when enter pressed
+                />
+                <SimpleButton callback={sendCommand} color={BUTTON_GREEN}>Run</SimpleButton>
+            </div>
+        </div>
     );
 }

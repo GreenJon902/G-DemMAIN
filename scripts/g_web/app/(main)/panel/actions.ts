@@ -1,6 +1,8 @@
 // TODO: Logic for this file should go in lib
 "use server";
 
+import { tailLatest } from "@/lib/panelUtils";
+
 /**
  * The status of a systemd unit.
  * Note: there are technically more, but I don't think they'll come up.
@@ -183,4 +185,11 @@ export async function loadPanelDataAction(): Promise<PanelData> {
 export async function unitAction(unit: Unit, status: "start"|"stop"|"restart") {  // TODO: IMplement this
     console.log(`${status}ing ${unit.name}.${unit.type}`);
     await new Promise(r => setTimeout(r, 500));
+}
+
+/**
+ * Returns the last ten lines from latest.log
+ */
+export async function tailLatestAction() {
+    return tailLatest(50);
 }
