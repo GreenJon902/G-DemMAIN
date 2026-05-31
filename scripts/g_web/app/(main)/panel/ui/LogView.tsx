@@ -8,7 +8,7 @@ export default function LogView({
 }: {
     lines: string[],
     className?: string,
-    lineNoStart: number,
+    lineNoStart?: number,
 }) {
     return (
         <div className={`rounded-md bg-gray-950 p-1 ${className}`}>

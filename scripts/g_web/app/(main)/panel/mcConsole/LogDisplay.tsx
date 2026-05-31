@@ -10,7 +10,7 @@ export default function LogDisplay({
     return (
         <LogView
             lines={data.contents}
-            className="flex-1 max-h-[30dvh] overflow-scroll"
+            className="max-h-[30dvh] flex-1 overflow-scroll"
             lineNoStart={-data.contents.length}
         />
     );

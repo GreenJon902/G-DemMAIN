@@ -19,5 +19,5 @@ export default function Page() {
                 />
             </PanelPageSection>
         </>
-    )
+    );
 }

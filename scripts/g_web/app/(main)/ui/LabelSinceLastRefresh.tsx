@@ -16,9 +16,11 @@ export default function LabelSinceLastRefresh({
 }) {
     // Keep track of the current timestamp so we can indicate how out of data data is
     const [currentTimestamp, setCurrentTimestamp] = useState(timestamp);  
-    const updateCurrentTimestamp = () => setCurrentTimestamp(Date.now());
-    if (updateCurrentTimestampRef) updateCurrentTimestampRef.current = updateCurrentTimestamp;
     useEffect(() => {
+        const updateCurrentTimestamp = () => setCurrentTimestamp(Date.now());
+        if (updateCurrentTimestampRef) updateCurrentTimestampRef.current = updateCurrentTimestamp;
+
+
         const interval = setInterval(async () => {
             updateCurrentTimestamp();
         }, 1000);

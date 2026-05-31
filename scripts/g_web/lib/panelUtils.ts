@@ -164,14 +164,12 @@ export async function tailLatest(n: number) {
     }
 
     file.close();
-    console.log(contents);
     
     // Join strings then split into lines
     const lines = contents.join("").split("\n");
     const cropped_lines = lines.slice(-n);  // Get last n lines
     if (cropped_lines.length > 0 && cropped_lines[cropped_lines.length - 1] === "") cropped_lines.pop();  // Remove trailing newline
-    const padded_lines = [...Array(n - cropped_lines.length).fill(""), ...cropped_lines]
-    console.log(padded_lines);
+    const padded_lines = [...Array(n - cropped_lines.length).fill(""), ...cropped_lines];
 
     // Return joined content
     return { contents: padded_lines, timestamp: Date.now() };
