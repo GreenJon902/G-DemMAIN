@@ -1,6 +1,6 @@
 "use server";
 
-import { dropSession } from "@/lib/auth";
+import { NS } from "@/lib/auth";
 import { redirectLogin } from "../login/util";
 
 /**
@@ -8,6 +8,6 @@ import { redirectLogin } from "../login/util";
  * This will then redirect the user to the login page.
  */
 export async function logoutAction() {
-    await dropSession(); 
+    await NS.dropSession(); 
     redirectLogin();
 }

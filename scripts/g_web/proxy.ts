@@ -4,13 +4,13 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { hasSession, optimisticCheckUser } from "./lib/auth";
+import { NS } from "./lib/auth";
 
 
 // The checks for whether a user is allowed to access each route
 // Routes are matched if they start with the given path
 const routeChecks: Array<[string, () => Promise<boolean>]> = [
-    ["/panel", async () => await optimisticCheckUser("panel")]
+    ["/panel", async () => await NS.optimisticCheckUser("panel")]
 ];
 
 export default async function proxy(req: NextRequest) {
@@ -22,7 +22,7 @@ export default async function proxy(req: NextRequest) {
             // User not authorised to view this route
             
             // Check if user has session
-            if (await hasSession()) {
+            if (await NS.hasSession()) {
                 // User has a session, just not permissions
                 // So send the unauthorized page
                 const url = req.nextUrl.clone();  // We keep the original URL in the navbar

@@ -1,6 +1,6 @@
 import "@/app/globals.css";
 import icon from "@/app/icon.png";
-import { hasSession } from "@/lib/auth";
+import { NS } from "@/lib/auth";
 import { UserCircleIcon as UserCircleIconOutline } from "@heroicons/react/24/outline";
 import { UserCircleIcon as UserCircleIconSolid } from "@heroicons/react/24/solid";
 import Image from "next/image";
@@ -41,7 +41,7 @@ export default async function Layout({
                         <div className="flex-1">
                             <div className="relative float-right size-6 text-white hover:text-gray-400">
                                 {  
-                                    (await hasSession()) ? (
+                                    (await NS.hasSession()) ? (
                                         <Link href="/account" >
                                             <UserCircleIconSolid className="size-full" />
                                         </Link>

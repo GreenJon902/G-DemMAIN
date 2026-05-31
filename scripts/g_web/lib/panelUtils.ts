@@ -7,9 +7,11 @@ import fs from "fs/promises";
 import * as path from "node:path";
 import * as z from "zod";
 import { C } from "./environ";
-import { optimisticRequireUser } from "./auth";
+import { NS } from "./auth";
 import { existsSync } from "fs";
 import * as zlib from "zlib";
+
+const optimisticRequireUser = NS.optimisticRequireUser;
 
 // Lists ------------------------------------------------------------------------
 
