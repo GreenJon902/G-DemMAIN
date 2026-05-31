@@ -33,7 +33,7 @@ sudo usermod -aG g_mc jon    # You may need to relog for this to take effect
 ```
 
 7. Setup the environment files.
-Use `npm ci` and `npm run build` in the infra folder.
+Use `npm ci` and `NODE_OPTIONS='--enable-source-maps' npm run build` in the infra folder.
 Create the g_web user.
 ```
 sudo rsync -a .next/standalone/ /var/lib/g_web/next/

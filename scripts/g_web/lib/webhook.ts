@@ -7,7 +7,6 @@ import { existsSync } from "fs";
 import { C } from "./environ";
 
 const WEBHOOKS_FILE = "/opt/infra/scripts/webhooks.py";  // Path to the webhooks python file
-if (!C().DONT_REQUIRE_WEBHOOKS_FILE && !existsSync(WEBHOOKS_FILE)) throw "Webhooks file does not exist";  // Ensure that it exists
 
 /**
  * Send a notifation that the given user has logged into the website.
@@ -22,6 +21,7 @@ export function sendWebloginWebhook(name: string) {
  * Note this will not wait for the webhook to finish.
  */
 function executeCommand(...args: Array<string>) {
+    if (!C().DONT_REQUIRE_WEBHOOKS_FILE && !existsSync(WEBHOOKS_FILE)) throw "Webhooks file does not exist";  // Ensure that it exists
     const proc = spawn("python3", [WEBHOOKS_FILE, ...args]);
 
     proc.stdout.on("data", (data) => console.log(`WEBHOOKS-STDOUT: ${data}`));
