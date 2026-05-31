@@ -4,6 +4,9 @@ MINECRAFT_PORT
 MINECRAFT_RCON_PORT
 # The port we open internally for management via RCON.
 
+MINECRAFT_RCON_PASSWORD
+# The password used to authenticate with RCON.
+
 MINECRAFT_LOG_PATH
 # The path to the folder where minecraft logs are stored.
 
