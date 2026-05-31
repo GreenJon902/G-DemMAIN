@@ -13,8 +13,10 @@ const generate = () => {
     const PANEL_USER = zod.string().trim().parse(process.env.PANEL_USER).split(",");
     const PANEL_PASSWORD = zod.array(zod.string()).length(PANEL_USER.length).parse(zod.string().trim().parse(process.env.PANEL_PASSWORD).split(","));
 
+    const DONT_REQUIRE_WEBHOOKS_FILE = zod.coerce.boolean().default(false).parse(process.env.DONT_REQUIRE_WEBHOOKS_FILE);
+
     return {
-        MCCWSS_PORT, SESSION_PASSWORD, PANEL_USER, PANEL_PASSWORD
+        MCCWSS_PORT, SESSION_PASSWORD, PANEL_USER, PANEL_PASSWORD, DONT_REQUIRE_WEBHOOKS_FILE
     };
 };
 

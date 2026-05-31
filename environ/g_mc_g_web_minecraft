@@ -7,9 +7,4 @@ MINECRAFT_RCON_PORT
 MINECRAFT_LOG_PATH
 # The path to the folder where minecraft logs are stored.
 
-MINECRAFT_MS_PORT
-# The port that the management server is opened on.
-
-MINECRAFT_MS_SECRET
-# The secret that the management server uses to authenticate you.
 

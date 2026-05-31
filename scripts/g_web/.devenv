@@ -2,3 +2,4 @@ SESSION_PASSWORD=testingtestingtestingtestingtestingtestingtestingtestingtesting
 MCCWSS_PORT=8001
 PANEL_USER=green,jon
 PANEL_PASSWORD=bar,baz
+DONT_REQUIRE_WEBHOOKS_FILE=true
