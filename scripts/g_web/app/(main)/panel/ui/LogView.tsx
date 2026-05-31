@@ -10,6 +10,8 @@ export default function LogView({
     className?: string,
     lineNoStart?: number,
 }) {
+    const maxLen = Math.max(String(lineNoStart).length, String(lineNoStart + lines.length).length);  // Max length of the line number
+
     return (
         <div className={`rounded-md bg-gray-950 p-1 ${className}`}>
             <pre className="text-wrap break-all">
@@ -19,7 +21,7 @@ export default function LogView({
                         className="block"
                     >
                         <span className="text-gray-700">
-                            {String(lineNoStart + i).padStart(String(a.length).length)}.
+                            {String(lineNoStart + i).padStart(maxLen)}.
                         </span>
                         &nbsp;
                         {line}
