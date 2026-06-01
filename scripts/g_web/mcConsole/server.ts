@@ -10,13 +10,14 @@ wss.on("connection", async (ws: WebSocket, req: Request) => {
 
     // Check cookies:
     const sa = new SessionAccessor(req, new Response());
-    if (!sa.optimisticCheckUser("panel")) {
+    if (!await sa.optimisticCheckUser("panel")) {
         console.log("WSS: 'User does not have permissions'");
         ws.send("You do not have permission to access the console!");
         ws.close();
         return;
     }
     
+    console.log(1);
     const username = (await sa.getUserData()).username;
     console.log(`WSS: 'Authenticated with name "${username}"'`);
 

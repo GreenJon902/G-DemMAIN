@@ -32,7 +32,18 @@ sudo chmod 2775 /var/lib/g_mc
 sudo usermod -aG g_mc jon    # You may need to relog for this to take effect
 ```
 
-7. Setup the environment files.
+7. Setup the environment and config files.
+```
+cd /opt/infra/environ
+sudo python3 ../utils/sync-environ.py
+cd /opt/infra/static-config
+sudo python3 ../utils/sync-static-config.py
+```
+
+8. Build the website
+```
+cd /opt/infra/scripts/g_web
+```
 Use `npm ci` and `NODE_OPTIONS='--enable-source-maps' npm run build` in the infra folder.
 Create the g_web user.
 ```
