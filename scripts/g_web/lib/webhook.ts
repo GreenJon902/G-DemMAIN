@@ -17,6 +17,15 @@ export function sendWebloginWebhook(name: string) {
 }
 
 /**
+ * Send a notifation that the given user has exectued a given command.
+ * The given command should not have the prefix (/).
+ * Note this will not wait for the webhook to finish.
+ */
+export function sendWebcommandWebhook(name: string, command: string) {
+    executeCommand("webcommand", name, command);
+}
+
+/**
  * Actually execute the webhook and pipe output to console.
  * Note this will not wait for the webhook to finish.
  */

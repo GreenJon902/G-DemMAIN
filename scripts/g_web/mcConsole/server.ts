@@ -2,6 +2,7 @@ import WebSocket, { WebSocketServer } from "ws";
 import { C } from "@/lib/environ";
 import { SessionAccessor } from "@/lib/auth";
 import Rcon from "ts-rcon";
+import { sendWebcommandWebhook } from "@/lib/webhook";
 
 // Create the WebSocketServer - the server that the client/browser connects to.
 const wss = new WebSocketServer({ port: C().MCCWSS_PORT });  // TODO: Use HTTPS
@@ -27,6 +28,7 @@ wss.on("connection", async (ws: WebSocket, req: Request) => {
     ws.on("message", (data: Buffer) => {
         const string = data.toString();  
         console.log(`WS[${username}]: Message<`, string, ">");
+        sendWebcommandWebhook(username, string);
         ws.send("/" + string);  // Send the command to the client so they can see what they sent
         mcrcon.send(string);
     });

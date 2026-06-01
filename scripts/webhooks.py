@@ -36,14 +36,27 @@ def generate_status(name, service_name, status, service_result, exit_code, exit_
                 }]
     }
 
+WEBCOLOR = 4363765
 def generate_weblogin(name):
     # Generate the json for a message about someone logging into the website.
     # Name should be the username of the user.
-    
     return {
             "username": "G-DemMAIN - G-Web",
             "embeds": [{
-                "title": f"'{name}' logged in"
+                "title": f"'{name}' logged in",
+                "color": WEBCOLOR
+                }]
+    }
+def generate_webcommand(name, command):
+    # Generate the json for a message about someone sending a minecraft command from the panel-console.
+    # Name should be the username of the user who sent the command.
+    # Command should be the command that was sent, this should not start with a slash.
+    return {
+            "username": "G-DemMAIN - G-Web",
+            "embeds": [{
+                "title": f"'{name}' sent a command",
+                "description": f"`/{command}`",  # TODO: Escape this
+                "color": WEBCOLOR
                 }]
     }
 
@@ -68,7 +81,8 @@ def _get_webhook(name):
     return hook_url
 webhook_getters = {
     "STATUS": lambda: _get_webhook("STATUS_WEBHOOK"),
-    "WEBLOGIN": lambda: _get_webhook("WEBLOGIN_WEBHOOK")
+    "WEBLOGIN": lambda: _get_webhook("WEBLOGIN_WEBHOOK"),
+    "WEBCOMMAND": lambda: _get_webhook("WEBCOMMAND_WEBHOOK")
 }
 
 # Parse arguments
@@ -80,6 +94,9 @@ status_parser.add_argument("service", help="The name of the service this update 
 status_parser.add_argument("status", choices=["starting", "stopped", "crashed"], help="What actually happened")
 weblogin_parser = subparsers.add_parser("weblogin", help="Send a notification that someone logged into the website")
 weblogin_parser.add_argument("name", help="The username of the user that logged in")
+webcommand_parser = subparsers.add_parser("webcommand", help="Send a notification that on the panel sent a command")
+webcommand_parser.add_argument("name", help="The username of the user that sent the command")
+webcommand_parser.add_argument("command", help="The command that was sent, without the prefix (/)")
 test_parser = subparsers.add_parser("test", help="Test that the webhooks are working")
 args = parser.parse_args()
 
@@ -102,6 +119,12 @@ elif args.action == "weblogin":
     name = args.name
     # Send webhook
     send(webhook_getters["WEBLOGIN"](), generate_weblogin(name))
+elif args.action == "webcommand":
+    # Extract args
+    name = args.name
+    command = args.command
+    # Send webhook
+    send(webhook_getters["WEBCOMMAND"](), generate_webcommand(name, command))
 
 elif args.action == "test":
     # Just try and call all webhooks
