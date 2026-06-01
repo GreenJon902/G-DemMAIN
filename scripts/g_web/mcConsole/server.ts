@@ -3,7 +3,7 @@ import { C } from "@/lib/environ";
 import { SessionAccessor } from "@/lib/auth";
 import Rcon from "ts-rcon";
 
- // Create the WebSocketServer - the server that the client/browser connects to.
+// Create the WebSocketServer - the server that the client/browser connects to.
 const wss = new WebSocketServer({ port: C().MCCWSS_PORT });  // TODO: Use HTTPS
 wss.on("connection", async (ws: WebSocket, req: Request) => {
     console.log("WSS: Connection");
@@ -26,29 +26,29 @@ wss.on("connection", async (ws: WebSocket, req: Request) => {
     ws.on("error", console.error);
     ws.on("message", (data: Buffer) => {
         const string = data.toString();  
-        console.log(`WS[${username}]: Message<`, string, `>`);
+        console.log(`WS[${username}]: Message<`, string, ">");
         ws.send("/" + string);  // Send the command to the client so they can see what they sent
         mcrcon.send(string);
     });
     ws.on("close", () => {
-        console.log(`WS[${username}]: Close`)
+        console.log(`WS[${username}]: Close`);
         mcrcon.disconnect();
     });
     // MCRCON bindings:
     mcrcon.on("auth", () => {
         console.info(`MCRCON[${username}]: Auth`);
-        ws.send("Succesfully authenticated!")
-    }).on("server", (str: String) => {
-        console.info(`MCRCON[${username}]: Server<`, str, `>`);
+        ws.send("Succesfully authenticated!");
+    }).on("server", (str: string) => {
+        console.info(`MCRCON[${username}]: Server<`, str, ">");
         ws.send(str);
-    }).on("response", (str: String) => {
-        console.info(`MCRCON[${username}]: Response<`, str, `>`);
+    }).on("response", (str: string) => {
+        console.info(`MCRCON[${username}]: Response<`, str, ">");
         ws.send(str);
     }).on("end", () => {
         console.info(`MCRCON[${username}]: End`);
         ws.close();
     }).on("error", (err: Error) => {
-        console.info(`MCRCON[${username}]: Error<`, err, `>`);
+        console.info(`MCRCON[${username}]: Error<`, err, ">");
         ws.send("An error occured: " + err);
     });
     // Do MCRCON connection:

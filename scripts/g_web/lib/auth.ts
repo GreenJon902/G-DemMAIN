@@ -44,8 +44,9 @@ export class SessionAccessor {
 
         // Fix a weird js thing
         Object.getOwnPropertyNames(SessionAccessor.prototype).forEach((key) => {
-            if (key !== 'constructor') {
-                this[key] = this[key].bind(this);
+            if (key !== "constructor") {
+                const this_ = this as unknown as { [name: string]: () => void };  // Fix typescript
+                this_[key] = this_[key].bind(this);
             }
         });
     }

@@ -15,7 +15,7 @@ export default function LogView({
     return (
         <div className={`rounded-md bg-gray-950 p-1 ${className}`}>
             <pre className="text-wrap break-all">
-                {lines.map((line, i, a) => (
+                {lines.map((line, i) => (
                     <span 
                         key={i}
                         className="block"

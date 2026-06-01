@@ -33,3 +33,11 @@ export default function LabelSinceLastRefresh({
         </span>
     );
 }
+
+/**
+ * A LabelSinceLastRefresh that takes the start timestamp as the time of creation.
+ */
+export function AutoLabelSinceLastRefresh() {
+    const [timestamp] = useState(() => Date.now());
+    return <LabelSinceLastRefresh timestamp={timestamp} />;
+}

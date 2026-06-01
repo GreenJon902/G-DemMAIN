@@ -2,7 +2,7 @@ import { loadLogContent } from "@/lib/panelUtils";
 import { notFound } from "next/navigation";
 import PanelPageSection from "../../ui/PanelPageSection";
 import Link from "next/link";
-import LabelSinceLastRefresh from "@/app/(main)/ui/LabelSinceLastRefresh";
+import { AutoLabelSinceLastRefresh } from "@/app/(main)/ui/LabelSinceLastRefresh";
 import LogView from "../../ui/LogView";
 
 export default async function Page({
@@ -30,7 +30,7 @@ export default async function Page({
                     className="min-w-150"
                 />
             </PanelPageSection>
-            <LabelSinceLastRefresh timestamp={Date.now()} />
+            <AutoLabelSinceLastRefresh />
         </>
     );
 }

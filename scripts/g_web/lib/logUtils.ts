@@ -12,8 +12,8 @@ export function compactOutput({
     stream = console.log
 }: {
     message?: string
-    obj: any,
-    stream?: (...stuff: Array<any>) => void
+    obj: unknown,
+    stream?: (...stuff: Array<unknown>) => void
 }) {
     const inspected = inspect(obj, { depth: null, compact: true, breakLength: Infinity })
         .replaceAll(/\s*\n\s*/g, "");  // Remove newlines (and starting whitespace)
@@ -29,7 +29,7 @@ export function patchConsole() {
     const oldLog = console.log;
     const oldWarn = console.warn;
     const oldError = console.error;
-    console.log = (...args: Array<any>) => oldLog("INFO:", ...args);
-    console.warn = (...args: Array<any>) => oldWarn("WARN:", ...args);
-    console.error = (...args: Array<any>) => oldError("ERRO:", ...args);
+    console.log = (...args: Array<unknown>) => oldLog("INFO:", ...args);
+    console.warn = (...args: Array<unknown>) => oldWarn("WARN:", ...args);
+    console.error = (...args: Array<unknown>) => oldError("ERRO:", ...args);
 }
