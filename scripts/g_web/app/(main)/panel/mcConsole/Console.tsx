@@ -20,14 +20,14 @@ export default function Console({ mccwss_port }: { mccwss_port: number }) {
         // NOTE: In development mode, this may try and connect twice
 
         // eslint-disable-next-line react-hooks/set-state-in-effect
-        pushConsoleContent("META: Connecting...");
+        pushConsoleContent("INFO: Connecting...");
         const socket = new WebSocket(`ws://${window.location.hostname}:${mccwss_port}`);  // TODO: Use the correct url
         socketRef.current = socket;
 
         // Append to the array in a way that makes react update
         socket.addEventListener("open", (event) => {
             console.log("OPEN:", event);
-            pushConsoleContent("META: Connected!");
+            pushConsoleContent("INFO: Connected!");
         });
         socket.addEventListener("message", (event) => {
             console.log("MESSAGE:", event);
@@ -35,11 +35,11 @@ export default function Console({ mccwss_port }: { mccwss_port: number }) {
         });
         socket.addEventListener("error", (event) => {
             console.log("ERROR:", event);
-            pushConsoleContent("META: An error occured!");
+            pushConsoleContent("INFO: An error occured!");
         });
         socket.addEventListener("close", (event) => {
             console.log("CLOSE:", event);
-            pushConsoleContent("META: Server closed the connection!");
+            pushConsoleContent("INFO: Server closed the connection!");
         });
 
         return () => socket.close();
