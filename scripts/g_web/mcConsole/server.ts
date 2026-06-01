@@ -17,7 +17,6 @@ wss.on("connection", async (ws: WebSocket, req: Request) => {
         return;
     }
     
-    console.log(1);
     const username = (await sa.getUserData()).username;
     console.log(`WSS: 'Authenticated with name "${username}"'`);
 
