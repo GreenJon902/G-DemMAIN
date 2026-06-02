@@ -2,8 +2,8 @@
 
 # Extract RCON settings from server.properties
 rcon_enabled=$(grep "^enable-rcon=" /var/lib/g_mc/server.properties | cut -d"=" -f2-)
-rcon_port=$RCON_PORT
-rcon_password=$RCON_PASSWORD
+rcon_port=$MINECRAFT_RCON_PORT
+rcon_password=$MINECRAFT_RCON_PASSWORD
 
 # Check if RCON is enabled
 if [[ "$rcon_enabled" != "true" ]]; then
