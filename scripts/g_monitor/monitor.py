@@ -1,8 +1,44 @@
+# This script handles the monitoring of the system. This includes tracking resource usage.
+# This tracks the cgroups specified in /opt/infra/static-config/g_monitor/cgroups. We expect each line to contain the cgroup name (e.g. system.slice/g_mc.service).
+#     You can specify an alternative location for the config folder by passing it as an arguement.
+# This file has a mainloop, rather than being ran by a systemd timer, as it needs to run frequently and I feel this is more efficient?
+
 import re
+from argparse import ArgumentParser
+import time
+import sys
 import json
 import traceback
 import subprocess
 import os
+
+# Parse arguments
+parser = ArgumentParser(description="See README.md")
+parser.add_argument("configfolder",
+                    nargs   = "?",  # Declare this argument as optional
+                    default = "/opt/infra/static-config/g_monitor",
+                    help    = "The path of the folder that contains the cgroups list, default /opt/infra/static-config/g_monitor")
+parser.add_argument("recordfolder",
+                    nargs   = "?",  # Declare this argument as optional
+                    default = "/var/lib/g_monitor",
+                    help    = "The path of the folder that contains the records created by the program")
+args = parser.parse_args()
+
+# Log run-info
+print("Executing in", os.getcwd())
+print("Ran with args", sys.argv, "which parsed to", args)
+
+# Load cgroups
+CGROUPS = [cg.strip() for cg in open(os.path.join(args.configfolder, "cgroups"), "r").read().split("\n") if not cg.isspace() and cg != ""]
+print("Trackin CGroups:", CGROUPS)
+
+# Load retention rules
+RETENTION_RULES = {
+    (int(vs[0]), None) if len(vs) == 1 else (int(vs[0]), int(vs[1].strip())) for vs in 
+        [cg.strip().split(" ", 1) for cg in open(os.path.join(args.configfolder, "retention"), "r").read().split("\n") if not cg.isspace() and cg != ""]
+}
+print("Retention Rules:", RETENTION_RULES)
+
 
 # Constants ---
 SYS_CPU = "/proc/stat"
@@ -52,6 +88,12 @@ def attempt_build_dict(source: dict[str: callable], *args: list[any]):
             computed_value = None
         output[k] = computed_value
     return output
+
+def get_record_subfolder(interval: int, number: int):
+    """
+    Returns the path of the subfolder for the retention rule with the given argumenets
+    """
+    return os.path.join(args.recordfolder, str(interval) if number is None else f"{interval}_{number}")
 
 # Data extraction functions ---
 def read_sys_cpu():
@@ -174,13 +216,6 @@ def read_cgroup_disk_io(cgroup):
     disk_written = sum([int(match.groupdict()["bytes_written"]) for match in matches])
     return {"read": disk_read, "written": disk_written}
 
-def read_cgroup_net_io(cgroup):
-    """
-    Returns {"sent": int, "recieved": int}
-    "sent" and "recieved" are in bytes, and are aggregated for all external traffic (loopback omitted). 
-    """
-    raise NotImplemented
-
 def read_cgroup_procs(cgroup):
     """
     Returns {[proc_id: int]: str}
@@ -190,22 +225,70 @@ def read_cgroup_procs(cgroup):
     procs = {int(id_): open(os.path.join(PROC_CMD_A, id_, PROC_CMD_B), "r").read().replace("\x00", " ").strip() for id_ in proc_ids if id_ != ""}
     return procs
 
+def read_data():
+    """
+    Reads all the data from the system and CGROUPS and returns it as seriazable object that folows the format defined in the documentation.
+    """
+    return attempt_build_dict({
+        "sys_cpu": read_sys_cpu, 
+        "sys_mem": read_sys_mem,
+        "sys_net_io": read_sys_net_io,
+        "sys_disk_io": read_sys_disk_io,
+        "sys_disk_usage": read_sys_disk_usage,
+        "cgroups": lambda: {
+            cgroup: attempt_build_dict({
+                "cpu": read_cgroup_cpu,
+                "mem": read_cgroup_mem,
+                "disk_io": read_cgroup_disk_io,
+                "procs": read_cgroup_procs
+            }, cgroup)
+            for cgroup in CGROUPS
+        }
+    })
 
-cgroups = ["system.slice/dbus.service", "system.slice/bluetooth.service"]
-print(json.dumps(attempt_build_dict({
-    "sys_cpu": read_sys_cpu, 
-    "sys_mem": read_sys_mem,
-    "sys_net_io": read_sys_net_io,
-    "sys_disk_io": read_sys_disk_io,
-    "sys_disk_usage": read_sys_disk_usage,
-    "cgroups": lambda cgroups=cgroups: {
-        cgroup: attempt_build_dict({
-            "cpu": read_cgroup_cpu,
-            "mem": read_cgroup_mem,
-            "disk_io": read_cgroup_disk_io,
-            "net_io": read_cgroup_net_io,
-            "procs": read_cgroup_procs
-        }, cgroup)
-        for cgroup in cgroups
-    }
-}), indent=2))
+# Mainloop ---
+while True:
+    # Create record subfolders if necessary
+    assert os.path.exists(args.recordfolder), f"Record folder - '{args.recordfolder}' - does not exist"
+    for interval, number in RETENTION_RULES:
+        path = get_record_subfolder(interval, number)
+        if not os.path.exists(path):
+            os.mkdir(path)
+
+    # Sample data
+    data = read_data()
+    current_time = int(time.monotonic())
+    string_data = json.dumps(data)
+
+    # Find subfolders where a new record needs creation, and calculate how long to sleep for
+    needs_new = []  # Paths of subfolders where the new record needs to be put
+    time_of_next_record = None  # The next record that needs to be created
+    for interval, number in RETENTION_RULES:
+        path = get_record_subfolder(interval, number)
+        items = os.listdir(path)
+        newest_time = max([int(item.removesuffix(".json")) for item in items]) if len(items) > 0 else current_time - interval # The time of the most recent record. If no records exist then create one now
+
+        # Does this subfolder need a new record
+        if current_time - newest_time >= interval:
+            needs_new.append(path)
+            newest_time = current_time  # newest record (will so be) is at the current time
+
+        # Calculate when the next record neeeds creation
+        time_of_next_record = min(time_of_next_record, newest_time + interval) if time_of_next_record is not None else newest_time + interval
+
+    # Write the record to the disk
+    for path in needs_new:
+        open(os.path.join(path, f"{current_time}.json"), "w").write(string_data)
+
+    # Remove old records
+    for interval, number in RETENTION_RULES:
+        if number is not None:  # If there is a maximum number of records for this interval
+            path = get_record_subfolder(interval, number)
+            while len(items := os.listdir(path)) > number:
+                oldest = min([int(item.removesuffix(".json")) for item in items])
+                record_path = os.path.join(path, f"{oldest}.json")
+                os.remove(record_path)
+            
+    # Sleep
+    time.sleep(time_of_next_record - time.monotonic())
+
