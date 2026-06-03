@@ -1,0 +1,36 @@
+[Unit]
+Description=Monitoring of G-DemMAIN 
+
+# Limit to 2 restarts (in a 5m period), after that mark as failed
+StartLimitIntervalSec=5m  
+StartLimitBurst=2
+
+# Status logging
+# We need to do it like this as OnFailure cannot run bash
+OnFailure=g_service_failed@Monitor-g_monitor.service
+
+[Service]
+User=g_monitor
+Group=g_monitor
+WorkingDirectory=/var/lib/g_monitor
+ExecStart=python3 /opt/infra/scripts/g_monitor/monitor.py  
+
+# Get environment variables (we need this to get the github web url)
+EnvironmentFile=/etc/g-demmain/common.env
+
+# Status logging
+ExecStartPost=/bin/python3 /opt/infra/scripts/webhooks.py status Monitor g_monitor starting
+ExecStopPost=/bin/python3 /opt/infra/scripts/webhooks.py status Monitor g_monitor stopped
+
+# Restart only when it crashes, not on /stop
+Restart=on-failure
+RestartSec=10
+
+# Any files created will be read/writable by the user g_monitor and the group g_monitor
+UMask=0002
+
+# Allow monitoring of disk read/write
+IOAccounting=yes 
+
+[Install]
+WantedBy=multi-user.target
