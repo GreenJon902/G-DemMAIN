@@ -7,6 +7,9 @@ Restart=no
 # No user specified so this runs as root, hence we have access to systemctl
 # TODO: Restart g_web too (in a way that makes sense)
 ExecStart=systemctl try-restart g_mc
- 
+
+# Allow monitoring of disk read/write
+IOAccounting=yes 
+
 [Install]
 WantedBy=multi-user.target

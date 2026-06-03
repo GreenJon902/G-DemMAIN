@@ -37,5 +37,8 @@ PrivateTmp=true
 # Blocks write access to certain folders
 ProtectSystem=full 
 
+# Allow monitoring of disk read/write
+IOAccounting=yes
+
 [Install]
 WantedBy=multi-user.target
