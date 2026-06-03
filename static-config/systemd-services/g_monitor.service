@@ -18,6 +18,9 @@ ExecStart=python3 /opt/infra/scripts/g_monitor/monitor.py
 # Get environment variables (we need this to get the github web url)
 EnvironmentFile=/etc/g-demmain/common.env
 
+# Disable print buffering
+Environment=PYTHONUNBUFFERED=1
+
 # Status logging
 ExecStartPost=/bin/python3 /opt/infra/scripts/webhooks.py status Monitor g_monitor starting
 ExecStopPost=/bin/python3 /opt/infra/scripts/webhooks.py status Monitor g_monitor stopped
