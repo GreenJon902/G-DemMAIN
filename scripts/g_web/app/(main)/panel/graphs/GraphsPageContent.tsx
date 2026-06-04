@@ -19,7 +19,7 @@ export default function GraphPageContent({
                         what="System"
                     />
                     <MultiCPUGraph
-                        data={gd.map(d => ({ time: d.time, cpus: d.sys_cpu?.ind }))}
+                        data={gd.map(d => ({ time: d.time, cpus: d.sys_cpu?.ind as unknown as { [ cpuno: string ]: number } }))}
                     />
                     <TransferGraph
                         data={gd.map(d => ({ time: d.time, in: d.sys_net_io?.agg.recieved, out: d.sys_net_io?.agg.sent }))}

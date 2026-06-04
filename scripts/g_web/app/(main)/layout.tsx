@@ -6,7 +6,7 @@ import { UserCircleIcon as UserCircleIconSolid } from "@heroicons/react/24/solid
 import Image from "next/image";
 import Link from "next/link";
 
-export const dynamic = 'force-dynamic';  // TODO: Find a better fix this
+export const dynamic = "force-dynamic";  // TODO: Find a better fix this
 
 export default async function Layout({
     children

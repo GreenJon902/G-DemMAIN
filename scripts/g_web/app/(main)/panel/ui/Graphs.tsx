@@ -54,7 +54,7 @@ export function MultiCPUGraph({
             lines={[
                 ...(prepped) ? 
                     keys.map((k, i) => ({ data: prepped?.props[k], color: LINE_COLORS[i], label: `CPU ${k}` }))
-                : [],
+                    : []
             ]}
             xTicks={{ bottom: prepped?.xTicks }}  // cpuRet's xTicks should be the same as memRet's xTicks
             yTicks={{ left: prepped?.yTicks }}
@@ -125,8 +125,8 @@ function prepareData(data: Array<{ time: number, [ k: string]: number | undefine
     
     // If no maximum given then calculate it to be the highest value we have seen.
     if (max === undefined) {
-         max = Math.max(...props.map(prop => Math.max(...data.filter(d => d[prop]).map(d => d[prop]!))));
-         if (max < 0) return null;  // Failed to calculate maximum (-Infinity is if no valid data)
+        max = Math.max(...props.map(prop => Math.max(...data.filter(d => d[prop]).map(d => d[prop]!))));
+        if (max < 0) return null;  // Failed to calculate maximum (-Infinity is if no valid data)
     }
     
     return {
@@ -140,10 +140,10 @@ function prepareData(data: Array<{ time: number, [ k: string]: number | undefine
                     x: 1 + d.time / timespan,  // Normalise value
                     y: d[prop]! / max  // Normalise values
                 }))
-            ]
+            ];
         })),
         yTicks: [0.25, 0.5, 0.75].map(n => 
-                                     (percentage ? `${n * 100}%` : "") +
+            (percentage ? `${n * 100}%` : "") +
                                      (percentage && units ? " - " : "") + 
                                      (units ? `${(max * tickMultiplier * n).toFixed(2)}${units}` : "")),
         xTicks: [-0.75, -0.5, -0.25].map(n => `${(n * timespan / 60).toFixed(2)}m`)

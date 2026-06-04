@@ -198,7 +198,7 @@ type diskIO = z.infer<typeof zDiskIO>;
 const zMem = z.strictObject({
     used: zNatural,  // Kilobytes
     total: zNatural
-})
+});
 const zCoercedMap = <T extends z.ZodTypeAny> (zValue: T) => z.record(z.string().nonempty(), zValue).transform(obj => new Map(Object.entries(obj)));
 const MonitorRecord = z.strictObject({
     sys_cpu: z.strictObject({
@@ -264,10 +264,10 @@ export async function loadMonitorRecords(interval: number, number: number) {
     type cnaiType <K, V> =  { agg: V, ind: Map<K, V> } | null; 
     const convNullAggInd: <K, V, Z> (last: cnaiType<K, V>, current: cnaiType<K, V>, conv: (l: V, c: V) => Z) => cnaiType<K, Z>  = 
         (last, current, conv) => (last === null || current === null) ? null : 
-        {
-            agg: conv(last.agg, current.agg),
-            ind: convMap(last.ind, current.ind, conv)
-        }
+            {
+                agg: conv(last.agg, current.agg),
+                ind: convMap(last.ind, current.ind, conv)
+            };
     const graphData = records.slice(1).map((_, j) => {
         const i = j+1;
         const last = records[i-1].data;
@@ -286,7 +286,7 @@ export async function loadMonitorRecords(interval: number, number: number) {
                 disk_io: (l.disk_io === null || c.disk_io === null) ? null : diskIOToSpeed(l.disk_io, c.disk_io, dt),
                 procs: c.procs  // PID maps to terminal command that started it
             }))!
-        }
+        };
     });
     return {timestamp: Date.now(), data: graphData};
 }
