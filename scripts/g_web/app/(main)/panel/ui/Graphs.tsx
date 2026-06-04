@@ -2,156 +2,151 @@
  * This file contains different graph presets/templates that are used frequently.
  */
 
-import { LINE_COLORS, LINE_CYAN, LINE_FUCHSIA, LINE_GRAY, LINE_LIME, LINE_ROSE, LINE_VIOLET, NLineGraph, PointAndFillGraph } from "./Graph";
-import { GraphDataGroup } from "../actions";
-
-export const MinecraftTpsHeapGraph = ({ 
-    data: { tps, mem }, allocated, timeSpan
-}: { 
-    data: { tps: number[], mem: number[] },
-    allocated: number,
-    timeSpan: number
-}) => {
-    const scaledTps = scaleData("TPS", 20, tps, false);
-    const scaledMem = scaleData("GB", allocated, mem, true);
-    return (
-        <PointAndFillGraph 
-            pointData={scaledTps.data} pointLabel="Minecraft TPS" pointColor={LINE_LIME}
-            fillData={scaledMem.data} fillLabel="Minecraft Heap" fillColor={LINE_GRAY}
-            xTicks={{ bottom: makeXTicks(timeSpan) }}
-            yTicks={{ left: scaledTps.ticks, right: scaledMem.ticks }}
-            containerClassName="min-w-50 flex-1" graphClassName="h-50"
-        />
-    );
-};
+import { Graph, LINE_COLORS, LINE_CYAN, LINE_FUCHSIA, LINE_GRAY, LINE_LIME, LINE_ROSE, LINE_VIOLET } from "./Graph";
 
 /**
- * @param data - The data to plot, this can optionally have multiple CPUs.
- * @param totMem - The total memory installed on the system.
+ * @param data - The data to plot. If a value is not given, then it will be ignored.
+ * @param totMem - The total memory installed on the system, if this is undefined then no memory line will be drawn.
  * @param what - What is the name of this, e.g. "sys" or "g_mc".
- * @param timeSpan - The time from the first to last datapoint.
  */
-export const CpuRamGraph = ({
-    data: { cpu, mem }, totMem, what, timeSpan
+export function CpuRamGraph({
+    data, totMem, what
 }: { 
-    data: { cpu: number[], mem: number[] },
-    totMem: number,
+    data: Array<{ time: number, cpu: number | undefined, mem: number | undefined }>,
+    totMem: number | null,
     what: string,
-    timeSpan: number
-}) => {
-    const scaledMem = scaleData("GB", totMem, mem, true);
+}) {
+    const cpuRet = prepareData(data, 1, true, undefined, 1, "cpu");
+    const memRet = prepareData(data, totMem, true, "GB", 1024**-2, "mem");
     return (
-        <PointAndFillGraph 
-            pointData={cpu} 
-            pointLabel={`${what} CPU`} 
-            pointColor={LINE_CYAN}
-            fillData={scaledMem.data} 
-            fillLabel={`${what} RAM`} 
-            fillColor={LINE_GRAY}
-            xTicks={{ bottom: makeXTicks(timeSpan) }}
-            yTicks={{ left: ["25%", "50%", "75%"], right: scaledMem.ticks }}  
+        <Graph 
+            lines={[
+                ...(cpuRet) ? [{ data: cpuRet?.props.cpu, color: LINE_CYAN, label: `${what} CPU`, points: true}] : [],
+                ...(memRet) ? [{ data: memRet?.props.mem, color: LINE_GRAY, label: `${what} RAM`, underFill: true}] : []
+            ]}
+            xTicks={{ bottom: cpuRet?.xTicks }}  // cpuRet's xTicks should be the same as memRet's xTicks
+            yTicks={{ left: cpuRet?.yTicks , right: memRet?.yTicks }}
             containerClassName="min-w-50 flex-1" 
             graphClassName="h-50"
         />
     );
-};
-
-/**
- * @param data - The data to plot, this can optionally have multiple CPUs.
- * @param totMem - The total memory installed on the system.
- * @param what - What is the name of this, e.g. "sys" or "g_mc".
- * @param timeSpan - The time from the first to last datapoint.
- */
-export const GraphDataGroupGraph = ({
-    data, totMem, what, timeSpan
-}: {
-    data: GraphDataGroup & {
-        cpus?: number[][]
-    },
-    totMem: number,
-    what: string, 
-    timeSpan: number
-}) => {
-    const normalizedNetwork = normalizeDatas("MB/s", data.network["up"], data.network["down"]);
-    const normalizedDisk = normalizeDatas("MB/s", data.disk["read"], data.disk["write"]);
-    return (
-        <>
-            {/* CPU and Memory */}
-            <CpuRamGraph
-                data={data}
-                totMem={totMem}
-                what={what}
-                timeSpan={timeSpan}
-            />
-            {/* Extra CPU data (if given) */}
-            {data.cpus && (
-                <NLineGraph
-                    datas={data.cpus}
-                    colors={LINE_COLORS.slice(0, data.cpus.length)}
-                    labels={data.cpus.map((_,i) => `CPU ${i}`)}
-                    underFill={false}
-                    xTicks={{ bottom: makeXTicks(timeSpan) }}yTicks={{ left: ["25%", "50%", "75%"] }}
-                    containerClassName="min-w-50 flex-1" 
-                    graphClassName="h-50"
-                />
-            )}
-            {/* Network up and down */}
-            <NLineGraph 
-                datas={normalizedNetwork.datas}
-                colors={[LINE_CYAN, LINE_FUCHSIA]}
-                labels={[`${what} Network Up`, `${what} Network Down`]}
-                underFill={true}
-                xTicks={{ bottom: makeXTicks(timeSpan) }}yTicks={{ left: normalizedNetwork.ticks }}
-                containerClassName="min-w-50 flex-1" 
-                graphClassName="h-50"
-            />
-            {/* Disk read and write*/}
-            <NLineGraph 
-                datas={normalizedDisk.datas}
-                colors={[LINE_VIOLET, LINE_ROSE]}
-                labels={[`${what} Disk Reads`, `${what} Disk Writes`]}
-                underFill={true}
-                xTicks={{ bottom: makeXTicks(timeSpan) }}yTicks={{ left: normalizedDisk.ticks }}
-                containerClassName="min-w-50 flex-1" 
-                graphClassName="h-50"
-            />
-        </>
-    );
-};
-
-
-/**
- * Scales data to be in the interval [0,1]. This also returns labels that can be put on the y-axis. This is as the actual Graph component requires data in this range.
- * This expects the data to be in the range [0,inf).
- * If every data-piece is 0 then the we set the upper edge of the graph to 1.
- * @param datas - The datas that should fit within the axis.
- * @param units - The units to append after the axis ticks.
- */
-function normalizeDatas(units: string, ...datas: number[][]) {
-    const max = Math.max(1, ...datas.map(data => Math.max(...data)));
-    const labels = [0.25, 0.5, 0.75].map(n => `${(n*max).toFixed(2)}` + units);
-    const normalized = datas.map(data => data.map(n => n / max));
-    return { datas: normalized, ticks: labels };
 }
 
 /**
- * Scale the given data [0,max] to be in the range [0,1].
- * This also returns labels which can be put on the y-axis.
- * @param data - The data to be scaled.
- * @param max - The maximum value the given data can reach, and hence the value that becomes 1 when scaled.
- * @param units - The units to append after the axis ticks.
- * @param percentage - Do we include a percentage in the label.
+ * @param data - The data to plot. If a value is not given, then it will be ignored. The CPU key is expected to not contain the text cpu.
  */
-function scaleData(units: string, max: number, data: number[], percentage: boolean) {
+export function MultiCPUGraph({
+    data
+}: { 
+    data: Array<{ time: number, cpus: { [cpuno: string]: number } | undefined }>,
+}) {
+
+    console.log(data[0].cpus);
+    const flattened = data.map(d => ({
+        time: d.time,
+        ...(d.cpus) ? d.cpus : {}
+    }));
+    const keys = (data[0].cpus) ? Object.keys(data[0].cpus) : [];
+    const prepped = prepareData(flattened, 1, true, undefined, 1, ...keys);
+
+    return (
+        <Graph 
+            lines={[
+                ...(prepped) ? 
+                    keys.map((k, i) => ({ data: prepped?.props[k], color: LINE_COLORS[i], label: `CPU ${k}` }))
+                : [],
+            ]}
+            xTicks={{ bottom: prepped?.xTicks }}  // cpuRet's xTicks should be the same as memRet's xTicks
+            yTicks={{ left: prepped?.yTicks }}
+            containerClassName="min-w-50 flex-1" 
+            graphClassName="h-50"
+        />
+    );
+}
+
+/**
+ * @param data - The data to plot. 'in' is coming towards the cpu (network recieved, disk read), 'out' is away (sent, written).
+ * @param inDisplayName - What is the name of incoming data (e.g. "read"). This is rendered to the user.
+ * @param units - The units of the data (after scaling, see multiplier).
+ * @param multiplier - How much to scale the data by before displaying it to the user.
+ * @param colorScheme - 0 for cyan and fuchsia, 1 for violet and rose
+ */
+export function TransferGraph({
+    data, inDisplayName, outDisplayName, units, multiplier, colorScheme
+}: {
+    data: Array<{ time: number, in: number | undefined, out: number | undefined }>,
+    inDisplayName: string,
+    outDisplayName: string,
+    units: string,
+    multiplier: number,
+    colorScheme: 0 | 1
+}) {
+    const prep = prepareData(data, undefined, false, units, multiplier, "in", "out");
+    const in_ = prep?.props.in;
+    const out = prep?.props.out;
+    return (
+        <Graph 
+            lines={[
+                ...(prep) ? [{ data: in_!, color: colorScheme ? LINE_FUCHSIA : LINE_ROSE, label: inDisplayName, underFill: true}] : [],
+                ...(prep) ? [{ data: out!, color: colorScheme ? LINE_CYAN : LINE_VIOLET, label: outDisplayName, underFill: true}] : []
+            ]}
+            xTicks={{ bottom: prep?.xTicks }}  // TODO: These properly
+            yTicks={{ left: prep?.yTicks }}
+            containerClassName="min-w-50 flex-1" 
+            graphClassName="h-50"
+        />
+    );
+
+}
+
+/**
+ * The given props must exist in the data.
+ * This expects the time to be in the range (-inf,0].
+ * Returns {
+ *     data: Array<{ 
+ *          time: in range [0, 1],
+ *          value: in range [0, 1]
+ *     >],
+ *     yTicks: an array of strings from bottom to top,
+ *     xTicks: an array of string from left to right
+ * } or null
+ *
+ * @param max - Optional maximum value. If this is given then it will be used, if this is null then null will be returned, if this is undefined then we will attempt to calculate a maximum value.
+ * @param props - The properties in the data object that we are preparing.
+ * @param percentage - Should axis ticks contain a percentage.
+ * @param units - The units of the axis ticks, or undefined to not render absolute values.
+ * @param tickMultiplier - The multiplier to scale values by so they fit the ticks.
+ */
+function prepareData(data: Array<{ time: number, [ k: string]: number | undefined }>, max: number | null | undefined, percentage: boolean, units: string | undefined, tickMultiplier: number, ...props: string[]) {
+    // Check if return
+    if (max === null) return null;  // We wanted to supply a maximum, but there is missing data in the data source
+    // Calculate timespan
+    const timespan = -Math.min(...data.map(d => d.time).filter(x => x !== undefined));  // Remember times are negative. Also calculate before filting data as other data on the graph may be defined at different points
+    
+    // If no maximum given then calculate it to be the highest value we have seen.
+    if (max === undefined) {
+         max = Math.max(...props.map(prop => Math.max(...data.filter(d => d[prop]).map(d => d[prop]!))));
+         if (max < 0) return null;  // Failed to calculate maximum (-Infinity is if no valid data)
+    }
+    
     return {
-        data: data.map(n => n / max),
-        ticks: [0.25, 0.5, 0.75].map(n => (percentage ? `${n * 100}% - ` : "") + `${(max * n).toFixed(2)}${units}`)
+        props: Object.fromEntries(props.map(prop => {
+            // Remove missing datapoints
+            data = data.filter(d => d[prop] !== undefined);
+            // Normalise and return
+            return [
+                prop, 
+                data.map(d => ({
+                    x: 1 + d.time / timespan,  // Normalise value
+                    y: d[prop]! / max  // Normalise values
+                }))
+            ]
+        })),
+        yTicks: [0.25, 0.5, 0.75].map(n => 
+                                     (percentage ? `${n * 100}%` : "") +
+                                     (percentage && units ? " - " : "") + 
+                                     (units ? `${(max * tickMultiplier * n).toFixed(2)}${units}` : "")),
+        xTicks: [-0.75, -0.5, -0.25].map(n => `${(n * timespan / 60).toFixed(2)}m`)
     };
 }
 
-/**
- * Make the x-tick labels given that the data on the graph spans from [-timeSpan, 0].
- */
-function makeXTicks(timeSpan: number) {
-    return [-0.75, -0.5, -0.25].map(n => `${n * timeSpan / 60}m`);
-}

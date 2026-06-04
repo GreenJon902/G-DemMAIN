@@ -202,9 +202,14 @@ def read_cgroup_cpu(cgroup):
 
 def read_cgroup_mem(cgroup):
     """
-    Returns int - bytes of memory used by the cgroup.    
+    Returns {"total": int, "used": int}.
+    The data is in kB.
+    "total" is the maximum amount of memory that could be used (by this cgroup) when ran on its own. 
     """
-    return int(open(os.path.join(CGROUP_A, cgroup, CGROUP_B_MEM), "r").read())
+    return {
+        "used": int(int(open(os.path.join(CGROUP_A, cgroup, CGROUP_B_MEM), "r").read()) / 1024),  # We round this for consistency with sys_mem
+        "total": read_sys_mem()["total"]  # TODO: Cache this value somehow
+    }
 
 def read_cgroup_disk_io(cgroup):
     """

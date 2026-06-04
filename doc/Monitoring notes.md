@@ -128,12 +128,11 @@ The names of the records themselves are all relative to the same arbitrary point
     "cgroups": {
         [cgroup_name]: {
             "cpu": int | null,           Microseconds, Absolute
-            "mem": int | null,           Bytes
-            "disk_io": {
-                "read": int,             Bytes, Absolute
-                "written": int           Bytes, Absolute
+            "mem": {
+                "total": int,                    Kilobytes
+                "used": int                      Kilobytes
             } | null,
-            "net_io": {
+            "disk_io": {
                 "read": int,             Bytes, Absolute
                 "written": int           Bytes, Absolute
             } | null,

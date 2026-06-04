@@ -22,7 +22,7 @@ And add `jon ALL=(ALL) NOPASSWD: ALL` to the end of `visudo`.
 
 5. `apt install mariadb-server mariadb-client openjdk-25-jdk-headless`
 
-6. Create service user (run all lines that are necessary): 
+6. Create service users (run all lines that are necessary): 
 ```
 sudo groupadd g_mc
 sudo adduser --system --no-create-home -group g_mc
@@ -55,4 +55,20 @@ sudo chown -R g_web:g_web /var/lib/g_web
 
 TODO: Document how permissions work
 So ownership is not important. g\_mc group gives read/write access for jon and g\_mc. We have the setgid bit for all infra and var/lib folders. THen read access everywhere cause who cares. We have umask set to 0002 so that permissions work correctly
+
+
+
+
+
+
+
+
+
+```
+cd /opt/infra/environ/
+sudo python3 ../utils/sync-environ.py
+cd /opt/infra/static-config/
+sudo python3 ../utils/sync-static-config.py
+sudo systemctl daemon-reload
+```
 

@@ -1,10 +1,12 @@
 # Users
 
-| User   | Groups               | Notes                                                           | System user (UID < 1000) |
-|--------|----------------------|-----------------------------------------------------------------|--------------------------|
-| jon    | jon,users,sudo,g_mc  |                                                                 | No                       |
-| root   | root                 | Created by default, do not touch this.                          | Kinda? Has UID=0         |
-| g\_mc  | g\_mc,view_infra     | Should be as locked down as possible as may run arbitrary code. | Yes                      |
+| User       | Groups               | Notes                                                           | System user (UID < 1000) |
+|------------|----------------------|-----------------------------------------------------------------|--------------------------|
+| jon        | jon,users,sudo,g_mc  |                                                                 | No                       |
+| root       | root                 | Created by default, do not touch this.                          | Kinda? Has UID=0         |
+| g\_mc      | g\_mc                | Should be as locked down as possible as may run arbitrary code. | Yes                      |
+| g\_web     | g\_monitor           | Should be as locked down as possible as may run arbitrary code. | Yes                      |
+| g\_monitor | g\_monitor           | Should be as locked down as possible as may run arbitrary code. | Yes                      |
 
 Warning: Try to avoid deleting users. If you must, remove any files that user owns first.
 
@@ -15,9 +17,11 @@ TODO: Remove g\_nightly\_restart from the diagram.
 | Folder | Owner | Group | Permission | Notes |
 |---|---|---|---|---|
 | /var/lib/g\_mc/* | g\_mc | g\_mc | 2775 | The owner may also be jon or root, this is fine. 775 permissions so I can easily modify parts, and that g_web and anything else can read logs and whitelist.json, etc.. SetGID bit so that all files created in there are added to the g\_mc group. |
+| /var/lib/g\_monitor/* | g\_monitor | g\_monitor | 2775 | The owner may also be jon or root, this is fine. 775 permissions so I can easily modify parts, and that g_web and anything else can read logs and whitelist.json, etc.. SetGID bit so that all files created in there are added to the g\_monitor group. |
 able to read these files (as that makes it easier for access elsewhere). |
 | /opt/infra/ | jon | jon | 0755 | Only I should be able to write here. Every user needs read access as (nearly) all the scripts are stored here. |
 | /etc/g-demmain/ | root | root | 0600 | Only root should be able to read or write here, as there are secrets stored here. |
+
 
 TODO: Do we need a view_infra group?
 

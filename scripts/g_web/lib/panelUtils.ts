@@ -176,3 +176,117 @@ export async function tailLatest(n: number) {
     // Return joined content
     return { contents: padded_lines, timestamp: Date.now() };
 }
+
+// Monitor data ----------------------------------------------------------------------------------
+// Define schema for a record:
+const zNatural = z.number().nonnegative().multipleOf(1);  // 0, 1, ...
+const zArbCpu = z.strictObject({ 
+    total: zNatural,  // Arbitrary units, absolute
+    busy: zNatural
+});
+type arbCpu = z.infer<typeof zArbCpu>;
+const zNetIO = z.strictObject({
+    sent: zNatural,  // Bytes, absolute
+    recieved: zNatural
+});    
+type netIO = z.infer<typeof zNetIO>;
+const zDiskIO = z.strictObject({
+    read: zNatural,  // Bytes, absolute
+    written: zNatural
+});
+type diskIO = z.infer<typeof zDiskIO>;
+const zMem = z.strictObject({
+    used: zNatural,  // Kilobytes
+    total: zNatural
+})
+const zCoercedMap = <T extends z.ZodTypeAny> (zValue: T) => z.record(z.string().nonempty(), zValue).transform(obj => new Map(Object.entries(obj)));
+const MonitorRecord = z.strictObject({
+    sys_cpu: z.strictObject({
+        agg: zArbCpu,
+        ind: zCoercedMap(zArbCpu)
+    }).nullable(),
+    sys_mem: zMem.nullable(),
+    sys_net_io: z.strictObject({
+        agg: zNetIO,  // Does not include loopback
+        ind: zCoercedMap(zNetIO)
+    }).nullable(),
+    sys_disk_io: z.strictObject({
+        agg: zDiskIO,
+        ind: zCoercedMap(zDiskIO)
+    }).nullable(),
+    sys_disk_usage: zCoercedMap(z.strictObject({
+        filesystem: z.string().nonempty(),
+        total: zNatural,  // Bytes
+        used: zNatural
+    })).nullable(),
+    cgroups: zCoercedMap(z.strictObject({
+        cpu: zNatural.nullable(),  // Microseconds, absolute,
+        mem: zMem.nullable(),  
+        disk_io: zDiskIO.nullable(),
+        procs: zCoercedMap(z.string()).nullable()  // PID maps to terminal command that started it
+    }))
+});
+export type MonitorRecord = z.infer<typeof MonitorRecord>;
+
+const MONITOR_FOLDER = (process.env.G_MONITOR_FOLDER) ?? "/var/lib/g_monitor";
+
+/**
+ * Load all the records for the given monitor retainment rule.
+ * This expects a subfolder to exist for the given rule.
+ * Returns a sorted array of objects with a timestamp (in seconds) and graphdata at that point. The oldest record is first and has a negative value. The newest record is last and has a positive value.
+ */
+export async function loadMonitorRecords(interval: number, number: number) {
+    // Load data
+    const subfolder = path.join(MONITOR_FOLDER, `${interval}_${number}`); 
+    const recordNames = await fs.readdir(subfolder);
+    const records = await Promise.all(recordNames.map(async record => ({
+        time: parseInt(record),  // This will ignore the .json
+        data: MonitorRecord.parse(JSON.parse(await fs.readFile(path.join(subfolder, record), "utf-8")))
+    })));
+    records.sort(record => record.time);  // Sort based off time
+    const latestTime = Math.max(...records.map(record => record.time));  // The time of the newest record
+
+    // Transform data
+    //     We calculate the differences between records to get the actual rates. Hence we will have one less record after this
+    const arbCpuToUsage = (last: arbCpu, current: arbCpu) => (current.busy - last.busy) / (current.total - last.total);
+    const netIOToSpeed = (last: netIO, current: netIO, dt: number) => ({
+        sent: (current.sent - last.sent) / dt,
+        recieved: (current.recieved - last.recieved) / dt
+    });
+    const diskIOToSpeed = (last: diskIO, current: diskIO, dt: number) => ({
+        written: (current.written - last.written) / dt,
+        read: (current.read - last.read) / dt
+    });
+    // Convert a map field in the records (using last and current) by applying a function to the pairs of values.
+    const convMap: <K, V, Z> (last: Map<K, V>, current: Map<K, V>, conv: (l: V, c: V) => Z) => Map<K, Z> = 
+        (last, current, conv) => Object.fromEntries(last.keys().map(k => [k, conv(last.get(k)!, current.get(k)!)]));
+    // Convert a record field that has both aggregate and independent values. This is safe if last or current are null
+    type cnaiType <K, V> =  { agg: V, ind: Map<K, V> } | null; 
+    const convNullAggInd: <K, V, Z> (last: cnaiType<K, V>, current: cnaiType<K, V>, conv: (l: V, c: V) => Z) => cnaiType<K, Z>  = 
+        (last, current, conv) => (last === null || current === null) ? null : 
+        {
+            agg: conv(last.agg, current.agg),
+            ind: convMap(last.ind, current.ind, conv)
+        }
+    const graphData = records.slice(1).map((_, j) => {
+        const i = j+1;
+        const last = records[i-1].data;
+        const current = records[i].data;
+        const dt = records[i].time - records[i-1].time;
+        return {
+            time: records[i].time - latestTime,  // Normalise times
+            sys_cpu: convNullAggInd(last.sys_cpu, current.sys_cpu, arbCpuToUsage),  // Percentage utilisation
+            sys_mem: current.sys_mem,  // In Kilobytes
+            sys_net_io: convNullAggInd(last.sys_net_io, current.sys_net_io, (l, c) => netIOToSpeed(l, c, dt)),  // Bytes per second
+            sys_disk_io: convNullAggInd(last.sys_disk_io, current.sys_disk_io, (l, c) => diskIOToSpeed(l, c, dt)),  // Bytes per second
+            sys_disk_usage: current.sys_disk_usage,  // Bytes
+            cgroups: convMap(last.cgroups, current.cgroups, (l, c) => ({
+                cpu: (l.cpu === null || c.cpu === null) ? null : (c.cpu - l.cpu) / dt,  // Percentage utilisation
+                mem: c.mem,  // In kilobytes
+                disk_io: (l.disk_io === null || c.disk_io === null) ? null : diskIOToSpeed(l.disk_io, c.disk_io, dt),
+                procs: c.procs  // PID maps to terminal command that started it
+            }))!
+        }
+    });
+    return {timestamp: Date.now(), data: graphData};
+}

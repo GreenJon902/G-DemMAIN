@@ -4,7 +4,7 @@
 
 "use_client";
 
-import { ComponentProps, Fragment, ReactNode } from "react";
+import { Fragment, ReactNode } from "react";
 
 
 // Since we need to specify tailwind colors in full, we will use constants
@@ -18,12 +18,13 @@ export const LINE_ROSE = LineColor("stroke-rose-500", "fill-rose-500", "bg-rose-
 export const LINE_FUCHSIA = LineColor("stroke-fuchsia-500", "fill-fuchsia-500", "bg-fuchsia-500");
 export const LINE_VIOLET = LineColor("stroke-violet-500", "fill-violet-500", "bg-violet-500");
 export const LINE_BLUE = LineColor("stroke-blue-500", "fill-blue-500", "bg-blue-500");
-export const LINE_COLORS = [LINE_ROSE, LINE_FUCHSIA, LINE_VIOLET, LINE_BLUE, LINE_CYAN, LINE_LIME, LINE_GRAY];  
+export const LINE_YELLOW = LineColor("stroke-yellow-500", "fill-yellow-500", "bg-yellow-500");
+export const LINE_COLORS = [LINE_ROSE, LINE_FUCHSIA, LINE_VIOLET, LINE_BLUE, LINE_CYAN, LINE_LIME, LINE_GRAY, LINE_YELLOW];  
 
 
 
 type Line = {
-    data: number[],  // The datapoints to plot. These should be in the interval [0,1], where 0 is the bottom edge and 1 is the maximum on the top edge.
+    data: { x: number, y: number }[],  // The datapoints to plot. These should be in the interval [0,1], where 0 is the bottom/left edge and 1 is the maximum on the top/right edge. We expect these to be sorted with x ascending
     color: LineColor,
     underFill?: boolean,  // Do we fill in an opaque area under the line?
     points?: boolean,  // Do we draw circles on each vertex?
@@ -43,7 +44,7 @@ type Line = {
  * @param xTicks - The labels to put equally spaced on the x-axis. Note that there are no ticks on the edges, so the bounds of the data have no ticks. These should be ordered from left to right.
  * @param yTicks - See {@link xTicks} but for the y-axis. These should be ordered from bottom to top.
  */
-function Graph({
+export function Graph({
     lines, containerClassName="", graphClassName="", xTicks, yTicks
 }: {
     lines: Line[],
@@ -102,7 +103,7 @@ function Graph({
                             >
                                 {line.underFill && (
                                     <polygon 
-                                        points={`0,1 ${line.data.map((n, i) => `${i/(line.data.length-1)},${1 - n}`).join(" ")} 1,1`} 
+                                        points={`0,1 ${line.data.map(({x, y}) => `${x},${1-y}`).join(" ")} 1,1`} 
                                         className={`${line.color.fill} opacity-30`}
                                     />
                                 )}
@@ -117,8 +118,8 @@ function Graph({
                                     key={line.label} 
                                     vectorEffect="non-scaling-stroke"
                                     className={`fill-none ${line.color.stroke} stroke-2`}
-                                    d={`M0 ${1 - line.data[0]} ` +
-                                        line.data.slice(1).map((n, i, a) => `L${(i + 1)/a.length} ${1 - n}`).join(" ")} 
+                                    d={`M${line.data[0].x} ${1 - line.data[0].y} ` +
+                                        line.data.map(({x, y}) => `L${x} ${1 - y}`).join(" ")} 
                                 />
                             </svg>
                             {/* Points (if applicable) --- */}
@@ -127,10 +128,10 @@ function Graph({
                                     className={`absolute size-full ${graphClassName} overflow-visible`}
                                     // No viewbox, we use percentages for this so that circle sizing is correct 
                                 >
-                                    {line.data.map((n, i) => (
+                                    {line.data.map(({x, y}, i) => (
                                         <circle 
-                                            cx={(i/(line.data.length - 1) * 100) + "%"} 
-                                            cy={(1 - n) * 100 + "%"} 
+                                            cx={x * 100 + "%"} 
+                                            cy={(1 - y) * 100 + "%"} 
                                             r="0.2rem" 
                                             className={`${line.color.fill}`}
                                             key={i}
@@ -174,60 +175,3 @@ const AxisText = ({ side, loc, children }: { side: "b"|"t"|"l"|"r", loc: number,
         {children}
     </span>
 );
-
-
-/**
- * A macro-component that creates a graph with:
- *  * A line with circles on it's points.
- *  * A line with a transparent fill underneath.
- *  The gray line is drawn below the blue line.
- *  @param pointData - The data for the first line.
- *  @param pointLabel - The label for the first line that is put on the legend.
- *  @param pointColor - The color of the first line.
- *  @param fillData - The data for the second line.
- *  @param fillLabel - The label for the second line that is put on the legend.
- *  @param pointColor - The color of the second line.
- *  @param props - See {@link Graph}.
- */
-export const PointAndFillGraph = ({ 
-    pointData, pointLabel, pointColor, fillData, fillLabel, fillColor, ...props 
-}: {
-    pointData: number[], pointLabel: string, pointColor: LineColor,
-    fillData: number[], fillLabel: string, fillColor: LineColor,
-} & Omit<ComponentProps<typeof Graph>, "lines">
-) => (
-    <Graph
-        lines={[
-            { data: fillData, color: fillColor, underFill: true, label: fillLabel },  // First in array so draws underneath
-            { data: pointData, color: pointColor, points: true, label: pointLabel }
-        ]}
-        {...props}
-    />
-);
-
-/**
- * A graph with a variable number of lines.
- * The ith item in datas will be drawn with the ith color in colors and given the ith label in labels.
- * @param datas  - The data to plot.
- * @param colors - The colors of the lines to draw.
- * @param labels - The labels to assing to the given datas.
- * @param underFill - Should each line have a translucent fill underneath. Default: False.
- * @param points - Should we draw points on each vertex. Default: False.
- * @param props - See {@link Graph}.
- */
-export const NLineGraph = ({
-    datas, colors, labels, underFill=false, points=false, ...props
-}: { 
-    datas: number[][], colors: LineColor[], labels: string[], underFill?: boolean, points?: boolean
-} & Omit<ComponentProps<typeof Graph>, "lines">
-) => {
-    if (datas.length != colors.length || datas.length != labels.length) throw "Given arrays must be of the same length";
-    return <Graph
-        lines={
-            datas.map((data, i) => (
-                { data: data, color: colors[i], label: labels[i], underFill, points }
-            )).reverse()  // Reverse so labels are shown in the order they are given
-        }
-        {...props}
-    />;
-};
