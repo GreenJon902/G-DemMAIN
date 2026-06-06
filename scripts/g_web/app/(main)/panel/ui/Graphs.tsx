@@ -25,8 +25,8 @@ export function CpuRamGraph({
     return (
         <Graph 
             lines={[
-                ...(cpuRet) ? [{ data: cpuRet?.props.cpu, color: LINE_CYAN, label: `${what} CPU`, points: true}] : [],
-                ...(memRet) ? [{ data: memRet?.props.mem, color: LINE_GRAY, label: `${what} RAM`, underFill: true}] : []
+                ...(memRet) ? [{ data: memRet?.props.mem, color: LINE_GRAY, label: `${what} RAM`, underFill: true}] : [],
+                ...(cpuRet) ? [{ data: cpuRet?.props.cpu, color: LINE_CYAN, label: `${what} CPU`, points: true}] : []
             ]}
             xTicks={{ bottom: cpuRet?.xTicks }}  // cpuRet's xTicks should be the same as memRet's xTicks
             yTicks={{ left: cpuRet?.yTicks , right: memRet?.yTicks }}
@@ -37,6 +37,7 @@ export function CpuRamGraph({
 }
 
 /**
+ * The cpu with the lowest number will be drawn on top.
  * @param data - The data to plot. If a value is not given, then it will be ignored. The CPU key is expected to not contain the text cpu.
  */
 export function MultiCPUGraph({
@@ -49,7 +50,7 @@ export function MultiCPUGraph({
         time: d.time,
         ...((d.cpus) ? Object.fromEntries(d.cpus.entries()) : {}) as {[cpuno: string]: number}
     }));
-    const keys = Array.from(data?.[0].cpus?.keys() ?? []);
+    const keys = Array.from(data?.[0].cpus?.keys() ?? []).sort().reverse();
     const prepped = prepareData(flattened, 1, true, undefined, 1, ...keys);
 
     return (
@@ -91,8 +92,8 @@ export function TransferGraph({
     return (
         <Graph 
             lines={[
-                ...(prep) ? [{ data: in_!, color: colorScheme ? LINE_FUCHSIA : LINE_ROSE, label: inDisplayName, underFill: true}] : [],
-                ...(prep) ? [{ data: out!, color: colorScheme ? LINE_CYAN : LINE_VIOLET, label: outDisplayName, underFill: true}] : []
+                ...(prep) ? [{ data: out!, color: colorScheme ? LINE_CYAN : LINE_VIOLET, label: outDisplayName, underFill: true}] : [],
+                ...(prep) ? [{ data: in_!, color: colorScheme ? LINE_FUCHSIA : LINE_ROSE, label: inDisplayName, underFill: true}] : []
             ]}
             xTicks={{ bottom: prep?.xTicks }}  // TODO: These properly
             yTicks={{ left: prep?.yTicks }}
