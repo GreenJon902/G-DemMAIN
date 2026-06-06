@@ -9,16 +9,18 @@ type nunumber = null | undefined | number;
 /**
  * @param data - The data to plot. If a value is not given, then it will be ignored.
  * @param totMem - The total memory installed on the system, if this is undefined then no memory line will be drawn.
+ * @param noCores - The number of cores in the system.
  * @param what - What is the name of this, e.g. "sys" or "g_mc".
  */
 export function CpuRamGraph({
-    data, totMem, what
+    data, totMem, what, noCores
 }: { 
     data: Array<{ time: number, cpu: nunumber, mem: nunumber }>,
     totMem: number | null,
+    noCores: number | null,
     what: string,
 }) {
-    const cpuRet = prepareData(data, 1, true, undefined, 1, "cpu");
+    const cpuRet = prepareData(data, 1, true, undefined, noCores ?? 1, "cpu");  // If we don't know the number of cores then assume 1. It doesn't really matter
     const memRet = prepareData(data, totMem, true, "GB", 1024**-2, "mem");
     return (
         <Graph 

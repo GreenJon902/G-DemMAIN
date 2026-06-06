@@ -127,7 +127,7 @@ The names of the records themselves are all relative to the same arbitrary point
     } | null,
     "cgroups": {
         [cgroup_name]: {
-            "cpu": int | null,           Microseconds, Absolute
+            "cpu": int | null,           Microseconds, Absolute  # Value is sum of cpu time on each core
             "mem": {
                 "total": int,                    Kilobytes
                 "used": int                      Kilobytes

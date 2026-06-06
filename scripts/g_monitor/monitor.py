@@ -198,7 +198,7 @@ def read_sys_disk_usage():
 
 def read_cgroup_cpu(cgroup):
     """
-    Returns int - microseconds of cpu used by the cgroup.
+    Returns int - sum of microseconds of each core used by the cgroup.
     """
     return int(RE_CGROUP_CPU.search(open(os.path.join(CGROUP_A, cgroup, CGROUP_B_CPU), "r").read()).group(1))
 

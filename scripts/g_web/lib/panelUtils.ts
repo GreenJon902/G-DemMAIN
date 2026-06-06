@@ -220,7 +220,7 @@ const MonitorRecord = z.strictObject({
         used: zNatural
     })).nullable(),
     cgroups: zCoercedMap(z.strictObject({
-        cpu: zNatural.nullable(),  // Microseconds, absolute,
+        cpu: zNatural.nullable(),  // Microseconds, absolute, sum of ms on each core
         mem: zMem.nullable(),  
         disk_io: zDiskIO.nullable(),
         procs: zCoercedMap(z.string()).nullable()  // PID maps to terminal command that started it
@@ -281,7 +281,7 @@ export async function loadMonitorRecords(interval: number, number: number) {
             sys_disk_io: convNullAggInd(last.sys_disk_io, current.sys_disk_io, (l, c) => diskIOToSpeed(l, c, dt)),  // Bytes per second
             sys_disk_usage: current.sys_disk_usage,  // Bytes
             cgroups: convMap(last.cgroups, current.cgroups, (l, c) => ({
-                cpu: (l.cpu === null || c.cpu === null) ? null : (c.cpu - l.cpu) / dt / 1_000_000,  // Percentage utilisation
+                cpu: (l.cpu === null || c.cpu === null || current.sys_cpu === null) ? null : (c.cpu - l.cpu) / dt / 1_000_000 / current.sys_cpu.ind.size,  // Percentage utilisation
                 mem: c.mem,  // In kilobytes
                 disk_io: (l.disk_io === null || c.disk_io === null) ? null : diskIOToSpeed(l.disk_io, c.disk_io, dt),
                 procs: c.procs  // PID maps to terminal command that started it
