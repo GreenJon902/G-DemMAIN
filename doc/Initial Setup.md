@@ -38,6 +38,7 @@ cd /opt/infra/environ
 sudo python3 ../utils/sync-environ.py
 cd /opt/infra/static-config
 sudo python3 ../utils/sync-static-config.py
+sudo systemctl daemon-reload
 ```
 
 8. Build the website
@@ -66,11 +67,5 @@ So ownership is not important. g\_mc group gives read/write access for jon and g
 `sudo systemctl reset-failed g_mc g_web g_web_mcc g_monitor`
 `sudo systemctl restart g_mc g_web g_web_mcc g_monitor`
 
-```
-cd /opt/infra/environ/
-sudo python3 ../utils/sync-environ.py
-cd /opt/infra/static-config/
-sudo python3 ../utils/sync-static-config.py
-sudo systemctl daemon-reload
-```
+
 
