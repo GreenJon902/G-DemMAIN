@@ -62,7 +62,9 @@ So ownership is not important. g\_mc group gives read/write access for jon and g
 
 
 
-
+`sudo systemctl stop g_mc g_web g_web_mcc g_monitor`
+`sudo systemctl reset-failed g_mc g_web g_web_mcc g_monitor`
+`sudo systemctl restart g_mc g_web g_web_mcc g_monitor`
 
 ```
 cd /opt/infra/environ/

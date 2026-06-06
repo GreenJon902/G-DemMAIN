@@ -10,10 +10,10 @@ if [[ "$rcon_enabled" != "true" ]]; then
     echo "Warning, RCON is disabled, cannot stop the Minecraft server!"
     exit 1;
 elif [[ -z "$rcon_password" ]]; then  # Check if password length is equal to 0 (so was not set)
-    echo "Warning, could not find RCON_PASSWORD in environ!"
+    echo "Warning, could not find MINECRAFT_RCON_PASSWORD in environ!"
     exit 1;
 elif [[ -z "$rcon_port" ]]; then  # Check if password length is equal to 0 (so was not set)
-    echo "Warning, could not find RCON_PORT in environ!"
+    echo "Warning, could not find MINECRAFT_RCON_PORT in environ!"
     exit 1;
 fi
 
