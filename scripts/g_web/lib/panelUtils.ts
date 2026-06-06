@@ -259,7 +259,7 @@ export async function loadMonitorRecords(interval: number, number: number) {
     });
     // Convert a map field in the records (using last and current) by applying a function to the pairs of values.
     const convMap: <K, V, Z> (last: Map<K, V>, current: Map<K, V>, conv: (l: V, c: V) => Z) => Map<K, Z> = 
-        (last, current, conv) => Object.fromEntries(last.keys().map(k => [k, conv(last.get(k)!, current.get(k)!)]));
+        (last, current, conv) => new Map(last.keys().map(k => [k, conv(last.get(k)!, current.get(k)!)]));
     // Convert a record field that has both aggregate and independent values. This is safe if last or current are null
     type cnaiType <K, V> =  { agg: V, ind: Map<K, V> } | null; 
     const convNullAggInd: <K, V, Z> (last: cnaiType<K, V>, current: cnaiType<K, V>, conv: (l: V, c: V) => Z) => cnaiType<K, Z>  = 
@@ -281,7 +281,7 @@ export async function loadMonitorRecords(interval: number, number: number) {
             sys_disk_io: convNullAggInd(last.sys_disk_io, current.sys_disk_io, (l, c) => diskIOToSpeed(l, c, dt)),  // Bytes per second
             sys_disk_usage: current.sys_disk_usage,  // Bytes
             cgroups: convMap(last.cgroups, current.cgroups, (l, c) => ({
-                cpu: (l.cpu === null || c.cpu === null) ? null : (c.cpu - l.cpu) / dt,  // Percentage utilisation
+                cpu: (l.cpu === null || c.cpu === null) ? null : (c.cpu - l.cpu) / dt / 1_000_000,  // Percentage utilisation
                 mem: c.mem,  // In kilobytes
                 disk_io: (l.disk_io === null || c.disk_io === null) ? null : diskIOToSpeed(l.disk_io, c.disk_io, dt),
                 procs: c.procs  // PID maps to terminal command that started it

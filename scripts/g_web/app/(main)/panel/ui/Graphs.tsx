@@ -4,6 +4,8 @@
 
 import { Graph, LINE_COLORS, LINE_CYAN, LINE_FUCHSIA, LINE_GRAY, LINE_LIME, LINE_ROSE, LINE_VIOLET } from "./Graph";
 
+type nunumber = null | undefined | number;
+
 /**
  * @param data - The data to plot. If a value is not given, then it will be ignored.
  * @param totMem - The total memory installed on the system, if this is undefined then no memory line will be drawn.
@@ -12,7 +14,7 @@ import { Graph, LINE_COLORS, LINE_CYAN, LINE_FUCHSIA, LINE_GRAY, LINE_LIME, LINE
 export function CpuRamGraph({
     data, totMem, what
 }: { 
-    data: Array<{ time: number, cpu: number | undefined, mem: number | undefined }>,
+    data: Array<{ time: number, cpu: nunumber, mem: nunumber }>,
     totMem: number | null,
     what: string,
 }) {
@@ -38,15 +40,14 @@ export function CpuRamGraph({
 export function MultiCPUGraph({
     data
 }: { 
-    data: Array<{ time: number, cpus: { [cpuno: string]: number } | undefined }>,
+    data: Array<{ time: number, cpus: Map<string, number> | undefined }>,
 }) {
 
-    console.log(data[0].cpus);
     const flattened = data.map(d => ({
         time: d.time,
-        ...(d.cpus) ? d.cpus : {}
+        ...((d.cpus) ? Object.fromEntries(d.cpus.entries()) : {}) as {[cpuno: string]: number}
     }));
-    const keys = (data[0].cpus) ? Object.keys(data[0].cpus) : [];
+    const keys = Array.from(data?.[0].cpus?.keys() ?? []);
     const prepped = prepareData(flattened, 1, true, undefined, 1, ...keys);
 
     return (
@@ -74,7 +75,7 @@ export function MultiCPUGraph({
 export function TransferGraph({
     data, inDisplayName, outDisplayName, units, multiplier, colorScheme
 }: {
-    data: Array<{ time: number, in: number | undefined, out: number | undefined }>,
+    data: Array<{ time: number, in: nunumber, out: nunumber }>,
     inDisplayName: string,
     outDisplayName: string,
     units: string,
@@ -84,6 +85,7 @@ export function TransferGraph({
     const prep = prepareData(data, undefined, false, units, multiplier, "in", "out");
     const in_ = prep?.props.in;
     const out = prep?.props.out;
+
     return (
         <Graph 
             lines={[
@@ -117,7 +119,7 @@ export function TransferGraph({
  * @param units - The units of the axis ticks, or undefined to not render absolute values.
  * @param tickMultiplier - The multiplier to scale values by so they fit the ticks.
  */
-function prepareData(data: Array<{ time: number, [ k: string]: number | undefined }>, max: number | null | undefined, percentage: boolean, units: string | undefined, tickMultiplier: number, ...props: string[]) {
+function prepareData(data: Array<{ time: number, [ k: string]: nunumber }>, max: number | null | undefined, percentage: boolean, units: string | undefined, tickMultiplier: number, ...props: string[]) {
     // Check if return
     if (max === null) return null;  // We wanted to supply a maximum, but there is missing data in the data source
     // Calculate timespan
@@ -125,14 +127,19 @@ function prepareData(data: Array<{ time: number, [ k: string]: number | undefine
     
     // If no maximum given then calculate it to be the highest value we have seen.
     if (max === undefined) {
-        max = Math.max(...props.map(prop => Math.max(...data.filter(d => d[prop]).map(d => d[prop]!))));
+        max = Math.max(...props.map(prop => Math.max(...data.map(d => d[prop] ?? -1))));
         if (max < 0) return null;  // Failed to calculate maximum (-Infinity is if no valid data)
+
+        // We can't have a maximum of zero as then normalisation will return NaN. So set to one
+        if (max === 0) {
+            max = 1;
+        }
     }
     
     return {
         props: Object.fromEntries(props.map(prop => {
             // Remove missing datapoints
-            data = data.filter(d => d[prop] !== undefined);
+            data = data.filter(d => d[prop] !== undefined && d[prop] !== null);
             // Normalise and return
             return [
                 prop, 

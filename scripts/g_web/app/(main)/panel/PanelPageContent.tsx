@@ -3,27 +3,23 @@
 import { ActionButton, BUTTON_CYAN, BUTTON_GREEN, BUTTON_RED, BUTTON_YELLOW, LinkButton } from "./../ui/Button";
 import PanelPageSection from "./ui/PanelPageSection";
 import { loadPanelDataAction, Status, Unit, unitAction } from "./actions";
-import { CpuRamGraph, MinecraftTpsHeapGraph } from "./ui/Graphs";
+import { CpuRamGraph } from "./ui/Graphs";
 
 export default function PanelPageContent(
     { data }: { data: Awaited<ReturnType<typeof loadPanelDataAction>> }
 ) {
+    const gd = data.graphData.data;
     return ( 
         <>
             { /* Resource monitors -------------------------------------------------- */ }
             <PanelPageSection title="Important Graphs">
                 <div className="flex w-full flex-wrap gap-4">
                     <CpuRamGraph
-                        data={data.graphData.sys}
-                        totMem={data.graphData.meta.totMem}
-                        what={"System"}
-                        timeSpan={data.graphData.meta.timeSpan}
+                        data={gd.map(d => ({ time: d.time, cpu: d.sys_cpu?.agg, mem: d.sys_mem?.used }))}
+                        totMem={gd[0]?.sys_mem?.total ?? null}
+                        what="System"
                     />
-                    <MinecraftTpsHeapGraph
-                        data={data.graphData.mc}
-                        allocated={data.graphData.meta.mc.totMem}
-                        timeSpan={data.graphData.meta.timeSpan}
-                    />
+                { /*  TODO: MC TPS and heap mem usage*/ }
                 </div>
             </PanelPageSection>
             { /* Service status -------------------------------------------------- */ }

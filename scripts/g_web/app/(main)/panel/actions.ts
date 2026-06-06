@@ -1,7 +1,8 @@
 // TODO: Logic for this file should go in lib
 "use server";
 
-import { tailLatest } from "@/lib/panelUtils";
+import { loadMonitorRecords, tailLatest } from "@/lib/panelUtils";
+import { loadGraphDataAction } from "./graphs/actions";
 
 /**
  * The status of a systemd unit.
@@ -163,7 +164,7 @@ export type PanelData = {
         unit: Unit,
         status: Status
     }[],
-    graphData: GraphData,
+    graphData: Awaited<ReturnType<typeof loadMonitorRecords>>,  
     timestamp: number  // The time that this record was created, in ms since the epoch
 }
 
@@ -174,7 +175,7 @@ export type PanelData = {
 export async function loadPanelDataAction(): Promise<PanelData> {
     return {
         unitsStatuses: await getUnitsStatuses(),
-        graphData: await getGraphData(),
+        graphData: await loadGraphDataAction(),  // TODO: This could be improved
         timestamp: Date.now()
     };
 }

@@ -12,6 +12,8 @@ import traceback
 import subprocess
 import os
 
+# TODO: Read MC TPS and memory usage
+
 # Parse arguments
 parser = ArgumentParser(description="See README.md")
 parser.add_argument("configfolder",
