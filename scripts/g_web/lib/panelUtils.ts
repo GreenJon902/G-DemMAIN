@@ -243,7 +243,7 @@ export async function loadMonitorRecords(interval: number, number: number) {
         time: parseInt(record),  // This will ignore the .json
         data: MonitorRecord.parse(JSON.parse(await fs.readFile(path.join(subfolder, record), "utf-8")))
     })));
-    records.sort(record => record.time);  // Sort based off time
+    records.sort((a, b) => a.time - b.time);  // Sort based off time
     const latestTime = Math.max(...records.map(record => record.time));  // The time of the newest record
 
     // Transform data

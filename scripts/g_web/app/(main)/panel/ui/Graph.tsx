@@ -93,53 +93,55 @@ export function Graph({
                 {/* We plot each line as it's own svg(s) as this as scaling is complicated otherwise */}
                 {
                     lines.map(line => (
-                        <Fragment key={line.label}>
-                            {/* Line and fill (if applicable) */}
-                            {/* Fill (if applicable) --- */}
-                            <svg 
-                                className={`absolute size-full ${graphClassName} overflow-hidden rounded-md`}
-                                preserveAspectRatio="none"
-                                viewBox="0 0 1 1"
-                            >
-                                {line.underFill && (
-                                    <polygon 
-                                        points={`0,1 ${line.data.map(({x, y}) => `${x},${1-y}`).join(" ")} 1,1`} 
-                                        className={`${line.color.fill} opacity-30`}
-                                    />
-                                )}
-                            </svg>
-                            {/* Line --- */}
-                            <svg 
-                                className={`absolute size-full ${graphClassName} ${line.points ? "overflow-visible" : "overflow-hidden rounded-md"}`}
-                                preserveAspectRatio="none"
-                                viewBox="0 0 1 1"
-                            >
-                                <path 
-                                    key={line.label} 
-                                    vectorEffect="non-scaling-stroke"
-                                    className={`fill-none ${line.color.stroke} stroke-2`}
-                                    d={`M${line.data[0].x} ${1 - line.data[0].y} ` +
-                                        line.data.map(({x, y}) => `L${x} ${1 - y}`).join(" ")} 
-                                />
-                            </svg>
-                            {/* Points (if applicable) --- */}
-                            {line.points && (
-                                <svg
-                                    className={`absolute size-full ${graphClassName} overflow-visible`}
-                                    // No viewbox, we use percentages for this so that circle sizing is correct 
+                        (line.data.length > 0 &&
+                            <Fragment key={line.label}>
+                                {/* Line and fill (if applicable) */}
+                                {/* Fill (if applicable) --- */}
+                                <svg 
+                                    className={`absolute size-full ${graphClassName} overflow-hidden rounded-md`}
+                                    preserveAspectRatio="none"
+                                    viewBox="0 0 1 1"
                                 >
-                                    {line.data.map(({x, y}, i) => (
-                                        <circle 
-                                            cx={x * 100 + "%"} 
-                                            cy={(1 - y) * 100 + "%"} 
-                                            r="0.2rem" 
-                                            className={`${line.color.fill}`}
-                                            key={i}
+                                    {line.underFill && (
+                                        <polygon 
+                                            points={`0,1 ${line.data.map(({x, y}) => `${x},${1-y}`).join(" ")} 1,1`} 
+                                            className={`${line.color.fill} opacity-30`}
                                         />
-                                    ))}
+                                    )}
                                 </svg>
-                            )}
-                        </Fragment>
+                                {/* Line --- */}
+                                <svg 
+                                    className={`absolute size-full ${graphClassName} ${line.points ? "overflow-visible" : "overflow-hidden rounded-md"}`}
+                                    preserveAspectRatio="none"
+                                    viewBox="0 0 1 1"
+                                >
+                                    <path 
+                                        key={line.label} 
+                                        vectorEffect="non-scaling-stroke"
+                                        className={`fill-none ${line.color.stroke} stroke-2`}
+                                        d={`M${line.data[0].x} ${1 - line.data[0].y} ` +
+                                            line.data.map(({x, y}) => `L${x} ${1 - y}`).join(" ")} 
+                                    />
+                                </svg>
+                                {/* Points (if applicable) --- */}
+                                {line.points && (
+                                    <svg
+                                        className={`absolute size-full ${graphClassName} overflow-visible`}
+                                        // No viewbox, we use percentages for this so that circle sizing is correct 
+                                    >
+                                        {line.data.map(({x, y}, i) => (
+                                            <circle 
+                                                cx={x * 100 + "%"} 
+                                                cy={(1 - y) * 100 + "%"} 
+                                                r="0.2rem" 
+                                                className={`${line.color.fill}`}
+                                                key={i}
+                                            />
+                                        ))}
+                                    </svg>
+                                )}
+                            </Fragment>
+                        )
                     ))
                 }
             </div>
@@ -148,10 +150,12 @@ export function Graph({
             <div className="flex flex-row flex-wrap gap-1">
                 {
                     lines.reverse().map(line => (
-                        <div key={line.label} className="flex h-6 flex-row items-center gap-1 rounded-md bg-gray-950 px-2 text-nowrap">
-                            <div className={`size-3 rounded-full ${line.color.bg}`} />
-                            <span>{line.label}</span>
-                        </div>
+                        (line.data.length > 0 &&
+                            <div key={line.label} className="flex h-6 flex-row items-center gap-1 rounded-md bg-gray-950 px-2 text-nowrap">
+                                <div className={`size-3 rounded-full ${line.color.bg}`} />
+                                <span>{line.label}</span>
+                            </div>
+                        )
                     ))
                 }
             </div>

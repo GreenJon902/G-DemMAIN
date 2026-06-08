@@ -84,14 +84,14 @@ export default function GraphPageContent({
             { /*  TODO: MC TPS, and java heap memory usage */ }
             <PanelPageSection title="CGroups">
                 {
-                    Array.from(gd[0].cgroups.keys().map(cgname => (
+                    Array.from(gd[0]?.cgroups.keys().map(cgname => (
                         <PanelPageSection pretitle={"• "} title={`${cgname}`} key={cgname}>
                             <div className="flex flex-col gap-4">
                                 <div className="grid w-full gap-4 sm:grid-cols-1 md:grid-cols-2">  
                                     <CpuRamGraph
                                         data={gd.map(d => ({ time: d.time, cpu: d.cgroups.get(cgname)?.cpu, mem: d.cgroups.get(cgname)?.mem?.used}))}
                                         totMem={gd[0]?.cgroups.get(cgname)?.mem?.total ?? null}
-					noCores={gd[0]?.sys_cpu?.ind.size ?? null}
+                                        noCores={gd[0]?.sys_cpu?.ind.size ?? null}
                                         what="CGroup"
                                     />
                                     <TransferGraph
@@ -125,7 +125,7 @@ export default function GraphPageContent({
                                 </table>
                             </div>
                         </PanelPageSection>
-                    )))
+                    )) ?? [])
                 }
             </PanelPageSection>
         </>

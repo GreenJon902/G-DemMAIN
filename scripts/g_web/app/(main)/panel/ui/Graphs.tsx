@@ -50,7 +50,7 @@ export function MultiCPUGraph({
         time: d.time,
         ...((d.cpus) ? Object.fromEntries(d.cpus.entries()) : {}) as {[cpuno: string]: number}
     }));
-    const keys = Array.from(data?.[0].cpus?.keys() ?? []).sort().reverse();
+    const keys = Array.from(data[data.length - 1]?.cpus?.keys() ?? []).sort().reverse();
     const prepped = prepareData(flattened, 1, true, undefined, 1, ...keys);
 
     return (
