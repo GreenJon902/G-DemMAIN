@@ -19,7 +19,7 @@ export default function GraphPageContent({
                         <CpuRamGraph
                             data={gd.map(d => ({ time: d.time, cpu: d.sys_cpu?.agg, mem: d.sys_mem?.used }))}
                             totMem={gd[0]?.sys_mem?.total ?? null}
-			    noCores={gd[0]?.sys_cpu?.ind.size ?? null}
+                            noCores={gd[0]?.sys_cpu?.ind.size ?? null}
                             what="System"
                         />
                         <MultiCPUGraph

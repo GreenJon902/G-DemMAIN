@@ -20,7 +20,7 @@ export function CpuRamGraph({
     noCores: number | null,
     what: string,
 }) {
-    const cpuRet = prepareData(data, 1, true, undefined, noCores ?? 1, "cpu");  // If we don't know the number of cores then assume 1. It doesn't really matter
+    const cpuRet = prepareData(data, 1, false, "%", (noCores ?? 1) * 100, "cpu");  // If we don't know the number of cores then assume 1. It doesn't really matter
     const memRet = prepareData(data, totMem, true, "GB", 1024**-2, "mem");
     return (
         <Graph 
