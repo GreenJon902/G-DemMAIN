@@ -73,30 +73,34 @@ export function MultiCPUGraph({
  * @param inDisplayName - What is the name of incoming data (e.g. "read"). This is rendered to the user.
  * @param units - The units of the data (after scaling, see multiplier).
  * @param multiplier - How much to scale the data by before displaying it to the user.
- * @param colorScheme - 0 for cyan and fuchsia, 1 for violet and rose
+ * @param colorScheme - 0 for cyan and fuchsia, 1 for violet and rose.
+ * @param inShortName - A short piece of text to be put after the units to indicate these units correspond to incoming data.
  */
 export function TransferGraph({
-    data, inDisplayName, outDisplayName, units, multiplier, colorScheme
+    data, inDisplayName, outDisplayName, units, multiplier, colorScheme, inShortName, outShortName
 }: {
     data: Array<{ time: number, in: nunumber, out: nunumber }>,
     inDisplayName: string,
     outDisplayName: string,
     units: string,
     multiplier: number,
-    colorScheme: 0 | 1
+    colorScheme: 0 | 1,
+    inShortName: string,
+    outShortName: string
 }) {
-    const prep = prepareData(data, undefined, false, units, multiplier, "in", "out");
-    const in_ = prep?.props.in;
-    const out = prep?.props.out;
+    const inPrep = prepareData(data, undefined, false, `${units} ${inShortName}`, multiplier, "in");
+    const outPrep = prepareData(data, undefined, false, `${units} ${outShortName}`, multiplier, "out");
+    const in_ = inPrep?.props.in;
+    const out = outPrep?.props.out;
 
     return (
         <Graph 
             lines={[
-                ...(prep) ? [{ data: out!, color: colorScheme ? LINE_CYAN : LINE_VIOLET, label: outDisplayName, underFill: true}] : [],
-                ...(prep) ? [{ data: in_!, color: colorScheme ? LINE_FUCHSIA : LINE_ROSE, label: inDisplayName, underFill: true}] : []
+                ...(outPrep) ? [{ data: out!, color: colorScheme ? LINE_CYAN : LINE_VIOLET, label: outDisplayName, underFill: true}] : [],
+                ...(inPrep) ? [{ data: in_!, color: colorScheme ? LINE_FUCHSIA : LINE_ROSE, label: inDisplayName, underFill: true}] : []
             ]}
-            xTicks={{ bottom: prep?.xTicks }}  
-            yTicks={{ left: prep?.yTicks }}
+            xTicks={{ bottom: inPrep?.xTicks }}   // xTicks should be the same for both of these
+            yTicks={{ left: inPrep?.yTicks, right: outPrep?.yTicks }}
             containerClassName="min-w-50 flex-1" 
             graphClassName="h-50"
         />
