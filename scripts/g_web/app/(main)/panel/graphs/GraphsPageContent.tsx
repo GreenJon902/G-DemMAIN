@@ -11,6 +11,7 @@ export default function GraphPageContent({
     const gd = data.data;
     const disk_usage = gd[gd.length - 1]?.sys_disk_usage;  // We only want one value as we don't plot this against time
     return (
+        // TODO: Show indicator for time of last monitor log taken
         <>
             <PanelPageSection title="System">
                 <div className="flex w-full flex-col gap-4">

@@ -95,7 +95,7 @@ export function TransferGraph({
                 ...(prep) ? [{ data: out!, color: colorScheme ? LINE_CYAN : LINE_VIOLET, label: outDisplayName, underFill: true}] : [],
                 ...(prep) ? [{ data: in_!, color: colorScheme ? LINE_FUCHSIA : LINE_ROSE, label: inDisplayName, underFill: true}] : []
             ]}
-            xTicks={{ bottom: prep?.xTicks }}  // TODO: These properly
+            xTicks={{ bottom: prep?.xTicks }}  
             yTicks={{ left: prep?.yTicks }}
             containerClassName="min-w-50 flex-1" 
             graphClassName="h-50"

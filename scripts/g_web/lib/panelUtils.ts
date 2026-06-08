@@ -238,7 +238,8 @@ const MONITOR_FOLDER = (process.env.G_MONITOR_FOLDER) ?? "/var/lib/g_monitor";
 export async function loadMonitorRecords(interval: number, number: number) {
     // Load data
     const subfolder = path.join(MONITOR_FOLDER, `${interval}_${number}`); 
-    const recordNames = await fs.readdir(subfolder);
+    const recordNames = (await fs.readdir(subfolder))
+        .filter(name => /^\d+\.json$/.test(name));  // Only load files of the correct format
     const records = await Promise.all(recordNames.map(async record => ({
         time: parseInt(record),  // This will ignore the .json
         data: MonitorRecord.parse(JSON.parse(await fs.readFile(path.join(subfolder, record), "utf-8")))
