@@ -8,8 +8,7 @@ export default function GraphPageContent({
 }: {
     data: Awaited<ReturnType<typeof loadGraphDataAction>> 
 }) {
-    const gd = data.data;
-    const disk_usage = gd[gd.length - 1]?.sys_disk_usage;  // We only want one value as we don't plot this against time
+    const gd = data.timed;
     return (
         // TODO: Show indicator for time of last monitor log taken
         <>
@@ -45,38 +44,40 @@ export default function GraphPageContent({
                     <table className="w-full">
                         <tbody>
                             {
-                                disk_usage &&
-                                [...disk_usage.entries()].map(([mountpoint, metrics]) => (
-                                    <tr key={mountpoint}>
-                                        <td>
-                                            <span className="text-nowrap">
-                                                {mountpoint}
-                                            </span>
-                                        </td>
-                                        <td className="w-full px-2">
-                                            <div className="h-2 flex-1 rounded-full bg-gray-700">
-                                                <div className="h-2 rounded-full bg-green-500" style={{width: `${metrics.used / metrics.total * 100}%`}} />
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span className="text-nowrap">
-                                                {(metrics.used / metrics.total * 100).toFixed(0)}%  
-                                            </span> 
-                                        </td>
-                                        <td className="px-2"><span>-</span></td>
-                                        <td className="text-right">
-                                            <span className="text-nowrap">
-                                                {(metrics.used / 1_000_000_000).toFixed(2)}
-                                            </span>
-                                        </td>
-                                        <td className="px-1"><span>/</span></td>
-                                        <td className="text-right">
-                                            <span className="text-nowrap">
-                                                {(metrics.total / 1_000_000_000).toFixed(2)}GB 
-                                            </span>
-                                        </td>
-                                    </tr>
-                                ))
+                                data.disk_usage ? 
+                                    [...data.disk_usage.entries()].map(([mountpoint, metrics]) => (
+                                        <tr key={mountpoint}>
+                                            <td>
+                                                <span className="text-nowrap">
+                                                    {mountpoint}
+                                                </span>
+                                            </td>
+                                            <td className="w-full px-2">
+                                                <div className="h-2 flex-1 rounded-full bg-gray-700">
+                                                    <div className="h-2 rounded-full bg-green-500" style={{width: `${metrics.used / metrics.total * 100}%`}} />
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span className="text-nowrap">
+                                                    {(metrics.used / metrics.total * 100).toFixed(0)}%  
+                                                </span> 
+                                            </td>
+                                            <td className="px-2"><span>-</span></td>
+                                            <td className="text-right">
+                                                <span className="text-nowrap">
+                                                    {(metrics.used / 1_000_000_000).toFixed(2)}
+                                                </span>
+                                            </td>
+                                            <td className="px-1"><span>/</span></td>
+                                            <td className="text-right">
+                                                <span className="text-nowrap">
+                                                    {(metrics.total / 1_000_000_000).toFixed(2)}GB 
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))
+                                : 
+                                    <span className="italic">Disk usage data not available!</span>
                             }
                         </tbody>
                     </table>
@@ -104,26 +105,32 @@ export default function GraphPageContent({
                                         multiplier={1024**-2}
                                     />
                                 </div>
-                                <table>
-                                    <thead>
-                                        <tr className="border-b">
-                                            <th className="border-r p-1 text-left">PID</th>
-                                            <th className="w-full p-1 text-left">Command</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {
-                                            [...gd[gd.length - 1]?.cgroups.get(cgname)?.procs?.entries() ?? []].map(([pid, cmd]) => (
-                                                <tr key={pid}>
-                                                    <td className="border-r p-1">{pid}</td>
-                                                    <td className="w-full p-1">
-                                                        <pre className="rounded-lg bg-gray-950 text-wrap"> {cmd} </pre>
-                                                    </td>
+                                {
+                                    data.cgroup_procs.get(cgname)
+                                    ?
+                                        <table>
+                                            <thead>
+                                                <tr className="border-b">
+                                                    <th className="border-r p-1 text-left">PID</th>
+                                                    <th className="w-full p-1 text-left">Command</th>
                                                 </tr>
-                                            ))
-                                        }
-                                    </tbody>
-                                </table>
+                                            </thead>
+                                            <tbody>
+                                                {
+                                                    data.cgroup_procs.get(cgname)!.keys().map(([pid, cmd]) => (
+                                                        <tr key={pid}>
+                                                            <td className="border-r p-1">{pid}</td>
+                                                            <td className="w-full p-1">
+                                                                <pre className="rounded-lg bg-gray-950 text-wrap"> {cmd} </pre>
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                }
+                                            </tbody>
+                                        </table>
+                                    :
+                                        <span className="italic">Data for processes is unavailable!</span>
+                                }
                             </div>
                         </PanelPageSection>
                     )) ?? [])

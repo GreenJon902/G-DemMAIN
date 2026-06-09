@@ -280,14 +280,29 @@ export async function loadMonitorRecords(interval: number, number: number) {
             sys_mem: current.sys_mem,  // In Kilobytes
             sys_net_io: convNullAggInd(last.sys_net_io, current.sys_net_io, (l, c) => netIOToSpeed(l, c, dt)),  // Bytes per second
             sys_disk_io: convNullAggInd(last.sys_disk_io, current.sys_disk_io, (l, c) => diskIOToSpeed(l, c, dt)),  // Bytes per second
-            sys_disk_usage: current.sys_disk_usage,  // Bytes
+            //sys_disk_usage: current.sys_disk_usage,  // Bytes
             cgroups: convMap(last.cgroups, current.cgroups, (l, c) => ({
                 cpu: (l.cpu === null || c.cpu === null || current.sys_cpu === null) ? null : (c.cpu - l.cpu) / dt / 1_000_000 / current.sys_cpu.ind.size,  // Percentage utilisation
                 mem: c.mem,  // In kilobytes
                 disk_io: (l.disk_io === null || c.disk_io === null) ? null : diskIOToSpeed(l.disk_io, c.disk_io, dt),
-                procs: c.procs  // PID maps to terminal command that started it
+            //    procs: c.procs  // PID maps to terminal command that started it
             }))!
         };
     });
-    return {timestamp: Date.now(), data: graphData};
+
+    // Extract data
+    //     Some data isn't really time dependent, we just want the newest version of it
+    // Disk usage:
+    const diskUsage = records.map(r => r.data.sys_disk_usage).filter(du => du !== null).at(-1) ?? null;  // Take newest found value
+    // CGroup procs:
+    const cgroupsProcs = new Map(records[0].data.cgroups.keys().map(k => [k, 
+        records.map(r => r.data.cgroups.get(k)?.procs ?? null).filter(ps => ps !== null).at(-1) ?? null
+    ]));
+
+    return {
+        timestamp: Date.now(),
+        timed: graphData,
+        disk_usage: diskUsage,
+        cgroup_procs: cgroupsProcs
+    };
 }
