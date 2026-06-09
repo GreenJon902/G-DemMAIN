@@ -1,7 +1,7 @@
 # A service to sent a status=crashed webhook. We need this as OnFailed cannot directly run python.
 # The parameter is expected to be <readable_name>-<service_name>, e.g. Minecraft-g_mc.
 [Unit]
-Description=Failure handler for g_mc
+Description=Failure handler that calls the failure webhook
 
 [Service]
 Type=oneshot
