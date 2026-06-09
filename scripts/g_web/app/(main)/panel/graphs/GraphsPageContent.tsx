@@ -117,7 +117,7 @@ export default function GraphPageContent({
                                             </thead>
                                             <tbody>
                                                 {
-                                                    data.cgroup_procs.get(cgname)!.keys().map(([pid, cmd]) => (
+                                                    data.cgroup_procs.get(cgname)!.entries().map(([pid, cmd]) => (
                                                         <tr key={pid}>
                                                             <td className="border-r p-1">{pid}</td>
                                                             <td className="w-full p-1">
