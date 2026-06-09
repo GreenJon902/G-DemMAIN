@@ -2,13 +2,14 @@
 
 import { ActionButton, BUTTON_CYAN, BUTTON_GREEN, BUTTON_RED, BUTTON_YELLOW, LinkButton } from "./../ui/Button";
 import PanelPageSection from "./ui/PanelPageSection";
-import { loadPanelDataAction, Status, Unit, unitAction } from "./actions";
+import { loadPanelDataAction, Unit, unitAction } from "./actions";
 import { CpuRamGraph } from "./ui/Graphs";
+import { UnitStatus } from "@/lib/panelUtils";
 
 export default function PanelPageContent(
     { data }: { data: Awaited<ReturnType<typeof loadPanelDataAction>> }
 ) {
-    const gd = data.graphData.data;
+    const gd = data.graphData.timed;
     return ( 
         <>
             { /* Resource monitors -------------------------------------------------- */ }
@@ -17,10 +18,10 @@ export default function PanelPageContent(
                     <CpuRamGraph
                         data={gd.map(d => ({ time: d.time, cpu: d.sys_cpu?.agg, mem: d.sys_mem?.used }))}
                         totMem={gd[0]?.sys_mem?.total ?? null}
-			noCores={gd[0]?.sys_cpu?.ind.size ?? null}
+                        noCores={gd[0]?.sys_cpu?.ind.size ?? null}
                         what="System"
                     />
-                { /*  TODO: MC TPS and heap mem usage*/ }
+                    { /*  TODO: MC TPS and heap mem usage*/ }
                 </div>
             </PanelPageSection>
             { /* Service status -------------------------------------------------- */ }
@@ -57,15 +58,17 @@ export default function PanelPageContent(
  * If the status is unkown then it's logged to the console and set to transparent.
  * @param status - This should be the systemd SubState.
  */
-function StatusIndicator({ unit, status }: { unit: Unit, status: Status }) {
+function StatusIndicator({ unit, status }: { unit: Unit, status: UnitStatus | undefined }) {
     // Get the color
     const color = { 
         "active": "bg-green-600", 
         "inactive": unit.expectActive ? "bg-orange-600" : "bg-cyan-600", 
         "failed": "bg-red-600", 
         "activating": "bg-yellow-600",
-        "deactivating": "bg-yellow-600" 
-    }[status];
+        "deactivating": "bg-yellow-600",
+        "reloading": "bg-yellow-600",
+        "undefined": "bg-gray-600"
+    }[String(status)];
 
     // If we have no color then we don't recognise this status
     if (color === undefined) {
@@ -76,7 +79,7 @@ function StatusIndicator({ unit, status }: { unit: Unit, status: Status }) {
     
     // Create a circle with the first letter of status, with hover being full status name
     return <div className={`${color} aspect-square w-6 rounded-full text-center`} title={status}>
-        {status[0].toUpperCase()}
+        {String(status)[0].toUpperCase()}
     </div>;
 }
 
@@ -84,7 +87,7 @@ function StatusIndicator({ unit, status }: { unit: Unit, status: Status }) {
  * Create the controls for the given unit.
  * @param className - This will be given to each child.
  */
-function UnitControls({ unit, status, className="" }: { unit: Unit, status: Status, className?: string }) {
+function UnitControls({ unit, status, className="" }: { unit: Unit, status: UnitStatus | undefined, className?: string }) {
 
     if (
         status === "activating" ||

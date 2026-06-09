@@ -76,7 +76,7 @@ export default function GraphPageContent({
                                             </td>
                                         </tr>
                                     ))
-                                : 
+                                    : 
                                     <span className="italic">Disk usage data not available!</span>
                             }
                         </tbody>
@@ -107,7 +107,7 @@ export default function GraphPageContent({
                                 </div>
                                 {
                                     data.cgroup_procs.get(cgname)
-                                    ?
+                                        ?
                                         <table>
                                             <thead>
                                                 <tr className="border-b">
@@ -128,7 +128,7 @@ export default function GraphPageContent({
                                                 }
                                             </tbody>
                                         </table>
-                                    :
+                                        :
                                         <span className="italic">Data for processes is unavailable!</span>
                                 }
                             </div>

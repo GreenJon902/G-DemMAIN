@@ -1,6 +1,5 @@
 # This script handles the monitoring of the system. This includes tracking resource usage.
-# This tracks the cgroups specified in /opt/infra/static-config/g_monitor/cgroups. We expect each line to contain the cgroup name (e.g. system.slice/g_mc.service).
-#     You can specify an alternative location for the config folder by passing it as an arguement.
+# See the documentation file for usage.
 # This file has a mainloop, rather than being ran by a systemd timer, as it needs to run frequently and I feel this is more efficient?
 
 import re
@@ -19,7 +18,7 @@ parser = ArgumentParser(description="See README.md")
 parser.add_argument("configfolder",
                     nargs   = "?",  # Declare this argument as optional
                     default = "/opt/infra/static-config/g_monitor",
-                    help    = "The path of the folder that contains the cgroups list, default /opt/infra/static-config/g_monitor")
+                    help    = "The path of the folder that contains the config files, default /opt/infra/static-config/g_monitor")
 parser.add_argument("recordfolder",
                     nargs   = "?",  # Declare this argument as optional
                     default = "/var/lib/g_monitor",
@@ -41,6 +40,9 @@ RETENTION_RULES = {
 }
 print("Retention Rules:", RETENTION_RULES)
 
+# Load units
+UNITS = [u.strip() for u in open(os.path.join(args.configfolder, "units"), "r").read().split("\n") if not u.isspace() and u != ""]
+print("Trackin Units:", UNITS)
 
 # Constants ---
 SYS_CPU = "/proc/stat"
@@ -65,6 +67,10 @@ RE_CGROUP_CPU = re.compile(r"^\s*usage_usec\s+(\d+)\s*$", re.MULTILINE)
 RE_CGROUP_DISK_IO = re.compile(r"^\s*\d+:\d+\s+rbytes=(?P<bytes_read>\d+)\s+wbytes=(?P<bytes_written>\d+)\s+rios=\d+\s+wios=\d+\s+dbytes=\d+\s+dios=\d+\s*$", re.MULTILINE)
 PROC_CMD_A = "/proc"
 PROC_CMD_B = "cmdline"
+UNIT_STATE_CMD_A = ["systemctl", "show"]
+UNIT_STATE_CMD_B = ["-p", "ActiveState"]
+RE_UNIT_STATUS = re.compile(r"^\s*ActiveState=(?P<activestate>(?:active)|(?:inactive)|(?:activating)|(?:deactivating)|(?:failed)|(?:reloading))\s*$")
+RE_FILENAME = re.compile(r"^(\d+).json$")
 
 # Utils ---
 def extractsum(data: dict[str, str], *properties: list[str]):
@@ -232,6 +238,16 @@ def read_cgroup_procs(cgroup):
     procs = {int(id_): open(os.path.join(PROC_CMD_A, id_, PROC_CMD_B), "r").read().replace("\x00", " ").strip() for id_ in proc_ids if id_ != ""}
     return procs
 
+def read_unit_status(unit):
+    """
+    Returns "active" | "inactive" | "activating" | "deactivating" | "failed" | "reloading".
+    """
+    raw = subprocess.check_output([*UNIT_STATE_CMD_A, unit, *UNIT_STATE_CMD_B]).decode()
+    assert (match := RE_UNIT_STATUS.match(raw)), f"Format of status is incorrect: \n{raw}"
+    status = match.groupdict()["activestate"]
+    return status
+    
+
 def read_data():
     """
     Reads all the data from the system and CGROUPS and returns it as seriazable object that folows the format defined in the documentation.
@@ -250,8 +266,15 @@ def read_data():
                 "procs": read_cgroup_procs
             }, cgroup)
             for cgroup in CGROUPS
-        }
+        },
+        "units": lambda: {
+            unit: attempt_build_dict({
+                "status": read_unit_status,
+            }, unit)
+            for unit in UNITS
+         }
     })
+
 
 # Mainloop ---
 while True:
@@ -273,7 +296,7 @@ while True:
     for interval, number in RETENTION_RULES:
         path = get_record_subfolder(interval, number)
         items = os.listdir(path)
-        newest_time = max([int(item.removesuffix(".json")) for item in items]) if len(items) > 0 else current_time - interval # The time of the most recent record. If no records exist then create one now
+        newest_time = max([int(item.removesuffix(".json")) for item in items if RE_FILENAME.match(item)]) if len(items) > 0 else current_time - interval # The time of the most recent record. If no records exist then create one now
 
         # Does this subfolder need a new record
         if current_time - newest_time >= interval:
@@ -292,7 +315,7 @@ while True:
         if number is not None:  # If there is a maximum number of records for this interval
             path = get_record_subfolder(interval, number)
             while len(items := os.listdir(path)) > number:
-                oldest = min([int(item.removesuffix(".json")) for item in items])
+                oldest = min([int(item.removesuffix(".json")) for item in items if RE_FILENAME.match(item)])
                 record_path = os.path.join(path, f"{oldest}.json")
                 os.remove(record_path)
             

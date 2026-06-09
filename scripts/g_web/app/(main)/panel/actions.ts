@@ -1,15 +1,8 @@
 // TODO: Logic for this file should go in lib
 "use server";
 
-import { loadMonitorRecords, tailLatest } from "@/lib/panelUtils";
+import { loadMonitorRecords, tailLatest, UnitStatus } from "@/lib/panelUtils";
 import { loadGraphDataAction } from "./graphs/actions";
-
-/**
- * The status of a systemd unit.
- * Note: there are technically more, but I don't think they'll come up.
- */
-export type Status = typeof STATUS_VALUES[number];
-const STATUS_VALUES = ["active", "inactive", "failed", "activating", "deactivating"] as const;
 
 /**
  * The js representation of a systemd unit.
@@ -33,16 +26,16 @@ const TRACKED_UNITS = [
     _mkUnit("g_nightly_restart", "service", false, false),
     _mkUnit("g_nightly_restart", "timer", true, true),
     _mkUnit("mysql", "service", true, true)
-];
+]; // TODO: DOn't hardcode these
 
 /**
  * Gets the status of the units specified in {@link TRACKED_UNITS}.
  */ 
 async function getUnitsStatuses() {
-    // TODO: Get actual data for this
+    const monitorRecords = await loadMonitorRecords(5, 20);  // TODO: Don't hardcode these values
     return TRACKED_UNITS.map(unit => ({
         unit,
-        status: STATUS_VALUES[Math.floor(Math.random() ** 5 * STATUS_VALUES.length)] as Status  // For now just pick a random value
+        status: monitorRecords.units_status?.get(`${unit.name}.${unit.type}`)
     }));
 }
 
@@ -162,7 +155,7 @@ const _graphData: GraphData = {
 export type PanelData = {
     unitsStatuses: {
         unit: Unit,
-        status: Status
+        status: UnitStatus | undefined
     }[],
     graphData: Awaited<ReturnType<typeof loadMonitorRecords>>,  
     timestamp: number  // The time that this record was created, in ms since the epoch

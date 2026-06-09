@@ -179,6 +179,8 @@ export async function tailLatest(n: number) {
 
 // Monitor data ----------------------------------------------------------------------------------
 // Define schema for a record:
+const UNIT_STATUS_VALUES = ["active", "inactive", "activating", "deactivating", "failed", "reloading"] as const;
+export type UnitStatus = typeof UNIT_STATUS_VALUES[number];
 const zNatural = z.number().nonnegative().multipleOf(1);  // 0, 1, ...
 const zArbCpu = z.strictObject({ 
     total: zNatural,  // Arbitrary units, absolute
@@ -224,7 +226,10 @@ const MonitorRecord = z.strictObject({
         mem: zMem.nullable(),  
         disk_io: zDiskIO.nullable(),
         procs: zCoercedMap(z.string()).nullable()  // PID maps to terminal command that started it
-    }))
+    })),
+    units: zCoercedMap(z.strictObject({
+        status: z.literal(UNIT_STATUS_VALUES)
+    })).optional()
 });
 export type MonitorRecord = z.infer<typeof MonitorRecord>;
 
@@ -269,6 +274,7 @@ export async function loadMonitorRecords(interval: number, number: number) {
                 agg: conv(last.agg, current.agg),
                 ind: convMap(last.ind, current.ind, conv)
             };
+    // TODO: Make sure (by modifying or otherwise) that all occurances of cgroups returned have same keys
     const graphData = records.slice(1).map((_, j) => {
         const i = j+1;
         const last = records[i-1].data;
@@ -284,7 +290,7 @@ export async function loadMonitorRecords(interval: number, number: number) {
             cgroups: convMap(last.cgroups, current.cgroups, (l, c) => ({
                 cpu: (l.cpu === null || c.cpu === null || current.sys_cpu === null) ? null : (c.cpu - l.cpu) / dt / 1_000_000 / current.sys_cpu.ind.size,  // Percentage utilisation
                 mem: c.mem,  // In kilobytes
-                disk_io: (l.disk_io === null || c.disk_io === null) ? null : diskIOToSpeed(l.disk_io, c.disk_io, dt),
+                disk_io: (l.disk_io === null || c.disk_io === null) ? null : diskIOToSpeed(l.disk_io, c.disk_io, dt)
             //    procs: c.procs  // PID maps to terminal command that started it
             }))!
         };
@@ -298,11 +304,17 @@ export async function loadMonitorRecords(interval: number, number: number) {
     const cgroupsProcs = new Map(records[0].data.cgroups.keys().map(k => [k, 
         records.map(r => r.data.cgroups.get(k)?.procs ?? null).filter(ps => ps !== null).at(-1) ?? null
     ]));
+    // Unit statuses:
+    const rawUnitsStatus = records
+        .filter(r => r.data.units !== null).at(-1)
+        ?.data.units?.entries().map(([k, v]) => [k, v.status] as [string, UnitStatus]);
+    const unitsStatus = (rawUnitsStatus === undefined) ? undefined : new Map(rawUnitsStatus);
 
     return {
         timestamp: Date.now(),
         timed: graphData,
         disk_usage: diskUsage,
-        cgroup_procs: cgroupsProcs
+        cgroup_procs: cgroupsProcs,
+        units_status: unitsStatus
     };
 }

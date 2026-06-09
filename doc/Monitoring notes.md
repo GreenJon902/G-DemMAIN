@@ -68,6 +68,8 @@ In `retention` you should specify how old records should be retained. Each line 
 E.g. if we have a line that is `5 20`, then we will keep 20 logs for the last 100 seconds, each of which is 5 seconds apart.  
 Older logs are automatically removed.  
 There should not be identical rules.
+### Units
+In `units` you should specify which systemd units to track (e.g. `g_web.service`, `g_nightly_restart.timer`).
 
 ## Historical records
 In `/var/lib/g_monitor` (or another folder if given as an argument to the script) are the records.   
@@ -140,7 +142,12 @@ The names of the records themselves are all relative to the same arbitrary point
                 [process_id: int]: str          # Value is terminal command used to start the process
             } | null
         }
-    }
+    },
+    "units": {
+        [unit_name]: {
+            "status": "active" | "inactive" | "activating" | "deactivating" | "failed" | "reloading"
+        }  
+    } | null
 }
 ```
 
