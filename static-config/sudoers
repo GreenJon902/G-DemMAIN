@@ -1,0 +1,13 @@
+servicea ALL=(root) NOPASSWD: \
+    /usr/bin/systemctl enable --now g_mc.service, \
+    /usr/bin/systemctl disable --now g_mc.service, \
+    /usr/bin/systemctl enable --now mysql.service, \
+    /usr/bin/systemctl disable --now mysql.service, \
+    /usr/bin/systemctl enable --now g_nightly_restart.timer, \
+    /usr/bin/systemctl disable --now g_nightly_restart.timer, \
+    /usr/bin/systemctl enable --now g_web.service, \
+    /usr/bin/systemctl disable --now g_web.service, \
+    /usr/bin/systemctl enable --now g_web_mcc.service, \
+    /usr/bin/systemctl disable --now g_web_mcc.service, \
+    /usr/bin/systemctl enable --now g_monitor.service, \
+    /usr/bin/systemctl disable --now g_monitor.service

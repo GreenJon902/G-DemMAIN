@@ -34,10 +34,11 @@ sudo usermod -aG g_mc jon    # You may need to relog for this to take effect
 
 7. Setup the environment and config files.
 ```
-cd /opt/infra/environ
-sudo python3 ../utils/sync-environ.py
-cd /opt/infra/static-config
-sudo python3 ../utils/sync-static-config.py
+cd /opt/infra/environ && \
+sudo python3 ../utils/sync-environ.py && \
+cd /opt/infra/static-config && \
+sudo python3 ../utils/sync-static-config.py && \
+sudo python3 ../utils/sync-sudoers.py && \
 sudo systemctl daemon-reload
 ```
 
