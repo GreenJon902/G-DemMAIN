@@ -41,6 +41,7 @@ export default function PanelPageContent(
                                 </td>
                                 <td className="flex gap-1 p-1"> {/* All changing controls go into the same <td> as the frequent changing causes firefox to get confused and not render backgrounds correctly */}
                                     <UnitControls unit={unit} status={status} className="flex-1" /> 
+                                    {/* TODO: A warning before restart g_web or g_mysql as these may not be easy to revert without ssh access */}
                                 </td>
                             </tr>
                         ))

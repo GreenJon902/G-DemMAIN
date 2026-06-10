@@ -10,7 +10,7 @@ import { C } from "./environ";
 import { NS } from "./auth";
 import { existsSync } from "fs";
 import * as zlib from "zlib";
-import { exec, execFile, execFileSync } from "node:child_process";
+import { exec, execFile, execFileSync, spawn } from "node:child_process";
 import { promisify } from "node:util";
 
 const optimisticRequireUser = NS.optimisticRequireUser;
@@ -327,4 +327,32 @@ export async function getUnitStatus(name: string, type: UnitType): Promise<UnitS
     const match = stdout.match(/^\s*ActiveState=((?:active)|(?:inactive)|(?:activating)|(?:deactivating)|(?:failed)|(?:reloading))\s*$/);
     if (!match) throw "Failed to match stdout for unit status - " + stdout;
     return match[1] as UnitStatus;
+}
+/**
+ * This does not sanitize name or type, so data should be checked.
+ */
+export async function unitAction(name: string, type: UnitType, action: "start"|"stop"|"restart") {
+    optimisticRequireUser("panel");  // This probably shouldn't be an optimistic check
+    
+    if (action !== "start" && action !== "stop" && action !== "restart") throw "Invalid action";
+
+    // We want to wait for the process to finish
+    await new Promise((resolve, reject) => {
+        const proc = spawn(
+            "sudo", 
+            ["-n", "systemctl", action, `${name}.${type}`]  // -n means it won't ever prompt for a password. Passwordless sudo should be allowed for this command
+        );
+
+        proc.stdout.on("data", (data) => console.log(`SYSTEMCTL-STDOUT: ${data}`));
+        proc.stderr.on("data", (data) => console.error(`SYSTEMCTL-STDERR: ${data}`));
+        proc.on("error", reject);
+        proc.on("close", (code) => {
+            console.log(`Systemctl exited with code ${code}`);
+            if (code === 0) {
+                resolve(undefined);
+            } else {
+                reject(new Error(`Systemctl exited with code ${code}`));
+            }
+        });
+    });
 }
