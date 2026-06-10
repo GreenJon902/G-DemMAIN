@@ -1,7 +1,0 @@
-g_mc.service
-g_web.service
-g_web_mcc.service
-g_nightly_restart.service
-g_nightly_restart.timer
-g_monitor.service
-mysql.service

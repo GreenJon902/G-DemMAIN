@@ -1,7 +1,7 @@
 // TODO: Logic for this file should go in lib
 "use server";
 
-import { loadMonitorRecords, tailLatest, UnitStatus } from "@/lib/panelUtils";
+import { getUnitStatus, loadMonitorRecords, tailLatest, UnitStatus, UnitType } from "@/lib/panelUtils";
 import { loadGraphDataAction } from "./graphs/actions";
 
 /**
@@ -9,12 +9,12 @@ import { loadGraphDataAction } from "./graphs/actions";
  */
 export type Unit = {
     name: string,  // E.g. "g_mc"
-    type: string,  // E.g. "service" or "timer"
+    type: UnitType,  // E.g. "service" or "timer"
     controllable: boolean,  // Should the user be able to start or stop this from the dashboard?
     expectActive: boolean  // Is normal behavior that this is running? E.g. g_mc.service being stopped is abnormal, but g_nightly_restart.service we don't expect to be running all the time
 }
 /** A utility function to create a {@link Unit}. */
-const _mkUnit = (name: string, type: string, controllable: boolean, expectActive: boolean): Unit => ({ name, type, controllable, expectActive });
+const _mkUnit = (name: string, type: UnitType, controllable: boolean, expectActive: boolean): Unit => ({ name, type, controllable, expectActive });
 
 /** 
  * A list of all the units we want to keep track of and display to the user.
@@ -32,11 +32,10 @@ const TRACKED_UNITS = [
  * Gets the status of the units specified in {@link TRACKED_UNITS}.
  */ 
 async function getUnitsStatuses() {
-    const monitorRecords = await loadMonitorRecords(5, 20);  // TODO: Don't hardcode these values
-    return TRACKED_UNITS.map(unit => ({
+    return await Promise.all(TRACKED_UNITS.map(async unit => ({
         unit,
-        status: monitorRecords.units_status?.get(`${unit.name}.${unit.type}`)
-    }));
+        status: await getUnitStatus(unit.name, unit.type)
+    })));
 }
 
 /**

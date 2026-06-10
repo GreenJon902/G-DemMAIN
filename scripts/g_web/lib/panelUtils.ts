@@ -10,6 +10,8 @@ import { C } from "./environ";
 import { NS } from "./auth";
 import { existsSync } from "fs";
 import * as zlib from "zlib";
+import { exec, execFile, execFileSync } from "node:child_process";
+import { promisify } from "node:util";
 
 const optimisticRequireUser = NS.optimisticRequireUser;
 
@@ -179,8 +181,6 @@ export async function tailLatest(n: number) {
 
 // Monitor data ----------------------------------------------------------------------------------
 // Define schema for a record:
-const UNIT_STATUS_VALUES = ["active", "inactive", "activating", "deactivating", "failed", "reloading"] as const;
-export type UnitStatus = typeof UNIT_STATUS_VALUES[number];
 const zNatural = z.number().nonnegative().multipleOf(1);  // 0, 1, ...
 const zArbCpu = z.strictObject({ 
     total: zNatural,  // Arbitrary units, absolute
@@ -226,10 +226,7 @@ const MonitorRecord = z.strictObject({
         mem: zMem.nullable(),  
         disk_io: zDiskIO.nullable(),
         procs: zCoercedMap(z.string()).nullable()  // PID maps to terminal command that started it
-    })),
-    units: zCoercedMap(z.strictObject({
-        status: z.literal(UNIT_STATUS_VALUES)
-    })).optional()
+    }))
 });
 export type MonitorRecord = z.infer<typeof MonitorRecord>;
 
@@ -241,6 +238,8 @@ const MONITOR_FOLDER = (process.env.G_MONITOR_FOLDER) ?? "/var/lib/g_monitor";
  * Returns a sorted array of objects with a timestamp (in seconds) and graphdata at that point. The oldest record is first and has a negative value. The newest record is last and has a positive value.
  */
 export async function loadMonitorRecords(interval: number, number: number) {
+    optimisticRequireUser("panel");
+
     // Load data
     const subfolder = path.join(MONITOR_FOLDER, `${interval}_${number}`); 
     const recordNames = (await fs.readdir(subfolder))
@@ -286,12 +285,10 @@ export async function loadMonitorRecords(interval: number, number: number) {
             sys_mem: current.sys_mem,  // In Kilobytes
             sys_net_io: convNullAggInd(last.sys_net_io, current.sys_net_io, (l, c) => netIOToSpeed(l, c, dt)),  // Bytes per second
             sys_disk_io: convNullAggInd(last.sys_disk_io, current.sys_disk_io, (l, c) => diskIOToSpeed(l, c, dt)),  // Bytes per second
-            //sys_disk_usage: current.sys_disk_usage,  // Bytes
             cgroups: convMap(last.cgroups, current.cgroups, (l, c) => ({
                 cpu: (l.cpu === null || c.cpu === null || current.sys_cpu === null) ? null : (c.cpu - l.cpu) / dt / 1_000_000 / current.sys_cpu.ind.size,  // Percentage utilisation
                 mem: c.mem,  // In kilobytes
                 disk_io: (l.disk_io === null || c.disk_io === null) ? null : diskIOToSpeed(l.disk_io, c.disk_io, dt)
-            //    procs: c.procs  // PID maps to terminal command that started it
             }))!
         };
     });
@@ -304,17 +301,30 @@ export async function loadMonitorRecords(interval: number, number: number) {
     const cgroupsProcs = new Map(records[0].data.cgroups.keys().map(k => [k, 
         records.map(r => r.data.cgroups.get(k)?.procs ?? null).filter(ps => ps !== null).at(-1) ?? null
     ]));
-    // Unit statuses:
-    const rawUnitsStatus = records
-        .filter(r => r.data.units !== null).at(-1)
-        ?.data.units?.entries().map(([k, v]) => [k, v.status] as [string, UnitStatus]);
-    const unitsStatus = (rawUnitsStatus === undefined) ? undefined : new Map(rawUnitsStatus);
 
     return {
         timestamp: Date.now(),
         timed: graphData,
         disk_usage: diskUsage,
-        cgroup_procs: cgroupsProcs,
-        units_status: unitsStatus
+        cgroup_procs: cgroupsProcs
     };
+}
+
+// SystemD unit control ---------------------------------------------------------
+export type UnitType = "service" | "timer";
+const UNIT_STATUS_VALUES = ["active", "inactive", "activating", "deactivating", "failed", "reloading"] as const;
+export type UnitStatus = typeof UNIT_STATUS_VALUES[number];
+/**
+ * Gets the status of the given unit.
+ * I believe this returns "inactive" for unkown units.
+ * This does not sanitize inputs, so no user-supplied data should come here.
+ */
+export async function getUnitStatus(name: string, type: UnitType): Promise<UnitStatus> {
+    optimisticRequireUser("panel");
+
+    const execFileAsync = promisify(execFile); 
+    const { stdout } = await execFileAsync("systemctl", ["show", `${name}.${type}`, "-p", "ActiveState"]);  // If this fails then an error should be thrown
+    const match = stdout.match(/^\s*ActiveState=((?:active)|(?:inactive)|(?:activating)|(?:deactivating)|(?:failed)|(?:reloading))\s*$/);
+    if (!match) throw "Failed to match stdout for unit status - " + stdout;
+    return match[1] as UnitStatus;
 }

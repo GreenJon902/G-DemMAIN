@@ -22,7 +22,7 @@ parser.add_argument("configfolder",
 parser.add_argument("recordfolder",
                     nargs   = "?",  # Declare this argument as optional
                     default = "/var/lib/g_monitor",
-                    help    = "The path of the folder that contains the records created by the program")
+                    help    = "The path of the folder that contains the records created by the program, defaults to /var/lib/g_monitor")
 args = parser.parse_args()
 
 # Log run-info
@@ -39,10 +39,6 @@ RETENTION_RULES = {
         [cg.strip().split(" ", 1) for cg in open(os.path.join(args.configfolder, "retention"), "r").read().split("\n") if not cg.isspace() and cg != ""]
 }
 print("Retention Rules:", RETENTION_RULES)
-
-# Load units
-UNITS = [u.strip() for u in open(os.path.join(args.configfolder, "units"), "r").read().split("\n") if not u.isspace() and u != ""]
-print("Trackin Units:", UNITS)
 
 # Constants ---
 SYS_CPU = "/proc/stat"
@@ -67,9 +63,6 @@ RE_CGROUP_CPU = re.compile(r"^\s*usage_usec\s+(\d+)\s*$", re.MULTILINE)
 RE_CGROUP_DISK_IO = re.compile(r"^\s*\d+:\d+\s+rbytes=(?P<bytes_read>\d+)\s+wbytes=(?P<bytes_written>\d+)\s+rios=\d+\s+wios=\d+\s+dbytes=\d+\s+dios=\d+\s*$", re.MULTILINE)
 PROC_CMD_A = "/proc"
 PROC_CMD_B = "cmdline"
-UNIT_STATE_CMD_A = ["systemctl", "show"]
-UNIT_STATE_CMD_B = ["-p", "ActiveState"]
-RE_UNIT_STATUS = re.compile(r"^\s*ActiveState=(?P<activestate>(?:active)|(?:inactive)|(?:activating)|(?:deactivating)|(?:failed)|(?:reloading))\s*$")
 RE_FILENAME = re.compile(r"^(\d+).json$")
 
 # Utils ---
@@ -237,15 +230,6 @@ def read_cgroup_procs(cgroup):
     proc_ids = [id_.strip() for id_ in open(os.path.join(CGROUP_A, cgroup, CGROUP_B_PROCS), "r").read().split("\n")]
     procs = {int(id_): open(os.path.join(PROC_CMD_A, id_, PROC_CMD_B), "r").read().replace("\x00", " ").strip() for id_ in proc_ids if id_ != ""}
     return procs
-
-def read_unit_status(unit):
-    """
-    Returns "active" | "inactive" | "activating" | "deactivating" | "failed" | "reloading".
-    """
-    raw = subprocess.check_output([*UNIT_STATE_CMD_A, unit, *UNIT_STATE_CMD_B]).decode()
-    assert (match := RE_UNIT_STATUS.match(raw)), f"Format of status is incorrect: \n{raw}"
-    status = match.groupdict()["activestate"]
-    return status
     
 
 def read_data():
@@ -266,13 +250,7 @@ def read_data():
                 "procs": read_cgroup_procs
             }, cgroup)
             for cgroup in CGROUPS
-        },
-        "units": lambda: {
-            unit: attempt_build_dict({
-                "status": read_unit_status,
-            }, unit)
-            for unit in UNITS
-         }
+        }
     })
 
 
@@ -287,7 +265,7 @@ while True:
 
     # Sample data
     data = read_data()
-    current_time = int(time.monotonic())
+    current_time = int(time.time())
     string_data = json.dumps(data)
 
     # Find subfolders where a new record needs creation, and calculate how long to sleep for
@@ -320,5 +298,5 @@ while True:
                 os.remove(record_path)
             
     # Sleep
-    time.sleep(time_of_next_record - time.monotonic())
+    time.sleep(time_of_next_record - time.time())
 
