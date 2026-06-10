@@ -1,13 +1,19 @@
-servicea ALL=(root) NOPASSWD: \
-    /usr/bin/systemctl enable --now g_mc.service, \
-    /usr/bin/systemctl disable --now g_mc.service, \
-    /usr/bin/systemctl enable --now mysql.service, \
-    /usr/bin/systemctl disable --now mysql.service, \
-    /usr/bin/systemctl enable --now g_nightly_restart.timer, \
-    /usr/bin/systemctl disable --now g_nightly_restart.timer, \
-    /usr/bin/systemctl enable --now g_web.service, \
-    /usr/bin/systemctl disable --now g_web.service, \
-    /usr/bin/systemctl enable --now g_web_mcc.service, \
-    /usr/bin/systemctl disable --now g_web_mcc.service, \
-    /usr/bin/systemctl enable --now g_monitor.service, \
-    /usr/bin/systemctl disable --now g_monitor.service
+g_web ALL=(root) NOPASSWD: \
+    /usr/bin/systemctl start g_mc.service, \
+    /usr/bin/systemctl restart g_mc.service, \
+    /usr/bin/systemctl stop g_mc.service, \
+    /usr/bin/systemctl start mysql.service, \
+    /usr/bin/systemctl restart mysql.service, \
+    /usr/bin/systemctl stop mysql.service, \
+    /usr/bin/systemctl start g_nightly_restart.timer, \
+    /usr/bin/systemctl restart g_nightly_restart.timer, \
+    /usr/bin/systemctl stop g_nightly_restart.timer, \
+    /usr/bin/systemctl start g_web.service, \
+    /usr/bin/systemctl restart g_web.service, \
+    /usr/bin/systemctl stop g_web.service, \
+    /usr/bin/systemctl start g_web_mcc.service, \
+    /usr/bin/systemctl restart g_web_mcc.service, \
+    /usr/bin/systemctl stop g_web_mcc.service, \
+    /usr/bin/systemctl start g_monitor.service, \
+    /usr/bin/systemctl restart g_monitor.service, \
+    /usr/bin/systemctl stop g_monitor.service
