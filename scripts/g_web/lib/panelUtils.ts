@@ -81,6 +81,7 @@ export const OPERATOR_LIST = { filename: "ops.json", itemSchema: OperatorListIte
 
 /**
  * Load the account list from the given filename.
+ * Returns null if no file exists.
  *
  * @param filename - The name of the file to load (e.g. ops.json), this should be in the root directory of the minecraft server.
  * @param itemSchema  - The schema of a single list item.
@@ -88,7 +89,11 @@ export const OPERATOR_LIST = { filename: "ops.json", itemSchema: OperatorListIte
 export async function loadListItems(list: List) {
     optimisticRequireUser("panel");
 
-    const file = await fs.readFile(path.join(C().LIST_FOLDER, list.filename), "utf-8");  
+    const path_ = path.join(C().LIST_FOLDER, list.filename);
+
+    if (!existsSync(path_)) return null;
+
+    const file = await fs.readFile(path_, "utf-8");  
     const data = z.array(list.itemSchema).parse(JSON.parse(file));  // Parse an array of accounts. This will ignore any extra properties
     return data;
 }

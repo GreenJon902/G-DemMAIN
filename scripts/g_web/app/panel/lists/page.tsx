@@ -30,9 +30,9 @@ export default function Page() {
                     <PanelPageSection title={list.rendername} key={i} >
                         <div className="space-y-1">
                             <div> 
-                                {(await loadListItems(list.list)).map(item => (
+                                {(await loadListItems(list.list))?.map(item => (
                                     <ItemRow key={item.uniquename} item={item} list={list} />
-                                ))}
+                                )) ?? <span className="italic">Data missing!</span>}
                             </div>
                         </div>
                     </PanelPageSection>
