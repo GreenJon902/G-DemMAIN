@@ -1,7 +1,7 @@
 import { listLogs } from "@/lib/panelUtils";
 import PanelPageSection from "../ui/PanelPageSection";
-import Link from "next/link";
 import { AutoLabelSinceLastRefresh } from "../../ui/LabelSinceLastRefresh";
+import TextLink from "@/app/ui/TextLink";
 
 export default async function Page() {
     const logNames = await listLogs();
@@ -11,15 +11,15 @@ export default async function Page() {
             <PanelPageSection title="Minecraft Logs">
                 {
                     logNames.sort().reverse().map(name => (  // Latest.log should always be first after this
-                        <Link 
+                        <TextLink 
                             key={name}
                             href={`/panel/mcLogs/${name}`}
                             prefetch={false}  // Disable prefetching so we don't load all the logs at once nooooooo
-                            className="block px-2 underline decoration-gray-500 decoration-dotted first:rounded-t-md last:rounded-b-md odd:bg-gray-700 even:bg-gray-800"
+                            className="block px-2 first:rounded-t-md last:rounded-b-md odd:bg-gray-700 even:bg-gray-800"
                             target="_blank"  // Open in new tab
                         >
                             {name}
-                        </Link>
+                        </TextLink>
                     ))
                 }
             </PanelPageSection>

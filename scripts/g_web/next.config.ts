@@ -19,7 +19,10 @@ const nextConfig: NextConfig = {
         remotePatterns: [new URL("https://api.mcheads.org/head/**/256/hat")]
     },
     allowedDevOrigins: allowedDevOrigins,
-    output: "standalone"
+    output: "standalone",
+    experimental: {
+        authInterrupts: true
+    }
 };
 
 export default nextConfig;

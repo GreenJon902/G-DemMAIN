@@ -2,12 +2,31 @@ import "@/app/globals.css";
 
 import { BUTTON_CYAN, BUTTON_GREEN, BUTTON_INDIGO, BUTTON_RED, BUTTON_YELLOW, LinkButton } from "../ui/Button";
 import Link from "next/link";
+import { NS } from "@/lib/auth";
+import { forbidden, unauthorized } from "next/navigation";
 
-export default function Layout({
+export default async function Layout({
     children
 }: {
     children: React.ReactNode,
 }) {
+    // Check the user is authorised to view the panel
+    if (!await NS.optimisticCheckUser("panel")) {
+        // User not authorised to view this route
+        
+        // Check if user has session
+        if (await NS.hasSession()) {
+            // User has a session, just not permissions
+            // So send the forbbiden page
+            forbidden();
+        } else {
+            // User has no session
+            // So send to the unauthorised page
+            unauthorized();
+        }
+    }
+
+    // Add the panel specific nav bar
     return (
         <>
             <header className="flex w-full flex-wrap items-center gap-2 border-t border-t-gray-500 bg-gray-700 p-2">

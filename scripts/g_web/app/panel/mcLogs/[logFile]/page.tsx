@@ -2,7 +2,7 @@ import { loadLogContent } from "@/lib/panelUtils";
 import { notFound } from "next/navigation";
 import PanelPageSection from "../../ui/PanelPageSection";
 import Link from "next/link";
-import { AutoLabelSinceLastRefresh } from "@/app/(main)/ui/LabelSinceLastRefresh";
+import { AutoLabelSinceLastRefresh } from "@/app/ui/LabelSinceLastRefresh";
 import LogView from "../../ui/LogView";
 
 export default async function Page({
@@ -14,7 +14,7 @@ export default async function Page({
     const logContents = await loadLogContent(logFile);
 
     // If log is not found then go to 404 page
-    if (logContents === undefined) notFound();  // TODO: This doesn't use the correct not found page
+    if (logContents === undefined) notFound();  
 
     return (
         <>
