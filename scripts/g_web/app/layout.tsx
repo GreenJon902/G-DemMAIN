@@ -13,7 +13,7 @@ export default async function Layout({
             <head>
                 <link rel="icon" type="image/png" href="favicon.png" />
             </head>
-            <body className="bg-gray-900 text-white flex min-h-dvh flex-col">
+            <body className="flex min-h-dvh flex-col bg-gray-900 text-white">
                 <header><nav> <GlobalNav /> </nav></header>
                 {children}
             </body>

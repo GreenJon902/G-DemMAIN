@@ -49,6 +49,6 @@ export default async function GlobalNav() {
                 </div>
             </div>
         </>
-    )
+    );
 
 }

@@ -15,7 +15,7 @@ export default function Forbidden() {
             head={ollieblitzz}        
         >
             <span>
-                You don't have permission to access this page.
+                You don&apos;t have permission to access this page.
             </span>
             <br />
             <TextLink href={loginUrl(next)} onNavigate={async (e) => { e.preventDefault(); await logoutAction(next); }}>

@@ -10,7 +10,7 @@ import { C } from "./environ";
 import { NS } from "./auth";
 import { existsSync } from "fs";
 import * as zlib from "zlib";
-import { exec, execFile, execFileSync, spawn } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { promisify } from "node:util";
 
 const optimisticRequireUser = NS.optimisticRequireUser;

@@ -17,7 +17,14 @@ const eslintConfig = defineConfig([
     ]),
 
     // Tailwind
-    tailwind.configs["flat/recommended"],
+    ...tailwind.configs["flat/recommended"],
+    {
+        settings: {
+            tailwindcss: {
+                config: false  // We don't have a config file, so tell eslint that so it doesn't try to find it
+            }
+        }
+    },
 
     // Rule modifications
     {
