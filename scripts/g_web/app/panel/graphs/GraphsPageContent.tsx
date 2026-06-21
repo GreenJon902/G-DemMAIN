@@ -117,14 +117,14 @@ export default function GraphPageContent({
                                             </thead>
                                             <tbody>
                                                 {
-                                                    data.cgroup_procs.get(cgname)!.entries().map(([pid, cmd]) => (
+                                                    [...data.cgroup_procs.get(cgname)!.entries().map(([pid, cmd]) => (
                                                         <tr key={pid}>
                                                             <td className="border-r p-1">{pid}</td>
                                                             <td className="w-full p-1">
                                                                 <pre className="rounded-lg bg-gray-950 text-wrap"> {cmd} </pre>
                                                             </td>
                                                         </tr>
-                                                    ))
+                                                    ))]
                                                 }
                                             </tbody>
                                         </table>
