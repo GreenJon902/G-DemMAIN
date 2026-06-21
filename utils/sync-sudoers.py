@@ -1,3 +1,5 @@
+# TODO: Compare old and new config like we do with sync-static-config.py. And add header. Maybe we can just plug these two together into eachother
+
 import subprocess
 import os
 import sys
