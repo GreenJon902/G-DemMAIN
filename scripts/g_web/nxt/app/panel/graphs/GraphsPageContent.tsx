@@ -25,7 +25,7 @@ export default function GraphPageContent({
                             data={gd.map(d => ({ time: d.time, cpus: d.sys_cpu?.ind } ))}
                         />
                         <TransferGraph
-                            data={gd.map(d => ({ time: d.time, in: d.sys_net_io?.agg.recieved, out: d.sys_net_io?.agg.sent }))}
+                            data={gd.map(d => ({ time: d.time, in: d.sys_net_io?.agg?.recieved, out: d.sys_net_io?.agg?.sent }))}
                             inDisplayName="System Network Down" inShortName="down"
                             outDisplayName="System Network Up" outShortName="up"
                             colorScheme={1}
@@ -33,7 +33,7 @@ export default function GraphPageContent({
                             multiplier={1024**-2}
                         />
                         <TransferGraph
-                            data={gd.map(d => ({ time: d.time, in: d.sys_disk_io?.agg.read, out: d.sys_disk_io?.agg.written }))}
+                            data={gd.map(d => ({ time: d.time, in: d.sys_disk_io?.agg?.read, out: d.sys_disk_io?.agg?.written }))}
                             inDisplayName="System Disk Reads" inShortName="read"
                             outDisplayName="System Disk Writes" outShortName="write"
                             colorScheme={0}

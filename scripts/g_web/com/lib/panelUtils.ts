@@ -256,29 +256,39 @@ export async function loadMonitorRecords(interval: number, number: number) {
     records.sort((a, b) => a.time - b.time);  // Sort based off time
     const latestTime = Math.max(...records.map(record => record.time));  // The time of the newest record
 
-    // Transform data
+    // Data transformation functions
     //     We calculate the differences between records to get the actual rates. Hence we will have one less record after this
-    const arbCpuToUsage = (last: arbCpu, current: arbCpu) => (current.busy - last.busy) / (current.total - last.total);
-    const netIOToSpeed = (last: netIO, current: netIO, dt: number) => ({
-        sent: (current.sent - last.sent) / dt,
-        recieved: (current.recieved - last.recieved) / dt
+    const arbCpuToUsage = (last: arbCpu | null, current: arbCpu | null) => (nu(last) || nu(current)) ? null : (current!.busy - last!.busy) / (current!.total - last!.total);
+    const netIOToSpeed = (last: netIO | null, current: netIO | null, dt: number) => (nu(last) || nu(current)) ? null : ({
+        sent: (current!.sent - last!.sent) / dt,
+        recieved: (current!.recieved - last!.recieved) / dt
     });
-    const diskIOToSpeed = (last: diskIO, current: diskIO, dt: number) => ({
-        written: (current.written - last.written) / dt,
-        read: (current.read - last.read) / dt
+    const diskIOToSpeed = (last: diskIO | null, current: diskIO | null, dt: number) => (nu(last) || nu(current)) ? null : ({
+        written: (current!.written - last!.written) / dt,
+        read: (current!.read - last!.read) / dt
     });
-    // Convert a map field in the records (using last and current) by applying a function to the pairs of values.
-    const convMap: <K, V, Z> (last: Map<K, V>, current: Map<K, V>, conv: (l: V, c: V) => Z) => Map<K, Z> = 
-        (last, current, conv) => new Map(last.keys().map(k => [k, conv(last.get(k)!, current.get(k)!)]));
-    // Convert a record field that has both aggregate and independent values. This is safe if last or current are null
+    // Convert a map field in the records (using last and current) by applying a function to the pairs of values. If last or current doesn't contain a given key then the value is taken as null
+    const convMap: <K, V, Z> (keys: Set<K>, last: Map<K, V>, current: Map<K, V>, conv: (l: V | null, c: V | null) => Z) => Map<K, Z> = 
+        (keys, last, current, conv) => new Map([...keys].map(k => [k, conv(last.get(k) ?? null, current.get(k) ?? null)]));
+    // Convert a record field that has both aggregate and independent values. This is safe if last or current are null. The keys given are for the independent part
     type cnaiType <K, V> =  { agg: V, ind: Map<K, V> } | null; 
-    const convNullAggInd: <K, V, Z> (last: cnaiType<K, V>, current: cnaiType<K, V>, conv: (l: V, c: V) => Z) => cnaiType<K, Z>  = 
-        (last, current, conv) => (last === null || current === null) ? null : 
+    const convNullAggInd: <K, V, Z> (keys: Set<K>, last: cnaiType<K, V>, current: cnaiType<K, V>, conv: (l: V | null, c: V | null) => Z) => cnaiType<K, Z>  = 
+        (keys, last, current, conv) => (last === null || current === null) ? null : 
             {
                 agg: conv(last.agg, current.agg),
-                ind: convMap(last.ind, current.ind, conv)
+                ind: convMap(keys, last.ind, current.ind, conv)
             };
-    // TODO: Make sure (by modifying or otherwise) that all occurances of cgroups returned have same keys
+
+    // Returns true if x is null or undefined
+    const nu = (x: any) => x === null || x === undefined;
+
+    // For dictionary fields, get all used keys
+    const cpunoKeys = new Set(records.flatMap(r => [...(r.data.sys_cpu?.ind.keys() ?? [])]));
+    const netioKeys = new Set(records.flatMap(r => [...(r.data.sys_net_io?.ind.keys() ?? [])]));
+    const diskioKeys = new Set(records.flatMap(r => [...(r.data.sys_disk_io?.ind.keys() ?? [])]));
+    const cgroupKeys = new Set(records.flatMap(r => [...r.data.cgroups.keys()]));
+
+    // Transform data
     const graphData = records.slice(1).map((_, j) => {
         const i = j+1;
         const last = records[i-1].data;
@@ -286,14 +296,14 @@ export async function loadMonitorRecords(interval: number, number: number) {
         const dt = records[i].time - records[i-1].time;
         return {
             time: records[i].time - latestTime,  // Normalise times
-            sys_cpu: convNullAggInd(last.sys_cpu, current.sys_cpu, arbCpuToUsage),  // Percentage utilisation
+            sys_cpu: convNullAggInd(cpunoKeys, last.sys_cpu, current.sys_cpu, arbCpuToUsage),  // Percentage utilisation
             sys_mem: current.sys_mem,  // In Kilobytes
-            sys_net_io: convNullAggInd(last.sys_net_io, current.sys_net_io, (l, c) => netIOToSpeed(l, c, dt)),  // Bytes per second
-            sys_disk_io: convNullAggInd(last.sys_disk_io, current.sys_disk_io, (l, c) => diskIOToSpeed(l, c, dt)),  // Bytes per second
-            cgroups: convMap(last.cgroups, current.cgroups, (l, c) => ({
-                cpu: (l.cpu === null || c.cpu === null || current.sys_cpu === null) ? null : (c.cpu - l.cpu) / dt / 1_000_000 / current.sys_cpu.ind.size,  // Percentage utilisation
-                mem: c.mem,  // In kilobytes
-                disk_io: (l.disk_io === null || c.disk_io === null) ? null : diskIOToSpeed(l.disk_io, c.disk_io, dt)
+            sys_net_io: convNullAggInd(netioKeys, last.sys_net_io, current.sys_net_io, (l, c) => netIOToSpeed(l, c, dt)),  // Bytes per second
+            sys_disk_io: convNullAggInd(diskioKeys, last.sys_disk_io, current.sys_disk_io, (l, c) => diskIOToSpeed(l, c, dt)),  // Bytes per second
+            cgroups: convMap(cgroupKeys, last.cgroups, current.cgroups, (l, c) => ({
+                cpu: (nu(l?.cpu) || nu(c?.cpu) || nu(current.sys_cpu)) ? null : (c!.cpu! - l!.cpu!) / dt / 1_000_000 / current.sys_cpu!.ind.size,  // Percentage utilisation
+                mem: c?.mem ?? null,  // In kilobytes
+                disk_io: (nu(l?.disk_io) || nu(c?.disk_io)) ? null : diskIOToSpeed(l!.disk_io!, c!.disk_io!, dt)
             }))!
         };
     });

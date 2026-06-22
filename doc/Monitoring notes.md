@@ -84,7 +84,7 @@ The names of the records themselves are in seconds since the unix-epoch.
             "busy": int                  Arbitary units, Absolute
         },
         "ind": {
-            [cpuno]: {
+            [cpuno]: {                       # Keys not necessarily constant
                 "total": int,            Arbitary units, Absolute
                 "busy": int              Arbitary units, Absolute
             }
@@ -101,6 +101,7 @@ The names of the records themselves are in seconds since the unix-epoch.
         },
         "ind": {
             [interface_name]: {              # The 'lo' interface is 'loopback' - data sent internally from one process to another
+                                             # Keys not necessarily constant
                 "sent": int,             Bytes, Absolute
                 "recieved": int          Bytes, Absolute
             }
@@ -112,7 +113,7 @@ The names of the records themselves are in seconds since the unix-epoch.
             "written": int               Bytes, Absolute
         },
         "ind": {
-            [name]: {
+            [name]: {                        # Keys not necessarily constant
                 "read": int,             Bytes, Absolute
                 "written": int           Bytes, Absolute
             }
@@ -126,7 +127,7 @@ The names of the records themselves are in seconds since the unix-epoch.
         } 
     } | null,
     "cgroups": {
-        [cgroup_name]: {
+        [cgroup_name]: {                     # Keys not necessarily constant
             "cpu": int | null,           Microseconds, Absolute  # Value is sum of cpu time on each core
             "mem": {
                 "total": int,                    Kilobytes
@@ -137,7 +138,8 @@ The names of the records themselves are in seconds since the unix-epoch.
                 "written": int           Bytes, Absolute
             } | null,
             "procs": {
-                [process_id: int]: str          # Value is terminal command used to start the process
+                [process_id: int]: str       # Value is terminal command used to start the process
+                                             # Keys not necessarily constant
             } | null
         }
     }

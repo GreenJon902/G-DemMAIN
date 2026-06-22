@@ -43,7 +43,7 @@ export function CpuRamGraph({
 export function MultiCPUGraph({
     data
 }: { 
-    data: Array<{ time: number, cpus: Map<string, number> | undefined }>,
+    data: Array<{ time: number, cpus: Map<string, nunumber> | undefined }>,
 }) {
 
     const flattened = data.map(d => ({
