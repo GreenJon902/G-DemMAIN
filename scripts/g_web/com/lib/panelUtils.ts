@@ -316,7 +316,7 @@ export async function loadMonitorRecords(interval: number, number: number) {
 }
 
 // SystemD unit control ---------------------------------------------------------
-export type UnitType = "service" | "timer";
+export type UnitType = "service" | "timer" | "target" ;
 const UNIT_STATUS_VALUES = ["active", "inactive", "activating", "deactivating", "failed", "reloading"] as const;
 export type UnitStatus = typeof UNIT_STATUS_VALUES[number];
 /**

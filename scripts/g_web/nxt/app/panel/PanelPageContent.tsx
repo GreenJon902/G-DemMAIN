@@ -99,7 +99,7 @@ function UnitControls({ unit, status, className="" }: { unit: Unit, status: Unit
 
     } else if (
         status === "active" &&
-        unit.type === "service"
+        unit.type === "service" || unit.type === "target"
     ) {
         return <><_Restart unit={unit} className={className} /><_Stop unit={unit} className={className} /></>;
 

@@ -22,7 +22,9 @@ const _mkUnit = (name: string, type: UnitType, controllable: boolean, expectActi
  */
 const TRACKED_UNITS = [
     _mkUnit("g_mc", "service", true, true),
-    _mkUnit("g_web", "service", true, true),
+    _mkUnit("g_web", "target", true, true),
+    _mkUnit("g_web_nxt", "service", true, true),
+    _mkUnit("g_web_mcc", "service", true, true),
     _mkUnit("g_nightly_restart", "service", false, false),
     _mkUnit("g_nightly_restart", "timer", true, true),
     _mkUnit("mysql", "service", true, true)

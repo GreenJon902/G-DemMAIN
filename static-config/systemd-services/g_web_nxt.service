@@ -15,8 +15,8 @@ OnFailure=g_service_failed@Website-g_web_nxt.service
 [Service]
 User=g_web
 Group=g_web
-WorkingDirectory=/var/lib/g_web/next
-ExecStart=/usr/bin/node /var/lib/g_web/next/nxt/server.js
+WorkingDirectory=/var/lib/g_web/nxt/nxt
+ExecStart=/usr/bin/node /var/lib/g_web/nxt/nxt/server.js
 
 Environment=NODE_ENV=production
 # This port is temporary

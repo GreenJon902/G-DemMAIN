@@ -49,8 +49,8 @@ cd /opt/infra/scripts/g_web
 Use `npm ci` and `NODE_OPTIONS='--enable-source-maps' npm run build` in the infra folder.
 Create the g_web user.
 ```
-sudo rsync -a nxt/.next/standalone/ /var/lib/g_web/next/
-sudo rsync -a nxt/.next/static/ /var/lib/g_web/next/.next/static/
+sudo rsync -a nxt/.next/standalone/ /var/lib/g_web/nxt/
+sudo rsync -a nxt/.next/static/ /var/lib/g_web/nxt/nxt/.next/static/
 sudo rsync -a mcc/dist/ /var/lib/g_web/mcc/
 sudo chown -R g_web:g_web /var/lib/g_web
 ```
