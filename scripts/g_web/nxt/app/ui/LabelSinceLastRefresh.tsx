@@ -29,7 +29,7 @@ export default function LabelSinceLastRefresh({
     
     return (
         <span className="text-gray-600">
-            Last updated {Math.floor((currentTimestamp - timestamp) / 1000)} seconds ago
+            Last synced {Math.floor((currentTimestamp - timestamp) / 1000)} seconds ago
         </span>
     );
 }
