@@ -1,20 +1,19 @@
 {
-    "name": "@g_web",
+    "name": "@g_web/nxt",
     "version": "0.1.0",
     "private": true,
     "scripts": {
-        "dev": "concurrently --kill-others -n NXT,MCC \"npm run dev:nxt\" \"npm run dev:mcc\"",
-        "dev:nxt": "npm --prefix nxt run dev",
-        "dev:mcc": "npm --prefix mcc run dev",
-        "lint": "eslint",
-        "typecheck": "tsc -p nxt/tsconfig.json && tsc -p mcc/tsconfig.json",
-        "build": "npm run build:nxt && npm run build:mcc",
-        "build:nxt": "npm --prefix nxt run build",
-        "build:mcc": "npm --prefix mcc run build"
+        "dev": "dotenv -e ../.devenv -- next dev -p 8000",
+        "build": "next build"
     },
     "dependencies": {
     },
     "devDependencies": {
+        "@heroicons/react": "^2.2.0",
+        "next": "16.2.4",
+        "react": "19.2.4",
+        "react-dom": "19.2.4",
+        "@tailwindcss/postcss": "^4",
         "@types/node": "^20",
         "@types/react": "^19",
         "@types/react-dom": "^19",
@@ -25,6 +24,9 @@
         "eslint": "^9",
         "eslint-config-next": "16.2.4",
         "eslint-plugin-tailwindcss": "^3.18.3",
+        "iron-session": "^8.0.4",
+        "tailwindcss": "^4",
+        "ts-rcon": "^1.2.1",
         "tsup": "^8.5.1",
         "tsx": "^4.21.0",
         "typescript": "^5",

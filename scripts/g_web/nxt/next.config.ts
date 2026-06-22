@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import * as os from "os";
+import * as path from "path";
 
 // Find local ip address for use in dev-origins
 const env = process.env.NODE_ENV;
@@ -13,7 +14,6 @@ if (env == "development") {
 
 
 const nextConfig: NextConfig = {
-    /* config options here */
     reactCompiler: true,
     images: {
         remotePatterns: [new URL("https://api.mcheads.org/head/**/256/hat")]
@@ -21,7 +21,13 @@ const nextConfig: NextConfig = {
     allowedDevOrigins: allowedDevOrigins,
     output: "standalone",
     experimental: {
-        authInterrupts: true
+        authInterrupts: true,  // Allow forbidden() and unauthorised()
+        externalDir: true /* Folder organisation stuff */
+    },
+    turbopack: { /* Folder organisation stuff */
+        resolveAlias: {
+            "@/lib": path.resolve(__dirname, "../com/lib")
+        }
     }
 };
 

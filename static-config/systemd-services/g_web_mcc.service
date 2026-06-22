@@ -20,8 +20,6 @@ WorkingDirectory=/var/lib/g_web/mcc
 ExecStart=/usr/bin/node server.js
 
 Environment=NODE_ENV=production
-# This port is temporary
-Environment=PORT=3000
 EnvironmentFile=/etc/g-demmain/common.env
 EnvironmentFile=/etc/g-demmain/g_web_website.env
 EnvironmentFile=/etc/g-demmain/g_mc_g_web_minecraft.env

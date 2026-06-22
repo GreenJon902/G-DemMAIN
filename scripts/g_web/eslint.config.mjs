@@ -9,11 +9,12 @@ const eslintConfig = defineConfig([
     ...nextVitals,
     ...nextTs,
     globalIgnores([
-        // Default ignores of eslint-config-next:
-        ".next/**",
-        "out/**",
-        "build/**",
-        "next-env.d.ts"
+        "node_modules/**",
+        "nxt/.next/**",
+        "nxt/next-env.d.ts",
+        "mcc/dist/**"
+
+        
     ]),
 
     // Tailwind
@@ -38,6 +39,15 @@ const eslintConfig = defineConfig([
             // Images
             "@next/next/no-img-element": "off",
             "jsx-a11y/alt-text": "off"
+        }
+    },
+    
+    // Folder setup stuff
+    {
+        settings: {
+            next: {
+                rootDir: "nxt"
+            }
         }
     }
 ]);

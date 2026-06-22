@@ -1,16 +1,10 @@
 {
-    "name": "@g_web",
+    "name": "@g_web/mcc",
     "version": "0.1.0",
     "private": true,
     "scripts": {
-        "dev": "concurrently --kill-others -n NXT,MCC \"npm run dev:nxt\" \"npm run dev:mcc\"",
-        "dev:nxt": "npm --prefix nxt run dev",
-        "dev:mcc": "npm --prefix mcc run dev",
-        "lint": "eslint",
-        "typecheck": "tsc -p nxt/tsconfig.json && tsc -p mcc/tsconfig.json",
-        "build": "npm run build:nxt && npm run build:mcc",
-        "build:nxt": "npm --prefix nxt run build",
-        "build:mcc": "npm --prefix mcc run build"
+        "dev": "dotenv -e ../.devenv -- tsx server.ts",
+        "build": "tsup server.ts --format cjs --out-dir dist"
     },
     "dependencies": {
     },

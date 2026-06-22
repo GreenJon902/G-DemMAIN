@@ -3,6 +3,8 @@
  * We need to load them during runtime as nextjs is stupid and messes up otherwise.
  */
 
+// TODO: Don't load all of these all the time?
+
 import zod from "zod";
 
 let cached: ReturnType<typeof generate> | null = null;
