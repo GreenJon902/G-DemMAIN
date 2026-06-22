@@ -113,8 +113,8 @@ export function TransferGraph({
  * This expects the time to be in the range (-inf,0].
  * Returns {
  *     data: Array<{ 
- *          time: in range [0, 1],
- *          value: in range [0, 1]
+ *          x: time - in range [0, 1],
+ *          y: value - in range [0, 1]  | null
  *     >],
  *     yTicks: an array of strings from bottom to top,
  *     xTicks: an array of string from left to right
@@ -145,14 +145,12 @@ function prepareData(data: Array<{ time: number, [ k: string]: nunumber }>, max:
     
     return {
         props: Object.fromEntries(props.map(prop => {
-            // Remove missing datapoints
-            data = data.filter(d => d[prop] !== undefined && d[prop] !== null);
             // Normalise and return
             return [
                 prop, 
                 data.map(d => ({
                     x: 1 + d.time / timespan,  // Normalise value
-                    y: d[prop]! / max  // Normalise values
+                    y: (d[prop] === undefined || d[prop] === null) ? null : d[prop] / max  // Normalise values
                 }))
             ];
         })),
