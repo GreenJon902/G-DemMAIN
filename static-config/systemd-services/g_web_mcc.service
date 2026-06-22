@@ -4,7 +4,6 @@
 Description=Runner for the console websocket for the website 
 
 After=network.target
-PartOf=g_web.target
 
 # Limit to 2 restarts (in a 5m period), after that mark as failed
 StartLimitIntervalSec=5m  
@@ -42,4 +41,4 @@ ProtectSystem=full
 IOAccounting=yes
 
 [Install]
-WantedBy=g_web.target
+WantedBy=multi-user.target

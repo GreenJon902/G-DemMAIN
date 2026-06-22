@@ -1,3 +1,0 @@
-[Unit]
-Description=The different parts of the website.
-Wants=g_web_nxt.service g_web_mcc.service
