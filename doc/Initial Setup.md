@@ -49,9 +49,9 @@ cd /opt/infra/scripts/g_web
 Use `npm ci` and `NODE_OPTIONS='--enable-source-maps' npm run build` in the infra folder.
 Create the g_web user.
 ```
-sudo rsync -a .next/standalone/ /var/lib/g_web/next/
-sudo rsync -a .next/static/ /var/lib/g_web/next/.next/static/
-sudo rsync -a dist-mcConsole/ /var/lib/g_web/mcc/
+sudo rsync -a nxt/.next/standalone/ /var/lib/g_web/next/
+sudo rsync -a nxt/.next/static/ /var/lib/g_web/next/.next/static/
+sudo rsync -a mcc/dist/ /var/lib/g_web/mcc/
 sudo chown -R g_web:g_web /var/lib/g_web
 ```
 
@@ -64,9 +64,9 @@ So ownership is not important. g\_mc group gives read/write access for jon and g
 
 
 
-`sudo systemctl stop g_mc g_web g_web_mcc g_monitor`
-`sudo systemctl reset-failed g_mc g_web g_web_mcc g_monitor`
-`sudo systemctl restart g_mc g_web g_web_mcc g_monitor`
+`sudo systemctl stop g_mc g_web_nxt g_web_mcc g_monitor`
+`sudo systemctl reset-failed g_mc g_web_nxt g_web_mcc g_monitor`
+`sudo systemctl restart g_mc g_web_nxt g_web_mcc g_monitor`
 
 
 

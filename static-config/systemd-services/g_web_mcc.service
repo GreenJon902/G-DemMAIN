@@ -4,6 +4,7 @@
 Description=Runner for the console websocket for the website 
 
 After=network.target
+PartOf=g_web.target
 
 # Limit to 2 restarts (in a 5m period), after that mark as failed
 StartLimitIntervalSec=5m  
@@ -29,8 +30,8 @@ RestartSec=10
 UMask=0002
 
 # Status logging
-ExecStartPost=/bin/python3 /opt/infra/scripts/webhooks.py status "Console Websocket" g_web_mcc starting
-ExecStopPost=/bin/python3 /opt/infra/scripts/webhooks.py status "Console Websocket" g_web_mcc stopped
+ExecStartPost=/bin/python3 /opt/infra/scripts/webhooks.py status "Website - Console Websocket" g_web_mcc starting
+ExecStopPost=/bin/python3 /opt/infra/scripts/webhooks.py status "Website - Console Websocket" g_web_mcc stopped
 
 # Security hardening:
 PrivateTmp=true
@@ -41,4 +42,4 @@ ProtectSystem=full
 IOAccounting=yes
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=g_web.target
