@@ -73,7 +73,7 @@ export function Graph({
         return {
             ...line,
             optimizedData: groups
-        }
+        };
     });
 
     
@@ -129,11 +129,11 @@ export function Graph({
                                     >
                                         {[
                                             ...line.optimizedData.filter(ol => ol.length >= 2).map((ol, i) => (
-                                                 <polygon 
+                                                <polygon 
                                                     points={`${ol[0].x},1 ${ol.map(({x, y}) => `${x},${1-y}`).join(" ")} ${ol[ol.length - 1].x},1`} 
                                                     className={`${line.color.fill} opacity-30`}
                                                     key={i}
-                                                 />
+                                                />
                                             ))
                                         ]}
                                     </svg>

@@ -1,8 +1,6 @@
 "use server";
 
 import { listMonitorOptions, loadMonitorRecords, MonitorOption } from "@/lib/panelUtils";
-import { cookies } from "next/headers";
-
 
 /**
  * Loads the monitor options list, and records for the record specified in the GRAPH_MONITOR_OPTION_COOKIE. If this is not set then this will take the minimum interval.

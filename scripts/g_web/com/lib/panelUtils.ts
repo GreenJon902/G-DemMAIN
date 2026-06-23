@@ -295,7 +295,7 @@ export async function loadMonitorRecords(interval: number, number?: number | und
             };
 
     // Returns true if x is null or undefined
-    const nu = (x: any) => x === null || x === undefined;
+    const nu = (x: unknown) => x === null || x === undefined;
 
     // For dictionary fields, get all used keys
     const cpunoKeys = new Set(records.flatMap(r => [...(r.data.sys_cpu?.ind.keys() ?? [])]));
@@ -342,7 +342,7 @@ export async function loadMonitorRecords(interval: number, number?: number | und
 
 // SystemD unit control ---------------------------------------------------------
 export type UnitType = "service" | "timer" | "target" ;
-const UNIT_STATUS_VALUES = ["active", "inactive", "activating", "deactivating", "failed", "reloading"] as const;
+export const UNIT_STATUS_VALUES = ["active", "inactive", "activating", "deactivating", "failed", "reloading"] as const;
 export type UnitStatus = typeof UNIT_STATUS_VALUES[number];
 /**
  * Gets the status of the given unit.

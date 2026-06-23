@@ -2,7 +2,7 @@
  * This file contains different graph presets/templates that are used frequently.
  */
 
-import { Graph, LINE_COLORS, LINE_CYAN, LINE_FUCHSIA, LINE_GRAY, LINE_LIME, LINE_ROSE, LINE_VIOLET } from "./Graph";
+import { Graph, LINE_COLORS, LINE_CYAN, LINE_FUCHSIA, LINE_GRAY, LINE_ROSE, LINE_VIOLET } from "./Graph";
 
 type nunumber = null | undefined | number;
 

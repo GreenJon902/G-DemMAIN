@@ -1,6 +1,6 @@
 "use client";
 
-import { ActionButton, BUTTON_CYAN, BUTTON_GREEN, BUTTON_RED, BUTTON_YELLOW, LinkButton } from "./../ui/Button";
+import { ActionButton, BUTTON_GREEN, BUTTON_RED, BUTTON_YELLOW } from "./../ui/Button";
 import PanelPageSection from "./ui/PanelPageSection";
 import { loadPanelDataAction, Unit, unitAction } from "./actions";
 import { CpuRamGraph } from "./ui/Graphs";

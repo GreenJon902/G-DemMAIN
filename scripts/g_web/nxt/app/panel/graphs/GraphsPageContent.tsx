@@ -13,7 +13,7 @@ export default function GraphPageContent({
 }) {
     const gd = data.timed;
     return (
-        // TODO: Show indicator for time of last monitor log taken
+    // TODO: Show indicator for time of last monitor log taken
 
         <>
             {/* Monitor option selector: */}
@@ -23,10 +23,10 @@ export default function GraphPageContent({
                 This is passed to the loadGraphDataAction, who returns it for this radio button to know what value to show.
                 So when a button is clicked, it will set only the refreshing-page's parameters.
             */ }
-           <div className="flex w-full gap-2 items-center flex-wrap">
-               <h1>
+            <div className="flex w-full flex-wrap items-center gap-2">
+                <h1>
                     Select data source:
-               </h1>
+                </h1>
                 <RadioButtons
                     className="flex-1"
                     choices={

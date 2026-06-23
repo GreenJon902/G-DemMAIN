@@ -1,5 +1,3 @@
-import { MonitorOption } from "@/lib/panelUtils";
-
 /**
  * Radio buttons with the given choices.
  * Selected is selected by default, this is expected to be a valid choice.
@@ -26,7 +24,7 @@ export default function RadioButtons<T>({
                     .map((({c, cname}) => (
                         <button 
                             // Compare cnames as we can't compare objects
-                            className={`flex-1 first:rounded-l-md last:rounded-r-md ${(cname === selectedCName) ? "bg-gray-700 border-white border" : "bg-gray-800 border-gray-700 not-last:border-r"} p-1 cursor-pointer hover:bg-gray-700`}
+                            className={`flex-1 first:rounded-l-md last:rounded-r-md ${(cname === selectedCName) ? "border border-white bg-gray-700" : "border-gray-700 bg-gray-800 not-last:border-r"} cursor-pointer p-1 hover:bg-gray-700`}
                             key={cname}
                             onClick={() => setter(c)}
                         >
