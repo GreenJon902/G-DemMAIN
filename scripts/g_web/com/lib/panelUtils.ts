@@ -324,12 +324,12 @@ export async function loadMonitorRecords(interval: number, number?: number | und
     });
 
     // Extract data
-    //     Some data isn't really time dependent, we just want the newest version of it
+    //     Some data isn't really time dependent
     // Disk usage:
-    const diskUsage = records.map(r => r.data.sys_disk_usage).filter(du => du !== null).at(-1) ?? null;  // Take newest found value
+    const diskUsage = records.at(-1)?.data.sys_disk_usage ?? null;  // Take newest found value
     // CGroup procs:
     const cgroupsProcs = new Map(records[0].data.cgroups.keys().map(k => [k, 
-        records.map(r => r.data.cgroups.get(k)?.procs ?? null).filter(ps => ps !== null).at(-1) ?? null
+        records.at(-1)?.data.cgroups.get(k)?.procs ?? null
     ]));
 
     return {
