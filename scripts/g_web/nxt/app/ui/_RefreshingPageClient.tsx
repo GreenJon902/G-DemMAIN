@@ -12,17 +12,23 @@ import LabelSinceLastRefresh from "./LabelSinceLastRefresh";
  * @param refreshRate - How often to reload the data, in ms.
  * @param Component - The component who's data is refreshing.
  */
-export default function RefreshingPageClient<T extends TimeStamped>({
+export default function RefreshingPageClient<T extends TimeStamped, U>({
     initialData,
     loadNewDataAction,
     refreshRate,
     Component
 }: {
     initialData: T,
-    loadNewDataAction: () => Promise<T>,
+    loadNewDataAction: (param: U | undefined) => Promise<T>,
     refreshRate: number,
-    Component: (props: { data: T }) => ReactNode
+    Component: (props: {
+        data: T,
+        setParam: (param: U) => void 
+    }) => ReactNode
 }) {
+    const [param, setParam] = useState<U | undefined>(undefined);
+    const isFirstRender = useRef(true);  // Is this the first render
+
     const updateCurrentTimestampRef = useRef<() => void>(null);
 
     // Routinely refresh the data from the serveraction
@@ -35,7 +41,7 @@ export default function RefreshingPageClient<T extends TimeStamped>({
         const pullData = async () => {
             if (cancelled) return;
             try {
-                setData(await loadNewDataAction());
+                setData(await loadNewDataAction(param));
                 if (updateCurrentTimestampRef.current !== null) {
                     updateCurrentTimestampRef.current();  // Refresh here too as otherwise data.timestamp will be larger than currentTimestamp
                 }
@@ -44,18 +50,19 @@ export default function RefreshingPageClient<T extends TimeStamped>({
             }
             timeout = setTimeout(pullData, refreshRate);
         };
-        timeout = setTimeout(pullData, refreshRate);
+        timeout = setTimeout(pullData, (isFirstRender.current) ? refreshRate : 0);  // If this is the first render then we want to wait the refreshRate. If this isn't the first render then this was called because some property/state changed, in which case data should be refreshed now
+        isFirstRender.current = false;
 
         return () => {
             clearTimeout(timeout);
             cancelled = true;
         };
-    }, [refreshRate, loadNewDataAction]);
+    }, [refreshRate, loadNewDataAction, param]);
 
     // Render component and time-indicator
     return (
         <>
-            <Component data={data} />
+            <Component data={data} setParam={setParam} />
             <LabelSinceLastRefresh timestamp={data.timestamp} updateCurrentTimestampRef={updateCurrentTimestampRef} />
         </>
     );

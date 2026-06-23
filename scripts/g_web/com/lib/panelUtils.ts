@@ -237,16 +237,31 @@ export type MonitorRecord = z.infer<typeof MonitorRecord>;
 
 const MONITOR_FOLDER = (process.env.G_MONITOR_FOLDER) ?? "/var/lib/g_monitor";
 
+export type MonitorOption = { interval: number, number?: number | undefined }
+/**
+ * Lists all the types of monitor records that it can find.
+ */
+export async function listMonitorOptions(): Promise<MonitorOption[]> {
+    optimisticRequireUser("panel");
+
+    return (await fs.readdir(MONITOR_FOLDER))
+        .map(name => name.match(/^(\d+)(?:_(\d+))?$/))  // Parse name
+        .filter(match => match !== null)  // Remove non-matches
+        .map(match => ({ interval: parseInt(match[1]), number: (match[2] !== undefined) ? parseInt(match[2]) : undefined }));  // Convert to a usable object
+}
+
 /**
  * Load all the records for the given monitor retainment rule.
  * This expects a subfolder to exist for the given rule.
  * Returns a sorted array of objects with a timestamp (in seconds) and graphdata at that point. The oldest record is first and has a negative value. The newest record is last and has a positive value.
  */
-export async function loadMonitorRecords(interval: number, number: number) {
+export async function loadMonitorRecords(interval: number, number?: number | undefined) {
     optimisticRequireUser("panel");
 
+    const monitorName = (number === undefined) ? `${interval}` : `${interval}_${number}`;
+
     // Load data
-    const subfolder = path.join(MONITOR_FOLDER, `${interval}_${number}`); 
+    const subfolder = path.join(MONITOR_FOLDER, monitorName); 
     const recordNames = (await fs.readdir(subfolder))
         .filter(name => /^\d+\.json$/.test(name));  // Only load files of the correct format
     const records = await Promise.all(recordNames.map(async record => ({

@@ -2,16 +2,46 @@
 import PanelPageSection from "../ui/PanelPageSection";
 import { CpuRamGraph, MultiCPUGraph, TransferGraph } from "../ui/Graphs";
 import { loadGraphDataAction } from "./actions";
+import RadioButtons from "@/app/ui/RadioButtons";
+import { MonitorOption } from "@/lib/panelUtils";
 
 export default function GraphPageContent({
-    data 
+    data, setParam
 }: {
-    data: Awaited<ReturnType<typeof loadGraphDataAction>> 
+    data: Awaited<ReturnType<typeof loadGraphDataAction>>,
+    setParam: (param: MonitorOption) => void
 }) {
     const gd = data.timed;
     return (
         // TODO: Show indicator for time of last monitor log taken
+
         <>
+            {/* Monitor option selector: */}
+            {/* 
+                The value handling for this field is a bit weird.
+                The refreshing-page parameters stores the current option.
+                This is passed to the loadGraphDataAction, who returns it for this radio button to know what value to show.
+                So when a button is clicked, it will set only the refreshing-page's parameters.
+            */ }
+           <div className="flex w-full gap-2 items-center flex-wrap">
+               <h1>
+                    Select data source:
+               </h1>
+                <RadioButtons
+                    className="flex-1"
+                    choices={
+                        // Sort options so buttons don't move arround
+                        data.options
+                            .sort((a, b) => (a.number ?? 0) - (b.number ?? 0))
+                            .sort((a, b) => a.interval - b.interval)
+                    }
+                    selected={data.currentOption}
+                    setter={setParam}
+                    nameConv={({interval, number}) => (number === undefined) ? `${interval}` : `${interval}_${number}`}
+                />
+            </div>
+            
+            {/* Actual graphs: */}
             <PanelPageSection title="System">
                 <div className="flex w-full flex-col gap-4">
                     <div className="grid w-full gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4">  
