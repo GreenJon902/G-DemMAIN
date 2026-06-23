@@ -54,12 +54,14 @@ export type PanelData = {
 /**
  * Get the data used on the main panel page.
  * This method should be fast enough that it can be used on the inital server-side render of the page.
+ * The timestamp is taken from the graph data.
  */
 export async function loadPanelDataAction(): Promise<PanelData> {
+    const graphData = await loadGraphDataAction();
     return {
         unitsStatuses: await getUnitsStatuses(),
-        graphData: await loadGraphDataAction(),  // TODO: This could be improved
-        timestamp: Date.now()
+        graphData,  // TODO: This could be improved
+        timestamp: graphData.timestamp
     };
 }
 

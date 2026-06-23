@@ -182,7 +182,7 @@ export async function tailLatest(n: number) {
     const padded_lines = [...Array(n - cropped_lines.length).fill(""), ...cropped_lines];
 
     // Return joined content
-    return { contents: padded_lines, timestamp: Date.now() };
+    return { contents: padded_lines };
 }
 
 // Monitor data ----------------------------------------------------------------------------------
@@ -334,7 +334,7 @@ export async function loadMonitorRecords(interval: number, number?: number | und
     ])) : (new Map() as Map<string, Map<string, string> | null>); // Default to empty map if no data
 
     return {
-        timestamp: Date.now(),
+        timestamp: latestTime * 1000,  // Timestamp is in ms
         timed: graphData,
         disk_usage: diskUsage,
         cgroup_procs: cgroupsProcs

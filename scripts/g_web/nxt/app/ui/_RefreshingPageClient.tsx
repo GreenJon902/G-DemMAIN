@@ -3,6 +3,7 @@
 import { useState, useEffect, ReactNode, useRef } from "react";
 import { TimeStamped } from "./RefreshingPage";
 import LabelSinceLastRefresh from "./LabelSinceLastRefresh";
+import { text } from "node:stream/consumers";
 
 
 /**
@@ -30,6 +31,7 @@ export default function RefreshingPageClient<T extends TimeStamped, U>({
     const isFirstRender = useRef(true);  // Is this the first render
 
     const updateCurrentTimestampRef = useRef<() => void>(null);
+    const [lastSyncTime, setLastSyncTime] = useState(Date.now());
 
     // Routinely refresh the data from the serveraction
     const [data, setData] = useState(initialData);
@@ -42,6 +44,7 @@ export default function RefreshingPageClient<T extends TimeStamped, U>({
             if (cancelled) return;
             try {
                 setData(await loadNewDataAction(param));
+                setLastSyncTime(Date.now());
                 if (updateCurrentTimestampRef.current !== null) {
                     updateCurrentTimestampRef.current();  // Refresh here too as otherwise data.timestamp will be larger than currentTimestamp
                 }
@@ -59,11 +62,26 @@ export default function RefreshingPageClient<T extends TimeStamped, U>({
         };
     }, [refreshRate, loadNewDataAction, param]);
 
-    // Render component and time-indicator
+    // Render component and time-indicator(s)
     return (
         <>
             <Component data={data} setParam={setParam} />
-            <LabelSinceLastRefresh timestamp={data.timestamp} updateCurrentTimestampRef={updateCurrentTimestampRef} />
+            {
+                (data.timestamp !== undefined) ?
+                    <div className="grid">  {/* grid for stack vertical */}
+                        <LabelSinceLastRefresh 
+                            timestamp={lastSyncTime}
+                            updateCurrentTimestampRef={updateCurrentTimestampRef}
+                        />
+                        <LabelSinceLastRefresh 
+                            timestamp={data.timestamp} 
+                            updateCurrentTimestampRef={updateCurrentTimestampRef}
+                            text="Data from"
+                        />
+                    </div>
+                :
+                    <LabelSinceLastRefresh timestamp={lastSyncTime} />
+            }
         </>
     );
 }
