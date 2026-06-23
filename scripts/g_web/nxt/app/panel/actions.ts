@@ -26,6 +26,7 @@ const TRACKED_UNITS = [
     _mkUnit("g_web_mcc", "service", true, true),
     _mkUnit("g_nightly_restart", "service", false, false),
     _mkUnit("g_nightly_restart", "timer", true, true),
+    _mkUnit("g_monitor", "service", true, true),
     _mkUnit("mysql", "service", true, true)
 ]; // TODO: DOn't hardcode these
 
