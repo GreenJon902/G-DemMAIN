@@ -8,9 +8,9 @@ g_web ALL=(root) NOPASSWD: \
     /usr/bin/systemctl start g_nightly_restart.timer, \
     /usr/bin/systemctl restart g_nightly_restart.timer, \
     /usr/bin/systemctl stop g_nightly_restart.timer, \
-    /usr/bin/systemctl start g_web.service, \
-    /usr/bin/systemctl restart g_web.service, \
-    /usr/bin/systemctl stop g_web.service, \
+    /usr/bin/systemctl start g_web_nxt.service, \
+    /usr/bin/systemctl restart g_web_nxt.service, \
+    /usr/bin/systemctl stop g_web_nxt.service, \
     /usr/bin/systemctl start g_web_mcc.service, \
     /usr/bin/systemctl restart g_web_mcc.service, \
     /usr/bin/systemctl stop g_web_mcc.service, \
