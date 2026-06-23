@@ -328,9 +328,9 @@ export async function loadMonitorRecords(interval: number, number?: number | und
     // Disk usage:
     const diskUsage = records.at(-1)?.data.sys_disk_usage ?? null;  // Take newest found value
     // CGroup procs:
-    const cgroupsProcs = new Map(records[0].data.cgroups.keys().map(k => [k, 
-        records.at(-1)?.data.cgroups.get(k)?.procs ?? null
-    ]));
+    const cgroupsProcs = (records.length > 0) ? new Map([...records.at(-1)!.data.cgroups.keys()].map(k => [k, 
+        records.at(-1)!.data.cgroups.get(k)?.procs ?? null
+    ])) : (new Map() as Map<string, Map<string, string> | null>); // Default to empty map if no data
 
     return {
         timestamp: Date.now(),
