@@ -11,7 +11,6 @@ export default async function Layout({
     return (
         <html>
             <head>
-                <link rel="icon" type="image/png" href="favicon.png" />
             </head>
             <body className="flex min-h-dvh flex-col bg-gray-900 text-white">
                 <header><nav> <GlobalNav /> </nav></header>

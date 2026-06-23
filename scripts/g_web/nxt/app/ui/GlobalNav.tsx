@@ -1,4 +1,4 @@
-import icon from "@/public/favicon.png";
+import icon from "@/public/icon.png";
 import { NS } from "@/lib/auth";
 import { UserCircleIcon as UserCircleIconOutline } from "@heroicons/react/24/outline";
 import { UserCircleIcon as UserCircleIconSolid } from "@heroicons/react/24/solid";
@@ -16,7 +16,7 @@ export default async function GlobalNav() {
                 <Link href="/" className="size-6">
                     <Image
                         src={icon}
-                        className="size-full rounded-md hover:opacity-50"
+                        className="size-full hover:opacity-50"
                         alt={"Logo"}
                     />
                 </Link>
