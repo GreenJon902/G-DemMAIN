@@ -3,6 +3,7 @@
  * All exported functions should check for authentication.
  */
 
+import "server-only";
 import fs from "fs/promises";
 import * as path from "node:path";
 import * as z from "zod";
@@ -235,7 +236,7 @@ const MonitorRecord = z.strictObject({
 });
 export type MonitorRecord = z.infer<typeof MonitorRecord>;
 
-const MONITOR_FOLDER = (process.env.G_MONITOR_FOLDER) ?? "/var/lib/g_monitor";
+const MONITOR_FOLDER = (process.env.NODE_ENV === "development" && process.env.G_MONITOR_FOLDER) || "/var/lib/g_monitor";
 
 export type MonitorOption = { interval: number, number?: number | undefined }
 /**
