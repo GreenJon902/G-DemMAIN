@@ -4,6 +4,7 @@ import { CpuRamGraph, MultiCPUGraph, TransferGraph } from "../ui/Graphs";
 import { loadGraphDataAction } from "./actions";
 import RadioButtons from "@/app/ui/RadioButtons";
 import { MonitorOption } from "@/lib/panelUtils";
+import { BYTES, rebase } from "@/loclib/unitUtils";
 
 export default function GraphPageContent({
     data, setParam
@@ -59,16 +60,14 @@ export default function GraphPageContent({
                             inDisplayName="System Network Down" inShortName="down"
                             outDisplayName="System Network Up" outShortName="up"
                             colorScheme={1}
-                            units="MB/s"
-                            multiplier={1024**-2}
+                            units={BYTES}
                         />
                         <TransferGraph
                             data={gd.map(d => ({ time: d.time, in: d.sys_disk_io?.agg?.read, out: d.sys_disk_io?.agg?.written }))}
                             inDisplayName="System Disk Reads" inShortName="read"
                             outDisplayName="System Disk Writes" outShortName="write"
                             colorScheme={0}
-                            units="MB/s"
-                            multiplier={1024**-2}
+                            units={BYTES}  // In MB
                         />
                     </div>
                     <table className="w-full">
@@ -131,8 +130,7 @@ export default function GraphPageContent({
                                         inDisplayName="CGroup Disk Reads" inShortName="read"
                                         outDisplayName="CGroup Disk Writes" outShortName="write"
                                         colorScheme={0}
-                                        units="MB/s"
-                                        multiplier={1024**-2}
+                                        units={rebase(BYTES, 10**3)}  // Data is in KB 
                                     />
                                 </div>
                                 {

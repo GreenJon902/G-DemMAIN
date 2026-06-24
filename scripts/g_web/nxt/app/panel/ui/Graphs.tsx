@@ -2,6 +2,7 @@
  * This file contains different graph presets/templates that are used frequently.
  */
 
+import { BaseUnit, BYTES, humanize, PERCENTAGE, rebase, SECONDS } from "@/loclib/unitUtils";
 import { Graph, LINE_COLORS, LINE_CYAN, LINE_FUCHSIA, LINE_GRAY, LINE_ROSE, LINE_VIOLET } from "./Graph";
 
 type nunumber = null | undefined | number;
@@ -20,8 +21,11 @@ export function CpuRamGraph({
     noCores: number | null,
     what: string,
 }) {
-    const cpuRet = prepareData(data, 1, false, "%", (noCores ?? 1) * 100, "cpu");  // If we don't know the number of cores then assume 1. It doesn't really matter
-    const memRet = prepareData(data, totMem, true, "GB", 1024**-2, "mem");
+    const cpuRet = prepareData(data.map(x => ({
+        ...x,
+        cpu: (x.cpu === null || x.cpu === undefined) ? null : (x.cpu * (noCores ?? 1) * 100)  // Scale cpu to a proper percentage (sum of percentage for each core (so can be over 100%))
+    })), (noCores ?? 1) * 100, false, PERCENTAGE, "", "cpu");                                 // If we don't know the number of cores then assume 1. It doesn't really matter
+    const memRet = prepareData(data, totMem, true, rebase(BYTES, 10**3), "", "mem");
     return (
         <Graph 
             lines={[
@@ -51,7 +55,7 @@ export function MultiCPUGraph({
         ...((d.cpus) ? Object.fromEntries(d.cpus.entries()) : {}) as {[cpuno: string]: number}
     }));
     const keys = Array.from(data[data.length - 1]?.cpus?.keys() ?? []).sort().reverse();
-    const prepped = prepareData(flattened, 1, true, undefined, 1, ...keys);
+    const prepped = prepareData(flattened, 1, true, undefined, "", ...keys);
 
     return (
         <Graph 
@@ -71,25 +75,23 @@ export function MultiCPUGraph({
 /**
  * @param data - The data to plot. 'in' is coming towards the cpu (network recieved, disk read), 'out' is away (sent, written).
  * @param inDisplayName - What is the name of incoming data (e.g. "read"). This is rendered to the user.
- * @param units - The units of the data (after scaling, see multiplier).
- * @param multiplier - How much to scale the data by before displaying it to the user.
+ * @param units - The units of the data.
  * @param colorScheme - 0 for cyan and fuchsia, 1 for violet and rose.
  * @param inShortName - A short piece of text to be put after the units to indicate these units correspond to incoming data.
  */
 export function TransferGraph({
-    data, inDisplayName, outDisplayName, units, multiplier, colorScheme, inShortName, outShortName
+    data, inDisplayName, outDisplayName, units, colorScheme, inShortName, outShortName
 }: {
     data: Array<{ time: number, in: nunumber, out: nunumber }>,
     inDisplayName: string,
     outDisplayName: string,
-    units: string,
-    multiplier: number,
+    units: BaseUnit,
     colorScheme: 0 | 1,
     inShortName: string,
     outShortName: string
 }) {
-    const inPrep = prepareData(data, undefined, false, `${units} ${inShortName}`, multiplier, "in");
-    const outPrep = prepareData(data, undefined, false, `${units} ${outShortName}`, multiplier, "out");
+    const inPrep = prepareData(data, undefined, false, units, `/s ${inShortName}`, "in");
+    const outPrep = prepareData(data, undefined, false, units, `/s ${outShortName}`, "out");
     const in_ = inPrep?.props.in;
     const out = outPrep?.props.out;
 
@@ -123,10 +125,10 @@ export function TransferGraph({
  * @param max - Optional maximum value. If this is given then it will be used, if this is null then null will be returned, if this is undefined then we will attempt to calculate a maximum value.
  * @param props - The properties in the data object that we are preparing.
  * @param percentage - Should axis ticks contain a percentage.
- * @param units - The units of the axis ticks, or undefined to not render absolute values.
- * @param tickMultiplier - The multiplier to scale values by so they fit the ticks.
+ * @param units - The units of the axis ticks, or undefined to not render absolute values. Undefined will force a percentage to render.
+ * @param unitSuffix - The suffix of the units (e.g. /s). Set to an empty string for none.
  */
-function prepareData(data: Array<{ time: number, [ k: string]: nunumber }>, max: number | null | undefined, percentage: boolean, units: string | undefined, tickMultiplier: number, ...props: string[]) {
+function prepareData(data: Array<{ time: number, [ k: string]: nunumber }>, max: number | null | undefined, percentage: boolean, units: BaseUnit | undefined, unitSuffix: string, ...props: string[]) {
     // Check if return
     if (max === null) return null;  // We wanted to supply a maximum, but there is missing data in the data source
     // Calculate timespan
@@ -154,11 +156,11 @@ function prepareData(data: Array<{ time: number, [ k: string]: nunumber }>, max:
                 }))
             ];
         })),
-        yTicks: [0.25, 0.5, 0.75].map(n => 
-            (percentage ? `${n * 100}%` : "") +
-                                     (percentage && units ? " - " : "") + 
-                                     (units ? `${(max * tickMultiplier * n).toFixed(2)}${units}` : "")),
-        xTicks: [-0.75, -0.5, -0.25].map(n => `${(n * timespan / 60).toFixed(2)}m`)
+        yTicks: (units === undefined) ? 
+            ["25%", "50%", "75%"]  // No units so we must render percentage
+        :
+            humanize([0.25, 0.5, 0.75].map(n => max * n), units, { unitSuffix, baseInteger: true, percentageMax: (percentage) ? max : undefined }),
+        xTicks: humanize([-0.75, -0.5, -0.25].map(n => n * timespan), SECONDS)
     };
 }
 

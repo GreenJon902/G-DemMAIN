@@ -1,6 +1,7 @@
 "use client";
 
 import { RefObject, useEffect, useState } from "react";
+import { SECONDS, humanize } from "@/loclib/unitUtils";
 
 /**
  * A label which indicates the time since the data was last updated.
@@ -32,7 +33,7 @@ export default function LabelSinceLastRefresh({
     
     return (
         <span className="text-gray-600">
-            {text} {Math.round((currentTimestamp - timestamp) / 1000)} seconds ago
+            {text} {humanize(Math.round((currentTimestamp - timestamp) / 1000), SECONDS, { baseInteger: true })} seconds ago
         </span>
     );
 }
