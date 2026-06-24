@@ -158,7 +158,7 @@ function prepareData(data: Array<{ time: number, [ k: string]: nunumber }>, max:
         })),
         yTicks: (units === undefined) ? 
             ["25%", "50%", "75%"]  // No units so we must render percentage
-        :
+            :
             humanize([0.25, 0.5, 0.75].map(n => max * n), units, { unitSuffix, baseInteger: true, percentageMax: (percentage) ? max : undefined }),
         xTicks: humanize([-0.75, -0.5, -0.25].map(n => n * timespan), SECONDS)
     };

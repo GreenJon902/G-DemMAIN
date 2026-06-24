@@ -17,7 +17,7 @@ export function rebase(baseUnit: BaseUnit, newBase: number): BaseUnit {
         
     // Confirm rebased contains key 1
     if (!Object.keys(rebased).map(parseInt).includes(1)) throw `Expected key 1, ${rebased}`;
-    const castRebased = rebased as ((typeof rebased) & { 1: string })
+    const castRebased = rebased as ((typeof rebased) & { 1: string });
 
     return castRebased;
 }
@@ -35,16 +35,16 @@ export function rebase(baseUnit: BaseUnit, newBase: number): BaseUnit {
  * @param percentageMax - If this is given then a percentage will be shown. The percentage is the percentage of the data point of this value.
  */
 export function humanize(data: number[] | number, baseUnit: BaseUnit, 
-                         { 
-                             unitSuffix = "",
-                             baseInteger = false,
-                             percentageMax 
-                         } : {
+    { 
+        unitSuffix = "",
+        baseInteger = false,
+        percentageMax 
+    } : {
                             unitSuffix?: string,
                             baseInteger?: boolean,
                             percentageMax?: number
                          } = {}
-    ) {
+) {
     const xs = Array.isArray(data) ? data : [data];
 
     const unitEntries = Object.entries(baseUnit).map(([key, value]) => [parseFloat(key), value] as const);
@@ -68,7 +68,7 @@ export function humanize(data: number[] | number, baseUnit: BaseUnit,
         (
             (isFinite(highestExpo)) ?
                 Math.max(0, 3 - Math.floor(highestExpo) - 1)  // We want three sig figs, if this would require rounding pre-decimal-point numbers then just keep everything before the point
-            :
+                :
                 0
         );  // Round to no decimal places cause idk what else to do
     const zs = ys.map(y => y.toFixed(dp));
