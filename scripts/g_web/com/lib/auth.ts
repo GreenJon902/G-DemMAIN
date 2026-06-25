@@ -6,6 +6,8 @@ import { getIronSession as getIronSession_ } from "iron-session";
 import { C } from "./environ";
 import { cookies as nextCookies } from "next/headers";
 import { sendWebloginWebhook } from "./webhook";
+import prisma from "./prisma";
+import * as argon2 from "argon2";
 
 const COOKIE_NAME = "auth";  // Name of the cookie that auth data is stored in
 
@@ -98,18 +100,19 @@ export class SessionAccessor {
     async attemptCreateSession(username: string, password: string) {
         // TODO: What to do if a session already exists
 
-        // TODO: Load sessions from a database
+        // Check with database if user exists and password is correct
+        const user = await prisma().user.findUnique({
+            where: { username }
+        });
+        if (user === null || !await argon2.verify(user.password_hash, password)) return false;
 
-        const i = C().PANEL_USER.indexOf(username);
-        if (i === -1) return false;  // User not found
-        if (password !== C().PANEL_PASSWORD[i]) return false;  // Invalid password
-
+        // Create session for user
         const session = await this.#getIronSession(); 
         session.hasSession = true;
         session.data = {
             username: username,
             optimistic: {
-                panel: true
+                panel: user.has_panel_access
             }
         };
         await session.save();

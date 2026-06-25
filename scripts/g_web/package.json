@@ -2,25 +2,22 @@
     "name": "@g_web",
     "version": "0.1.0",
     "private": true,
+    "type": "module",
     "scripts": {
-        "dev": "concurrently --kill-others -n NXT,MCC \"npm run dev:nxt\" \"npm run dev:mcc\"",
+        "dev": "npx prisma generate && concurrently --kill-others -n NXT,MCC \"npm run dev:nxt\" \"npm run dev:mcc\"",
         "dev:nxt": "npm --prefix nxt run dev",
         "dev:mcc": "npm --prefix mcc run dev",
-        "lint": "eslint",
-        "typecheck": "tsc -p nxt/tsconfig.json && tsc -p mcc/tsconfig.json",
-        "build": "npm run build:nxt && npm run build:mcc",
+        "lint": "npx prisma generate && eslint",
+        "typecheck": "npx prisma generate && tsc -p nxt/tsconfig.json && tsc -p mcc/tsconfig.json",
+        "build": "npx prisma generate && npm run build:nxt && npm run build:mcc",
         "build:nxt": "npm --prefix nxt run build",
         "build:mcc": "npm --prefix mcc run build"
     },
-    "dependencies": {
-    },
     "devDependencies": {
         "@heroicons/react": "^2.2.0",
-        "next": "16.2.4",
-        "react": "19.2.4",
-        "react-dom": "19.2.4",
         "@tailwindcss/postcss": "^4",
-        "@types/node": "^20",
+        "@types/node": "^20.19.43",
+        "@types/pg": "^8.20.0",
         "@types/react": "^19",
         "@types/react-dom": "^19",
         "@types/ws": "^8.18.1",
@@ -31,6 +28,10 @@
         "eslint-config-next": "16.2.4",
         "eslint-plugin-tailwindcss": "^3.18.3",
         "iron-session": "^8.0.4",
+        "next": "16.2.4",
+        "prisma": "^7.8.0",
+        "react": "19.2.4",
+        "react-dom": "19.2.4",
         "tailwindcss": "^4",
         "ts-rcon": "^1.2.1",
         "tsup": "^8.5.1",
@@ -38,5 +39,13 @@
         "typescript": "^5",
         "ws": "^8.20.1",
         "zod": "^4.4.3"
+    },
+    "dependencies": {
+        "@prisma/adapter-mariadb": "^7.8.0",
+        "@prisma/adapter-pg": "^7.8.0",
+        "@prisma/client": "^7.8.0",
+        "argon2": "^0.44.0",
+        "dotenv": "^17.4.2",
+        "pg": "^8.22.0"
     }
 }

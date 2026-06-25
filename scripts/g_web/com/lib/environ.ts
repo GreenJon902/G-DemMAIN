@@ -9,13 +9,13 @@ import zod from "zod";
 
 let cached: ReturnType<typeof generate> | null = null;
 
+
 const generate = () => {
     const zPort = zod.string().regex(/^\d+$/).transform(Number).pipe(zod.number().int().min(0).max(65535));
+    const zTNe = zod.string().trim().nonempty();
 
     const MCCWSS_PORT = zPort.parse(process.env.MCCWSS_PORT);
-    const SESSION_PASSWORD = zod.string().trim().min(32).parse(process.env.SESSION_PASSWORD);
-    const PANEL_USER = zod.string().trim().parse(process.env.PANEL_USER).split(",");
-    const PANEL_PASSWORD = zod.array(zod.string()).length(PANEL_USER.length).parse(zod.string().trim().parse(process.env.PANEL_PASSWORD).split(","));
+    const SESSION_PASSWORD = zTNe.min(32).parse(process.env.SESSION_PASSWORD);
 
     const DONT_REQUIRE_WEBHOOKS_FILE = zod.coerce.boolean().default(false).parse(process.env.DONT_REQUIRE_WEBHOOKS_FILE);
 
@@ -25,8 +25,13 @@ const generate = () => {
     const MINECRAFT_RCON_PORT = zPort.parse(process.env.MINECRAFT_RCON_PORT);
     const MINECRAFT_RCON_PASSWORD = zod.string().parse(process.env.MINECRAFT_RCON_PASSWORD);
 
+    const G_WEB_DATABASE_USER = zTNe.parse(process.env.G_WEB_DATABASE_USER);
+    const G_WEB_DATABASE_PASSWORD = zTNe.parse(process.env.G_WEB_DATABASE_PASSWORD);
+    const G_WEB_DATABASE_HOST = zTNe.parse(process.env.G_WEB_DATABASE_HOST);
+    const G_WEB_DATABASE_PORT = zPort.parse(process.env.G_WEB_DATABASE_PORT);
+
     return {
-        MCCWSS_PORT, SESSION_PASSWORD, PANEL_USER, PANEL_PASSWORD, DONT_REQUIRE_WEBHOOKS_FILE, LIST_FOLDER, MC_LOG_FOLDER, MINECRAFT_RCON_PORT, MINECRAFT_RCON_PASSWORD
+        MCCWSS_PORT, SESSION_PASSWORD, DONT_REQUIRE_WEBHOOKS_FILE, LIST_FOLDER, MC_LOG_FOLDER, MINECRAFT_RCON_PORT, MINECRAFT_RCON_PASSWORD, G_WEB_DATABASE_USER, G_WEB_DATABASE_PASSWORD, G_WEB_DATABASE_HOST, G_WEB_DATABASE_PORT
     };
 };
 
@@ -35,3 +40,5 @@ export function C() {
     cached = cached ?? generate();
     return cached;
 }
+
+export default C;

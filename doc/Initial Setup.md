@@ -42,7 +42,10 @@ sudo python3 ../utils/sync-sudoers.py && \
 sudo systemctl daemon-reload
 ```
 
-8. Build the website
+8. Set up the database 
+See `Databases.md`. We need database users created.
+
+9. Build the website
 ```
 cd /opt/infra/scripts/g_web
 ```

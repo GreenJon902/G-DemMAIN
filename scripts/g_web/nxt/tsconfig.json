@@ -11,6 +11,7 @@
     ],
     "paths": {
       "@/lib/*": ["../com/lib/*"],
+      "@/prisma/*": ["../generated/prisma/*"],
       "@/*": ["./*"],
     }
   },
