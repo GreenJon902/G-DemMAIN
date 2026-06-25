@@ -4,7 +4,7 @@
 
 import ItemRow from "./ItemRow";
 import PanelPageSection from "../ui/PanelPageSection";
-import { BANNEDIP_LIST, BANNEDPLAYER_LIST, loadListItems, OPERATOR_LIST, List as PUList, WHITELIST_LIST } from "@/lib/panelUtils";
+import { BANNEDIP_LIST, BANNEDPLAYER_LIST, loadListItems, OPERATOR_LIST, List as PUList, WHITELIST_LIST } from "@gcom/lib/panelUtils";
 import { AutoLabelSinceLastRefresh } from "../../ui/LabelSinceLastRefresh";
 
 

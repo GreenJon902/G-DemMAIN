@@ -2,7 +2,7 @@
  * This file contains different graph presets/templates that are used frequently.
  */
 
-import { BaseUnit, BYTES, humanize, PERCENTAGE, rebase, SECONDS } from "@/loclib/unitUtils";
+import { BaseUnit, BYTES, humanize, PERCENTAGE, rebase, SECONDS } from "@/lib/unitUtils";
 import { Graph, LINE_COLORS, LINE_CYAN, LINE_FUCHSIA, LINE_GRAY, LINE_ROSE, LINE_VIOLET } from "./Graph";
 
 type nunumber = null | undefined | number;

@@ -1,9 +1,12 @@
 {
-    "name": "@g_web/mcc",
+    "name": "@gmcc",
     "version": "0.1.0",
     "private": true,
     "scripts": {
         "dev": "dotenv -e ../.devenv -- tsx server.ts",
-        "build": "tsup server.ts --format cjs --out-dir dist"
+        "build": "tsc"
+    },
+    "dependencies": {
+        "@gcom": "*"
     }
 }

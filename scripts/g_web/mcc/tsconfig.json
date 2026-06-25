@@ -1,16 +1,12 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@/lib/*": ["../com/lib/*"],
-      "@/prisma/*": ["../generated/prisma/*"],
-      "@/*": ["./*"],
-    }
+    "outDir": "dist",
+    "rootDir": "."
   },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-  ],
-  "exclude": ["node_modules"]
+  "include": ["./**/*.ts"],
+  "exclude": ["node_modules"],
+  "references": [
+    { "path": "../com" }
+  ]
 }

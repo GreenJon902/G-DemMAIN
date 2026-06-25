@@ -1,9 +1,12 @@
 {
-    "name": "@g_web/nxt",
+    "name": "@gnxt",
     "version": "0.1.0",
     "private": true,
     "scripts": {
         "dev": "dotenv -e ../.devenv -- next dev -p 8000",
         "build": "next build"
-    }
+    },
+   "dependencies": {
+       "@gcom": "*"
+   }
 }

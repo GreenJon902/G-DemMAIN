@@ -1,5 +1,5 @@
 
-import { NS } from "@/lib/auth";
+import { NS } from "@gcom/lib/auth";
 import { ActionButton, BUTTON_RED } from "../ui/Button";
 import { logoutAction } from "./actions";
 import { redirectLogin } from "../login/util";

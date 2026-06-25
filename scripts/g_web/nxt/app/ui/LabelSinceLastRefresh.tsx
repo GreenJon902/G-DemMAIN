@@ -1,7 +1,7 @@
 "use client";
 
 import { RefObject, useEffect, useState } from "react";
-import { SECONDS, humanize } from "@/loclib/unitUtils";
+import { SECONDS, humanize } from "@/lib/unitUtils";
 
 /**
  * A label which indicates the time since the data was last updated.

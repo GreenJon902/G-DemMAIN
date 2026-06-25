@@ -3,16 +3,11 @@
   "compilerOptions": {
     "lib": ["dom", "dom.iterable", "esnext"],
     "jsx": "react-jsx",
-    "baseUrl": ".",
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
+    "noEmit": true,
+    "plugins": [{ "name": "next" }],
     "paths": {
-      "@/lib/*": ["../com/lib/*"],
-      "@/prisma/*": ["../generated/prisma/*"],
       "@/*": ["./*"],
+      "@gcom/*": ["../com/dist/*"]
     }
   },
   "include": [
@@ -23,5 +18,8 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", ".next"]
+  "exclude": ["node_modules", ".next"],
+  "references": [
+    { "path": "../com" }
+  ]
 }

@@ -1,4 +1,4 @@
-import { C } from "@/lib/environ";
+import { C } from "@gcom/lib/environ";
 import Console from "./Console";
 import PanelPageSection from "../ui/PanelPageSection";
 import RefreshingPage from "../../ui/RefreshingPage";

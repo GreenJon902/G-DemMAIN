@@ -1,31 +1,23 @@
 {
-    "name": "@g_web",
-    "version": "0.1.0",
-    "private": true,
-    "type": "module",
-    "scripts": {
-
-        "dev":       "npm run prisma:generate && concurrently --kill-others -n NXT,MCC \"npm run _dev:nxt\" \"npm run _dev:mcc\"",
-        "build":     "npm run prisma:generate && npm run _build:nxt && npm run _build:mcc",
-
-        "dev:nxt":   "npm --prefix nxt run dev",
-        "dev:mcc":   "npm --prefix mcc run dev", 
-        "build:nxt": "npm --prefix nxt run build",
-        "build:mcc": "npm --prefix mcc run build",
-
-        "lint":      "npm run prisma:generate && eslint",
-        "typecheck": "npm run prisma:generate && tsc -p nxt/tsconfig.json --noEmit && tsc -p mcc/tsconfig.json --noEmit",
-
-        "prisma:generate": "dotenv -e .devenv -- npx prisma generate",
-
-        "build2": "npm run build -ws"
+  "name": "gcom",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    "./lib/*": {
+      "types": "./dist/lib/*.d.ts",
+      "import": "./dist/lib/*.js"
     },
-    "workspaces": [
-        "com",
-        "mcc",
-        "nxt"
-    ],
-    "devDependencies": {
+    "./prisma/*": {
+      "types": "./dist/generated/prisma/*.d.ts",
+      "import": "./dist/generated/prisma/*.js"
+    }
+  },
+  "scripts": {
+    "build": "npm run build:_prs && npm run build:_tsc",
+    "build:_prs": "dotenv -e ../.devenv -- npx prisma generate",
+    "build:_tsc": "tsc -p tsconfig.json"
+  },  
+ "devDependencies": {
         "@heroicons/react": "^2.2.0",
         "@tailwindcss/postcss": "^4",
         "@types/node": "^20.19.43",
