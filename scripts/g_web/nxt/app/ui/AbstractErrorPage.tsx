@@ -1,6 +1,3 @@
-import Image from "next/image";
-import { StaticImageData } from "next/image";
-
 /**
  * The contents of the error page.
  * @param code - The error code.
@@ -11,7 +8,7 @@ export default function AbstractErrorPageContent({
     code, head, children
 }: {
     code: string,
-    head: StaticImageData,
+    head: string,
     children: React.ReactNode
 }) {    
     return (
@@ -27,7 +24,7 @@ export default function AbstractErrorPageContent({
             <div 
                 className="flex h-min w-min flex-col items-center space-y-1 rounded-md bg-gray-800 p-2 shadow-[0_0_10rem_8rem_rgba(0,0,0,0.7)]"
             >
-                <Image 
+                <img 
                     src={head}
                     alt="PLayerhead"
                     loading="eager"

@@ -1,7 +1,6 @@
 "use client";
 
 import AbstractErrorPage from "./ui/AbstractErrorPage";
-import ollieblitzz from "@/public/ollieblitzz.png";
 import TextLink from "./ui/TextLink";
 import { loginUrl } from "./login/util";
 import { logoutAction } from "./account/actions";
@@ -12,7 +11,7 @@ export default function Forbidden() {
     return (
         <AbstractErrorPage
             code="403"
-            head={ollieblitzz}        
+            head="/ollieblitzz.png"       
         >
             <span>
                 You don&apos;t have permission to access this page.

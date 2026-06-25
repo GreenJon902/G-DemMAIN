@@ -1,8 +1,6 @@
-import icon from "@/public/icon.png";
 import { NS } from "@/lib/auth";
 import { UserCircleIcon as UserCircleIconOutline } from "@heroicons/react/24/outline";
 import { UserCircleIcon as UserCircleIconSolid } from "@heroicons/react/24/solid";
-import Image from "next/image";
 import Link from "next/link";
 
 /**
@@ -14,8 +12,8 @@ export default async function GlobalNav() {
         <>
             <div className="flex flex-row flex-wrap bg-gray-700 p-1">
                 <Link href="/" className="size-6">
-                    <Image
-                        src={icon}
+                    <img
+                        src="/icon.png"
                         className="size-full hover:opacity-50"
                         alt={"Logo"}
                     />
