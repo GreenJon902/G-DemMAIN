@@ -1,4 +1,4 @@
-import { loadLogContent } from "@gcom/lib/panelUtils";
+import { loadLogContent } from "@g/com/lib/panelUtils";
 import { notFound } from "next/navigation";
 import PanelPageSection from "../../ui/PanelPageSection";
 import Link from "next/link";

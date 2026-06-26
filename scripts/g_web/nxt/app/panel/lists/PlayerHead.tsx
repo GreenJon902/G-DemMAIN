@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { ListItem } from "@gcom/lib/panelUtils";
+import { ListItem } from "@g/com/lib/panelUtils";
 
 
 /**

@@ -3,7 +3,7 @@ import PanelPageSection from "../ui/PanelPageSection";
 import { CpuRamGraph, MultiCPUGraph, TransferGraph } from "../ui/Graphs";
 import { loadGraphDataAction } from "./actions";
 import RadioButtons from "@/app/ui/RadioButtons";
-import { MonitorOption } from "@gcom/lib/panelUtils";
+import { MonitorOption } from "@g/com/lib/panelUtils";
 import { BYTES, rebase } from "@/lib/unitUtils";
 
 export default function GraphPageContent({

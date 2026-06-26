@@ -46,15 +46,15 @@ sudo systemctl daemon-reload
 See `Databases.md`. We need database users created.
 
 9. Build the website
+Ensure the g_web user is created.
 ```
-cd /opt/infra/scripts/g_web
-```
-Use `npm ci` and `NODE_OPTIONS='--enable-source-maps' npm run build` in the infra folder.
-Create the g_web user.
-```
-sudo rsync -a nxt/.next/standalone/ /var/lib/g_web/nxt/
-sudo rsync -a nxt/.next/static/ /var/lib/g_web/nxt/nxt/.next/static/
-sudo rsync -a mcc/dist/ /var/lib/g_web/mcc/
+sudo rsync -av --delete /opt/infra/scripts/g_web/ /var/lib/g_web
+cd /var/lib/g_web
+sudo -u g_web bash
+npm ci
+NODE_OPTIONS='--enable-source-maps' npm run build
+npm prune --omit=dev
+exit
 sudo chown -R g_web:g_web /var/lib/g_web
 ```
 

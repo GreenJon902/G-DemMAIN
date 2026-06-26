@@ -1,4 +1,4 @@
-import { listLogs } from "@gcom/lib/panelUtils";
+import { listLogs } from "@g/com/lib/panelUtils";
 import PanelPageSection from "../ui/PanelPageSection";
 import { AutoLabelSinceLastRefresh } from "../../ui/LabelSinceLastRefresh";
 import TextLink from "@/app/ui/TextLink";

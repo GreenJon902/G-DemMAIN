@@ -1,12 +1,21 @@
 {
-    "name": "@gmcc",
+    "name": "@g/mcc",
     "version": "0.1.0",
     "private": true,
     "scripts": {
-        "dev": "dotenv -e ../.devenv -- tsx server.ts",
+        "dev":   "dotenv -e ../.devenv -- tsx server.ts",
         "build": "tsc"
     },
     "dependencies": {
-        "@gcom": "*"
+        "@g/com": "*",
+        "ts-rcon": "^1.2.1",
+        "ws": "^8.20.1"
+    },
+    "devDependencies": {
+        "@types/node": "^20.19.43",
+        "@types/ws": "^8.18.1",
+        "dotenv-cli": "^11.0.0",
+        "tsx": "^4.21.0",
+        "typescript": "^5"
     }
 }

@@ -5,9 +5,9 @@
     "jsx": "react-jsx",
     "noEmit": true,
     "plugins": [{ "name": "next" }],
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"],
-      "@gcom/*": ["../com/dist/*"]
+      "@/*": ["./*"]
     }
   },
   "include": [

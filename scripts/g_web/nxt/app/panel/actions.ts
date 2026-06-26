@@ -1,7 +1,7 @@
 // TODO: Logic for this file should go in lib
 "use server";
 
-import { getUnitStatus, loadMonitorRecords, tailLatest, UnitStatus, UnitType, unitAction as libUnitAction } from "@gcom/lib/panelUtils";
+import { getUnitStatus, loadMonitorRecords, tailLatest, UnitStatus, UnitType, unitAction as libUnitAction } from "@g/com/lib/panelUtils";
 import { loadGraphDataAction } from "./graphs/actions";
 
 /**

@@ -2,7 +2,7 @@ import "@/app/globals.css";
 
 import { BUTTON_CYAN, BUTTON_GREEN, BUTTON_INDIGO, BUTTON_RED, BUTTON_YELLOW, LinkButton } from "../ui/Button";
 import Link from "next/link";
-import { NS } from "@gcom/lib/auth";
+import { NS } from "@g/com/lib/auth";
 import { forbidden, unauthorized } from "next/navigation";
 
 export default async function Layout({

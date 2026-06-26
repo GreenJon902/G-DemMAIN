@@ -17,7 +17,7 @@ OnFailure=g_service_failed@ConsoleWebsocket-g_web_mcc.service
 User=g_web
 Group=g_web
 WorkingDirectory=/var/lib/g_web/mcc
-ExecStart=/usr/bin/node server.js
+ExecStart=/usr/bin/node /var/lib/g_web/mcc/dist/server.js
 
 Environment=NODE_ENV=production
 EnvironmentFile=/etc/g-demmain/common.env

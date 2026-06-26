@@ -1,4 +1,4 @@
-import { NS } from "@gcom/lib/auth";
+import { NS } from "@g/com/lib/auth";
 import { UserCircleIcon as UserCircleIconOutline } from "@heroicons/react/24/outline";
 import { UserCircleIcon as UserCircleIconSolid } from "@heroicons/react/24/solid";
 import Link from "next/link";

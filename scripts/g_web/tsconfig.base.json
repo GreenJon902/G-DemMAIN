@@ -10,9 +10,7 @@
     "isolatedModules": true,
     "incremental": true,
     "baseUrl": ".",
-    "paths": {
-      "@gcom/*": ["./com/dist/*"]
-    }
+    "paths": {}
   },
   "exclude": ["node_modules"]
 }

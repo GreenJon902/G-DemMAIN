@@ -1,55 +1,39 @@
 {
-  "name": "gcom",
+  "name": "@g/com",
   "version": "0.1.0",
   "type": "module",
   "exports": {
     "./lib/*": {
       "types": "./dist/lib/*.d.ts",
-      "import": "./dist/lib/*.js"
+      "default": "./dist/lib/*.js"
     },
     "./prisma/*": {
       "types": "./dist/generated/prisma/*.d.ts",
-      "import": "./dist/generated/prisma/*.js"
+      "default": "./dist/generated/prisma/*.js"
     }
   },
   "scripts": {
-    "build": "npm run build:_prs && npm run build:_tsc",
-    "build:_prs": "dotenv -e ../.devenv -- npx prisma generate",
-    "build:_tsc": "tsc -p tsconfig.json"
-  },  
- "devDependencies": {
-        "@heroicons/react": "^2.2.0",
-        "@tailwindcss/postcss": "^4",
-        "@types/node": "^20.19.43",
-        "@types/pg": "^8.20.0",
-        "@types/react": "^19",
-        "@types/react-dom": "^19",
-        "@types/ws": "^8.18.1",
-        "babel-plugin-react-compiler": "1.0.0",
-        "concurrently": "^9.2.1",
-        "dotenv-cli": "^11.0.0",
-        "eslint": "^9",
-        "eslint-config-next": "16.2.4",
-        "eslint-plugin-tailwindcss": "^3.18.3",
-        "iron-session": "^8.0.4",
-        "next": "16.2.4",
-        "prisma": "^7.8.0",
-        "react": "19.2.4",
-        "react-dom": "19.2.4",
-        "tailwindcss": "^4",
-        "ts-rcon": "^1.2.1",
-        "tsup": "^8.5.1",
-        "tsx": "^4.21.0",
-        "typescript": "^5",
-        "ws": "^8.20.1",
-        "zod": "^4.4.3"
-    },
-    "dependencies": {
-        "@prisma/adapter-mariadb": "^7.8.0",
-        "@prisma/adapter-pg": "^7.8.0",
-        "@prisma/client": "^7.8.0",
-        "argon2": "^0.44.0",
-        "dotenv": "^17.4.2",
-        "pg": "^8.22.0"
-    }
+    "build":      "npm run build:_prs && npm run build:_tsc",
+    "build:_prs": "npx prisma generate",
+    "build:_tsc": "tsc -p tsconfig.json",
+    "watch":      "tsc -p tsconfig.json --watch --preserveWatchOutput",
+    "schema:pull": "dotenv -e ../.devenv -- npx prisma db pull"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "@types/pg": "^8.20.0",
+    "dotenv-cli": "^11.0.0",
+    "prisma": "^7.8.0",
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@prisma/adapter-mariadb": "^7.8.0",
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "argon2": "^0.44.0",
+    "dotenv": "^17.4.2",
+    "iron-session": "^8.0.4",
+    "pg": "^8.22.0",
+    "zod": "^4.4.3"
+  }
 }

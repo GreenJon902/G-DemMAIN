@@ -1,5 +1,5 @@
 "use client";
-import { tailLatest } from "@gcom/lib/panelUtils";
+import { tailLatest } from "@g/com/lib/panelUtils";
 import LogView from "../ui/LogView";
 
 export default function LogDisplay({

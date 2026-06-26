@@ -1,8 +1,8 @@
 import WebSocket, { WebSocketServer } from "ws";
-import { C } from "@gcom/lib/environ";
-import { SessionAccessor } from "@gcom/lib/auth";
+import { C } from "@g/com/lib/environ";
+import { SessionAccessor } from "@g/com/lib/auth";
 import Rcon from "ts-rcon";
-import { sendWebcommandWebhook } from "@gcom/lib/webhook";
+import { sendWebcommandWebhook } from "@g/com/lib/webhook";
 
 // Create the WebSocketServer - the server that the client/browser connects to.
 const wss = new WebSocketServer({ port: C().MCCWSS_PORT });  // TODO: Use HTTPS
