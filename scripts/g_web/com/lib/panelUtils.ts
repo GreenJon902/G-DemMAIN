@@ -356,7 +356,7 @@ export async function getUnitStatus(name: string, type: UnitType): Promise<UnitS
     const execFileAsync = promisify(execFile); 
     const { stdout } = await execFileAsync("systemctl", ["show", `${name}.${type}`, "-p", "ActiveState"]);  // If this fails then an error should be thrown
     const match = stdout.match(/^\s*ActiveState=((?:active)|(?:inactive)|(?:activating)|(?:deactivating)|(?:failed)|(?:reloading))\s*$/);
-    if (!match) throw "Failed to match stdout for unit status - " + stdout;
+    if (!match) throw new Error("Failed to match stdout for unit status - ") + stdout;
     return match[1] as UnitStatus;
 }
 /**
@@ -365,7 +365,7 @@ export async function getUnitStatus(name: string, type: UnitType): Promise<UnitS
 export async function unitAction(name: string, type: UnitType, action: "start"|"stop"|"restart") {
     optimisticRequireUser("panel");  // This probably shouldn't be an optimistic check
     
-    if (action !== "start" && action !== "stop" && action !== "restart") throw "Invalid action";
+    if (action !== "start" && action !== "stop" && action !== "restart") throw new Error("Invalid action");
 
     // We want to wait for the process to finish
     await new Promise((resolve, reject) => {

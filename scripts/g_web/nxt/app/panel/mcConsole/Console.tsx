@@ -48,8 +48,8 @@ export default function Console({ mccwss_port }: { mccwss_port: number }) {
     // Function to handle sending the command
     const commandBoxRef = useRef<HTMLInputElement>(null);
     function sendCommand() {
-        if (commandBoxRef.current === null) throw "Exception, commandBoxRef.current is null";
-        if (socketRef.current === null) throw "Exception, socketRef.current is null";
+        if (commandBoxRef.current === null) throw new Error("Exception, commandBoxRef.current is null");
+        if (socketRef.current === null) throw new Error("Exception, socketRef.current is null");
 
         // Get function from text-box
         const command = commandBoxRef.current.value.trim();
@@ -65,7 +65,7 @@ export default function Console({ mccwss_port }: { mccwss_port: number }) {
     const consoleDivRef = useRef<HTMLDivElement>(null);
     useEffect(() => {
         const cd = consoleDivRef.current;
-        if (cd === null) throw "Exception, consoleDivRef.current is null";
+        if (cd === null) throw new Error("Exception, consoleDivRef.current is null");
         if (cd.lastChild === null) return;
         const lastChild = cd.lastChild as unknown as { clientHeight: number };  // So typescript is happy
         if (cd.scrollHeight - cd.scrollTop - cd.clientHeight < lastChild.clientHeight + 10) {  // Is at bottom?

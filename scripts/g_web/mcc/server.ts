@@ -1,8 +1,11 @@
 import WebSocket, { WebSocketServer } from "ws";
 import { C } from "@g/com/lib/environ";
 import { SessionAccessor } from "@g/com/lib/auth";
-import Rcon from "ts-rcon";
 import { sendWebcommandWebhook } from "@g/com/lib/webhook";
+
+import rconPkg from "ts-rcon";
+// ts-rcon is broken, and - something something gpt help me - classes don't work without the next line 
+const Rcon = (rconPkg as any).default as typeof rconPkg;
 
 // Create the WebSocketServer - the server that the client/browser connects to.
 const wss = new WebSocketServer({ port: C().MCCWSS_PORT });  // TODO: Use HTTPS

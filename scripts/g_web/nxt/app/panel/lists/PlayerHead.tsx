@@ -23,7 +23,7 @@ export default function PlayerHead({
 }) {
     // Validate inputs
     if (!((item === undefined) !== (name === undefined))) {
-        throw "Expected exactly one of item/name to be given";
+        throw new Error("Expected exactly one of item/name to be given");
     }
     // Extract data from whichever input was given
     let uniquename, altname;

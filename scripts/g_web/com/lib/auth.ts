@@ -60,7 +60,7 @@ export class SessionAccessor {
         } else if (this.#sessionCookieArgsGetter.type === "reqres") {
             return await getIronSession_<WrappedSessionData>(this.#sessionCookieArgsGetter.req, this.#sessionCookieArgsGetter.res, SESSION_OPTIONS);
         } else {
-            throw "Unkown method";
+            throw new Error("Unkown method");
         }
     }
 
@@ -83,7 +83,7 @@ export class SessionAccessor {
      * Like optimisticCheckUser but throws an error if the test fails.
      */
     async optimisticRequireUser(area: keyof SessionData["optimistic"]) {
-        if (!this.optimisticCheckUser(area)) throw "User has no permission to access " + area;
+        if (!this.optimisticCheckUser(area)) throw new Error("User has no permission to access ") + area;
     }
 
     /**
@@ -135,7 +135,7 @@ export class SessionAccessor {
      */
     async getUserData() {
         const session = await this.#getSessionData();
-        if (session === null) throw "Expected current user to have a session";
+        if (session === null) throw new Error("Expected current user to have a session");
         return {
             username: session.username
         };

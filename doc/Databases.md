@@ -6,12 +6,14 @@ We separate data into different databases for easy permission management and dat
 
 To create a user and grant access to a specific database:
 ```sql
-CREATE USER '<username>'@'localhost' IDENTIFIED BY '<password>'; 
-GRANT ALL PRIVILEGES ON database_name.* TO '<username>'@'localhost';
+CREATE USER '<username>'@'127.0.0.1' IDENTIFIED BY '<password>'; 
+GRANT ALL PRIVILEGES ON <database_name>.* TO '<username>'@'127.0.0.1';
 FLUSH PRIVILEGES;
 ```
 
-Passowrds can be generated with `openssl rand -base64 32`. Make sure to add them to any environment configuration if applicable.
+Note, you must use `'127.0.0.1'` not `'localhost'`, Node.js drivers connect only via TCP/IP.
+
+Passwords can be generated with `openssl rand -base64 32`. Make sure to add them to any environment configuration if applicable.
 
 
 # g_web
@@ -26,6 +28,8 @@ This file is the source of truth.
 Changes must be manually copied from here into the database.
 Then in the `g_web` folder, execute `npx prisma db pull`. This generates the prisma schema.
 Then when `npm run ...` is executed, the schema is converted into ts.
+
+g\_web\_nxt will NOT run if the database and prisma schemas disagree.
 
 
 When migrating a table <tablename>:

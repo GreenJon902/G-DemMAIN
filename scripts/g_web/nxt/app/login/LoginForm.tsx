@@ -42,8 +42,8 @@ export default function LoginForm({ nextPath }: { nextPath: string }) {
                 
                 <ActionButton 
                     action={async () => {
-                        if (unmBoxRef.current === null) throw "unmBoxRef is null";
-                        if (pwdBoxRef.current === null) throw "pwdBoxRef is null";
+                        if (unmBoxRef.current === null) throw new Error("unmBoxRef is null");
+                        if (pwdBoxRef.current === null) throw new Error("pwdBoxRef is null");
 
                         const result = await attemptLoginAction(unmBoxRef.current.value, pwdBoxRef.current.value);
                         setShowIncorrectPassword(!result);

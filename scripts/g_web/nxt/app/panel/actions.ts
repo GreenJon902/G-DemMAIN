@@ -72,7 +72,7 @@ export async function unitAction(unit: Unit, status: "start"|"stop"|"restart") {
     console.log(`UnitAction: ${status}ing ${unit.name}.${unit.type}`);
 
     // Ensure that is a unit that we track:
-    if (TRACKED_UNITS.filter(tu => tu.name === unit.name && tu.type === unit.type).length === 0) throw "This unit is not in TRACKED_UNITS";
+    if (TRACKED_UNITS.filter(tu => tu.name === unit.name && tu.type === unit.type).length === 0) throw new Error("This unit is not in TRACKED_UNITS");
 
     await libUnitAction(unit.name, unit.type, status);
 }

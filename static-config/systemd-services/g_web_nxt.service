@@ -15,7 +15,7 @@ OnFailure=g_service_failed@Website-g_web_nxt.service
 User=g_web
 Group=g_web
 WorkingDirectory=/var/lib/g_web/nxt
-ExecStart=/usr/bin/node /var/lib/g_web/node_modules/.bin/next start -p 8000
+ExecStart=/usr/bin/node /var/lib/g_web/node_modules/.bin/next start -p 3000
 
 Environment=NODE_ENV=production
 # This port is temporary
@@ -27,6 +27,11 @@ EnvironmentFile=/etc/g-demmain/g_mc_g_web_minecraft.env
 Restart=on-failure
 RestartSec=10
 UMask=0002
+
+# Validate database schema matches prisma schema
+ExecStartPre=/bin/echo "Checking database schema synchronisation..."
+ExecStartPre=/usr/bin/node /var/lib/g_web/node_modules/prisma/build/index.js migrate diff --config /var/lib/g_web/com/prisma.config.ts --from-schema /var/lib/g_web/com/prisma/schema.prisma --to-config-datasource --exit-code
+ExecStartPre=/bin/echo "Database schema check passed!"
 
 # Status logging
 ExecStartPost=/bin/python3 /opt/infra/scripts/webhooks.py status "Website - NextJS" g_web_nxt starting

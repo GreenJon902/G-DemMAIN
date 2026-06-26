@@ -2,6 +2,7 @@
     "name": "@g/mcc",
     "version": "0.1.0",
     "private": true,
+    "type": "module",
     "scripts": {
         "dev":   "dotenv -e ../.devenv -- tsx server.ts",
         "build": "tsc"
