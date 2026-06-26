@@ -2,6 +2,18 @@
 We separate data into different databases for easy permission management and data separation.
 
 
+# Database Users
+
+To create a user and grant access to a specific database:
+```sql
+CREATE USER '<username>'@'localhost' IDENTIFIED BY '<password>'; 
+GRANT ALL PRIVILEGES ON database_name.* TO '<username>'@'localhost';
+FLUSH PRIVILEGES;
+```
+
+Passowrds can be generated with `openssl rand -base64 32`. Make sure to add them to any environment configuration if applicable.
+
+
 # g_web
 ```
 CREATE DATABASE g_web

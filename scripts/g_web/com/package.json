@@ -1,7 +1,6 @@
 {
   "name": "@g/com",
   "version": "0.1.0",
-  "type": "module",
   "exports": {
     "./lib/*": {
       "types": "./dist/lib/*.d.ts",
