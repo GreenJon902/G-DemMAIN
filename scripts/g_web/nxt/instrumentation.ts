@@ -7,9 +7,9 @@ export async function register() {
     if (process.env.NEXT_RUNTIME === "nodejs") {
         const { default: prisma } = await import("@g/com/lib/prisma");
         try {
-            console.log("Attempting to initiate primsa...")
+            console.log("Attempting to initiate primsa...");
             prisma();
-            console.log("Prisma initiation succeeded")
+            console.log("Prisma initiation succeeded");
         } catch (e) {
             console.error("Failed to initate prisma error:", e);
             process.exit(1);

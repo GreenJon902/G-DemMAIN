@@ -7,7 +7,7 @@
         "dev":       "npm run build -w @g/com && concurrently --kill-others -n COM,NXT,MCC \"npm run watch -w @g/com\" \"npm run dev -w @g/nxt\" \"npm run dev -w @g/mcc\"",
         "build":     "npm run build --workspaces",
         "lint":      "eslint",
-        "typecheck": "tsc -p nxt/tsconfig.json --noEmit && tsc -p mcc/tsconfig.json --noEmit"
+        "typecheck": "tsc --build --noEmit nxt/tsconfig.json mcc/tsconfig.json"
     },
     "workspaces": [
         "com",

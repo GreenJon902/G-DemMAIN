@@ -3,9 +3,13 @@
 import AbstractErrorPage from "./ui/AbstractErrorPage";
 import { loginUrl } from "./login/util";
 import TextLink from "./ui/TextLink";
+import { usePathname, useSearchParams } from "next/navigation";
 
 export default function Unauthorized() {
-    const next = window.location.pathname + window.location.search + window.location.hash;
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const search = searchParams.toString();
+    const next = pathname + (search ? `?${search}` : "");
 
     return (
         <AbstractErrorPage

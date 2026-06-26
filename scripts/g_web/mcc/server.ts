@@ -5,7 +5,7 @@ import { sendWebcommandWebhook } from "@g/com/lib/webhook";
 
 import rconPkg from "ts-rcon";
 // ts-rcon is broken, and - something something gpt help me - classes don't work without the next line 
-const Rcon = (rconPkg as any).default as typeof rconPkg;
+const Rcon = (rconPkg as unknown as { default: typeof rconPkg }).default;
 
 // Create the WebSocketServer - the server that the client/browser connects to.
 const wss = new WebSocketServer({ port: C().MCCWSS_PORT });  // TODO: Use HTTPS
