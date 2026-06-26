@@ -50,7 +50,8 @@ Ensure the g_web user is created.
 ```
 sudo rsync -av --delete /opt/infra/scripts/g_web/ /var/lib/g_web
 cd /var/lib/g_web
-sudo -u g_web bash
+sudo chown -R g_web:g_web /var/lib/g_web
+sudo -u g_web HOME=/var/lib/g_web bash
 npm ci
 NODE_OPTIONS='--enable-source-maps' npm run build
 npm prune --omit=dev
