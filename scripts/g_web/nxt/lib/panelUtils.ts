@@ -7,8 +7,8 @@ import "server-only";
 import fs from "fs/promises";
 import * as path from "node:path";
 import * as z from "zod";
-import { C } from "./environ";
-import { NS } from "./auth";
+import { C } from "@g/com/lib/environ";
+import { NS } from "./session";
 import { existsSync } from "fs";
 import * as zlib from "zlib";
 import { execFile, spawn } from "node:child_process";
@@ -26,7 +26,7 @@ export type ListItem = {
 }
 
 // Define our specific "list items" - the schema for items in each of the lists we want to load. Each of these validates the given input, and then transforms it into a generic ListItem
-const zMinecraftDatetime = z.preprocess(val => { 
+const zMinecraftDatetime = z.preprocess(val => {
     // Exit early if invalid format
     if (typeof val !== "string") return val;
     if (val.length != 25) return val;
@@ -62,7 +62,7 @@ const BannedIpListItem = z.object({
     ip: z.ipv4(),  // IP of player who was banned
     source: z.string(),  // Name of player who added it
     created: zMinecraftDatetime,
-    expires: zExpiresOn, 
+    expires: zExpiresOn,
     reason: z.string().default("Unknown")
 }).transform(o => ({
     rendername: o.ip,
@@ -94,7 +94,7 @@ export async function loadListItems(list: List) {
 
     if (!existsSync(path_)) return null;
 
-    const file = await fs.readFile(path_, "utf-8");  
+    const file = await fs.readFile(path_, "utf-8");
     const data = z.array(list.itemSchema).parse(JSON.parse(file));  // Parse an array of accounts. This will ignore any extra properties
     return data;
 }
@@ -174,7 +174,7 @@ export async function tailLatest(n: number) {
     }
 
     file.close();
-    
+
     // Join strings then split into lines
     const lines = contents.join("").split("\n");
     const cropped_lines = lines.slice(-n);  // Get last n lines
@@ -188,7 +188,7 @@ export async function tailLatest(n: number) {
 // Monitor data ----------------------------------------------------------------------------------
 // Define schema for a record:
 const zNatural = z.number().nonnegative().multipleOf(1);  // 0, 1, ...
-const zArbCpu = z.strictObject({ 
+const zArbCpu = z.strictObject({
     total: zNatural,  // Arbitrary units, absolute
     busy: zNatural
 });
@@ -196,7 +196,7 @@ type arbCpu = z.infer<typeof zArbCpu>;
 const zNetIO = z.strictObject({
     sent: zNatural,  // Bytes, absolute
     recieved: zNatural
-});    
+});
 type netIO = z.infer<typeof zNetIO>;
 const zDiskIO = z.strictObject({
     read: zNatural,  // Bytes, absolute
@@ -229,7 +229,7 @@ const MonitorRecord = z.strictObject({
     })).nullable(),
     cgroups: zCoercedMap(z.strictObject({
         cpu: zNatural.nullable(),  // Microseconds, absolute, sum of ms on each core
-        mem: zMem.nullable(),  
+        mem: zMem.nullable(),
         disk_io: zDiskIO.nullable(),
         procs: zCoercedMap(z.string()).nullable()  // PID maps to terminal command that started it
     }))
@@ -262,7 +262,7 @@ export async function loadMonitorRecords(interval: number, number?: number | und
     const monitorName = (number === undefined) ? `${interval}` : `${interval}_${number}`;
 
     // Load data
-    const subfolder = path.join(MONITOR_FOLDER, monitorName); 
+    const subfolder = path.join(MONITOR_FOLDER, monitorName);
     const recordNames = (await fs.readdir(subfolder))
         .filter(name => /^\d+\.json$/.test(name));  // Only load files of the correct format
     const records = await Promise.all(recordNames.map(async record => ({
@@ -284,12 +284,12 @@ export async function loadMonitorRecords(interval: number, number?: number | und
         read: (current!.read - last!.read) / dt
     });
     // Convert a map field in the records (using last and current) by applying a function to the pairs of values. If last or current doesn't contain a given key then the value is taken as null
-    const convMap: <K, V, Z> (keys: Set<K>, last: Map<K, V>, current: Map<K, V>, conv: (l: V | null, c: V | null) => Z) => Map<K, Z> = 
+    const convMap: <K, V, Z> (keys: Set<K>, last: Map<K, V>, current: Map<K, V>, conv: (l: V | null, c: V | null) => Z) => Map<K, Z> =
         (keys, last, current, conv) => new Map([...keys].map(k => [k, conv(last.get(k) ?? null, current.get(k) ?? null)]));
     // Convert a record field that has both aggregate and independent values. This is safe if last or current are null. The keys given are for the independent part
-    type cnaiType <K, V> =  { agg: V, ind: Map<K, V> } | null; 
-    const convNullAggInd: <K, V, Z> (keys: Set<K>, last: cnaiType<K, V>, current: cnaiType<K, V>, conv: (l: V | null, c: V | null) => Z) => cnaiType<K, Z>  = 
-        (keys, last, current, conv) => (last === null || current === null) ? null : 
+    type cnaiType <K, V> =  { agg: V, ind: Map<K, V> } | null;
+    const convNullAggInd: <K, V, Z> (keys: Set<K>, last: cnaiType<K, V>, current: cnaiType<K, V>, conv: (l: V | null, c: V | null) => Z) => cnaiType<K, Z>  =
+        (keys, last, current, conv) => (last === null || current === null) ? null :
             {
                 agg: conv(last.agg, current.agg),
                 ind: convMap(keys, last.ind, current.ind, conv)
@@ -329,7 +329,7 @@ export async function loadMonitorRecords(interval: number, number?: number | und
     // Disk usage:
     const diskUsage = records.at(-1)?.data.sys_disk_usage ?? null;  // Take newest found value
     // CGroup procs:
-    const cgroupsProcs = (records.length > 0) ? new Map([...records.at(-1)!.data.cgroups.keys()].map(k => [k, 
+    const cgroupsProcs = (records.length > 0) ? new Map([...records.at(-1)!.data.cgroups.keys()].map(k => [k,
         records.at(-1)!.data.cgroups.get(k)?.procs ?? null
     ])) : (new Map() as Map<string, Map<string, string> | null>); // Default to empty map if no data
 
@@ -353,7 +353,7 @@ export type UnitStatus = typeof UNIT_STATUS_VALUES[number];
 export async function getUnitStatus(name: string, type: UnitType): Promise<UnitStatus> {
     optimisticRequireUser("panel");
 
-    const execFileAsync = promisify(execFile); 
+    const execFileAsync = promisify(execFile);
     const { stdout } = await execFileAsync("systemctl", ["show", `${name}.${type}`, "-p", "ActiveState"]);  // If this fails then an error should be thrown
     const match = stdout.match(/^\s*ActiveState=((?:active)|(?:inactive)|(?:activating)|(?:deactivating)|(?:failed)|(?:reloading))\s*$/);
     if (!match) throw new Error("Failed to match stdout for unit status - ") + stdout;
@@ -364,13 +364,13 @@ export async function getUnitStatus(name: string, type: UnitType): Promise<UnitS
  */
 export async function unitAction(name: string, type: UnitType, action: "start"|"stop"|"restart") {
     optimisticRequireUser("panel");  // This probably shouldn't be an optimistic check
-    
+
     if (action !== "start" && action !== "stop" && action !== "restart") throw new Error("Invalid action");
 
     // We want to wait for the process to finish
     await new Promise((resolve, reject) => {
         const proc = spawn(
-            "sudo", 
+            "sudo",
             ["-n", "systemctl", action, `${name}.${type}`]  // -n means it won't ever prompt for a password. Passwordless sudo should be allowed for this command
         );
 

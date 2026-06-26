@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { NS } from "@g/com/lib/auth";
+import { NS } from "@/lib/session";
 import LoginForm from "./LoginForm";
 
 export default async function Page({

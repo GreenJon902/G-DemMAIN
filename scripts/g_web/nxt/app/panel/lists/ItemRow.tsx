@@ -1,4 +1,4 @@
-import { ListItem } from "@g/com/lib/panelUtils";
+import { ListItem } from "@/lib/panelUtils";
 import { List } from "./page";
 import PlayerHead from "./PlayerHead";
 

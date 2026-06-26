@@ -1,6 +1,6 @@
 "use server";
 
-import { NS } from "@g/com/lib/auth";
+import { NS } from "@/lib/session";
 import { redirectLogin } from "../login/util";
 
 /**

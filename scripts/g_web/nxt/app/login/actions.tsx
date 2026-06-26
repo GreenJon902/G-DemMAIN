@@ -1,6 +1,6 @@
 "use server";
 
-import { NS } from "@g/com/lib/auth";
+import { NS } from "@/lib/session";
 
 /**
  * Validates if a users credentials are correct.

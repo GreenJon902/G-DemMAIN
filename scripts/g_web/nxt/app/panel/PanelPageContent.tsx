@@ -4,7 +4,7 @@ import { ActionButton, BUTTON_GREEN, BUTTON_RED, BUTTON_YELLOW } from "./../ui/B
 import PanelPageSection from "./ui/PanelPageSection";
 import { loadPanelDataAction, Unit, unitAction } from "./actions";
 import { CpuRamGraph } from "./ui/Graphs";
-import { UnitStatus } from "@g/com/lib/panelUtils";
+import { UnitStatus } from "@/lib/panelUtils";
 
 export default function PanelPageContent(
     { data }: { data: Awaited<ReturnType<typeof loadPanelDataAction>> }
