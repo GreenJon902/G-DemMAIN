@@ -7,18 +7,22 @@ import { C } from "./environ";
 import { sendWebloginWebhook } from "./webhook";
 import prisma from "./prisma";
 import * as argon2 from "argon2";
+import { verify as otplibVerify } from "otplib";
+import { z } from "zod";
+import type { ReadonlyDeep } from "type-fest";
 
 const COOKIE_NAME = "auth";  // Name of the cookie that auth data is stored in
-const TFA_WINDOW_MS = 30 * 60 * 1000;  // How long a 2FA verification remains valid
-const TFA_WARN_MS = 5 * 1000;          // Warn if TFA expires within this window
+const SUDO_WINDOW_MS = 30 * 60 * 1000;  // How long sudo mode remains active
+const SUDO_WARN_MS = 5 * 1000;          // Warn if sudo mode expires within this time-window
+const TFA_EPOCH_TOLERANCE: number | [number, number] = [5, 0];  // Five seconds into past, none into future
 
 // Definition for the different restricted areas
-//  * requireTfa - Strict checks only. If true then 2FA must be enabled and verified. If false then 2FA verified only if the user has it enabled.
+//  * requireSudo - Strict checks only. If true then 2FA must be enabled and sudo mode must be active. If false then sudo mode is required only if the user has 2FA enabled.
 const AREAS = {
-    panel: { requireTfa: true }
-} satisfies Record<string, { requireTfa: boolean }>;
+    panel: { requireSudo: true }
+} satisfies Record<string, { requireSudo: boolean }>;
 
-type Area = keyof typeof AREAS;
+export type Area = keyof typeof AREAS;
 
 // Extract the areas a user can access from a database-user
 function userToAreaAccess(user: { has_panel_access: boolean }): Record<Area, boolean> {
@@ -31,18 +35,23 @@ type Cookies = {
     set(...args: unknown[]): void;
 };
 
-type WrappedSessionData = {
-    hasSession: true,  // Constant flag
-    data: SessionData
-}
-type SessionData = {  // Wrapping it again makes it easier to set the whole thing in one
-    uid: number,                         // User ID 
-    optimistic: {                        // Cached data, not to be used for sensitive operations
-        username: string,
-        areaAccess: Record<Area, boolean>
-    },
-    tfaVerifiedAt: number | null         // Timestamp of last 2FA verification, null if not yet verified
-}
+const SessionDataSchema = z.object({
+    uid: z.number(),                        // User ID
+    optimistic: z.object({                  // Cached data, not to be used for sensitive operations
+        username: z.string(),
+        areaAccess: z.object(
+            Object.fromEntries(Object.keys(AREAS).map(k => [k, z.boolean()])) as { [K in Area]: z.ZodBoolean }
+        )
+    }),
+    sudoVerifiedAt: z.number().nullable()   // Timestamp when sudo mode was last entered, null if not active
+});
+type SessionData = z.infer<typeof SessionDataSchema>;
+
+const WrappedSessionDataSchema = z.object({
+    hasSession: z.literal(true),            // Constant flag
+    data: SessionDataSchema
+});
+type WrappedSessionData = z.infer<typeof WrappedSessionDataSchema>;
 
 
 /**
@@ -77,23 +86,25 @@ export class SessionAccessor {
 
     async #getIronSession() {
         const SESSION_OPTIONS = { password: C().SESSION_PASSWORD, cookieName: COOKIE_NAME, cookieOptions: { secure: false } };
+        let session;
         if (this.#sessionCookieArgsGetter.type === "cookies") {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            return await getIronSession_<WrappedSessionData>(await this.#sessionCookieArgsGetter.cookies() as any, SESSION_OPTIONS);
+            session = await getIronSession_<WrappedSessionData>(await this.#sessionCookieArgsGetter.cookies() as any, SESSION_OPTIONS);
         } else if (this.#sessionCookieArgsGetter.type === "reqres") {
-            return await getIronSession_<WrappedSessionData>(this.#sessionCookieArgsGetter.req, this.#sessionCookieArgsGetter.res, SESSION_OPTIONS);
+            session = await getIronSession_<WrappedSessionData>(this.#sessionCookieArgsGetter.req, this.#sessionCookieArgsGetter.res, SESSION_OPTIONS);
         } else {
             throw new Error("Unkown method");
         }
-    }
-
-    /**
-     * Gets the session data of the current user, or null if there is no session.
-     */
-    async #getSessionData(): Promise<SessionData|null> {
-        const session = await this.#getIronSession();
-        if (session.hasSession !== true) return null;  // If user has no session then return null
-        return session.data;
+        // If a session exists but its shape is wrong (e.g. stale cookie from a schema change), treat it as no session
+        // We can't necessarily drop the session-cookie as in some contexts we are not able to mutate cookies here (e.g. calls from server-components)
+        if (session.hasSession === true) {
+            if (WrappedSessionDataSchema.safeParse(session).success) {
+                return [session.data as ReadonlyDeep<SessionData>, session] as const;
+            } else {
+                console.log("Session cookie exists, but has invalid schema. This may be from a previous version.")
+            }
+        }
+        return [null, session] as const;
     }
 
     /**
@@ -101,7 +112,7 @@ export class SessionAccessor {
      * Does not consult the database — use strictCheckUser for sensitive operations.
      */
     async optimisticCheckUser(area: Area) {
-        const session = await this.#getSessionData();
+        const [session] = await this.#getIronSession();
         if (session === null) return false;
         return session.optimistic.areaAccess[area] === true;
     }
@@ -114,12 +125,12 @@ export class SessionAccessor {
     }
 
     /**
-     * Checks area access against the database and validates 2FA if required.
+     * Checks area access against the database and validates sudo mode if required.
      * Use this for sensitive operations where the cached session data is not sufficient.
      * This is slower than an optimistic check so should only be used when required.
      */
     async strictCheckUser(area: Area): Promise<boolean> {
-        const session = await this.#getSessionData();
+        const [session] = await this.#getIronSession();
         if (session === null) return false;
 
         const user = await prisma().user.findUnique({
@@ -131,10 +142,10 @@ export class SessionAccessor {
         // Check user can access area
         if (!userToAreaAccess(user)[area]) return false;
 
-        // Check 2FA if required by area config, or required if user has it enabled
-        const needsTfa = AREAS[area].requireTfa || user.totp_secret !== null;
-        if (needsTfa) {
-            if (session.tfaVerifiedAt === null || Date.now() - session.tfaVerifiedAt > TFA_WINDOW_MS) return false;
+        // Check sudo mode if required by area config, or if the user has 2FA enabled
+        const needsSudo = AREAS[area].requireSudo || user.totp_secret !== null;
+        if (needsSudo) {
+            if (session.sudoVerifiedAt === null || Date.now() - session.sudoVerifiedAt > SUDO_WINDOW_MS) return false;
         }
 
         return true;
@@ -148,13 +159,14 @@ export class SessionAccessor {
     }
 
     /**
-     * Returns whether the user needs to (re-)verify 2FA to pass a strict check for the given area.
-     * Also triggers when the current verification is within TFA_WARN_MS of expiring, so the caller can prompt re-verification before the time-window closes mid-action.
+     * Returns whether the user needs to enter sudo mode to pass a strict check for the given area.
+     * Also triggers when sudo mode is within SUDO_WARN_MS of expiring, so the caller can prompt
+     * re-entry before the time-window closes mid-action.
      * Throws if the user has no session.
      */
-    async getTfaVerificationStatus(area: Area): Promise<{ requiresTfa: false } | { requiresTfa: true, tfaEnabled: boolean }> {
-        const session = await this.#getSessionData();
-        if (session === null) throw new Error("needsTfaVerification called with no active session");
+    async getSudoStatus(area: Area): Promise<{ requiresSudo: false } | { requiresSudo: true, tfaEnabled: boolean }> {
+        const [session] = await this.#getIronSession();
+        if (session === null) throw new Error("getSudoStatus called with no active session");
 
         const user = await prisma().user.findUnique({
             where: { id: session.uid },
@@ -162,24 +174,25 @@ export class SessionAccessor {
         });
         if (user === null) throw new Error(`Session references non-existent user id ${session.uid}`);
 
-        // Check if we'll require the user to enter tfa - they have it enabled or the area requires it
+        // Check if we'll require the user to enter sudo mode - area requires it, or user has 2FA enabled
         const tfaEnabled = user.totp_secret !== null;
-        const requiresTfa = AREAS[area].requireTfa || tfaEnabled;
-        if (!requiresTfa) return { requiresTfa: false };
+        const requiresSudo = AREAS[area].requireSudo || tfaEnabled;
+        if (!requiresSudo) return { requiresSudo: false };
 
-        // tfa is required, check if user has an active session
-        const noTfaSession = session.tfaVerifiedAt === null
-            || Date.now() - session.tfaVerifiedAt > TFA_WINDOW_MS - TFA_WARN_MS;
-        if (!noTfaSession) return { requiresTfa: false };
+        // Sudo is required; check if the user has an active sudo session
+        const sudoExpired = session.sudoVerifiedAt === null
+            || Date.now() - session.sudoVerifiedAt > SUDO_WINDOW_MS - SUDO_WARN_MS;
+        if (!sudoExpired) return { requiresSudo: false };
 
-        return { requiresTfa: true, tfaEnabled };
+        return { requiresSudo: true, tfaEnabled };
     }
 
     /**
      * Returns true if the user has an active session.
      */
     async hasSession() {
-        return (await this.#getSessionData()) !== null;
+        const [data] = await this.#getIronSession();
+        return data !== null;
     }
 
     /**
@@ -196,7 +209,7 @@ export class SessionAccessor {
         if (user === null || !await argon2.verify(user.password_hash, password)) return false;
 
         // Create session for user
-        const session = await this.#getIronSession();
+        const [, session] = await this.#getIronSession();
         session.hasSession = true;
         session.data = {
             uid: user.id,
@@ -204,7 +217,7 @@ export class SessionAccessor {
                 username: username,
                 areaAccess: userToAreaAccess(user)
             },
-            tfaVerifiedAt: null
+            sudoVerifiedAt: null
         };
         await session.save();
         sendWebloginWebhook(username);
@@ -212,10 +225,33 @@ export class SessionAccessor {
     }
 
     /**
+     * Verifies a TOTP code against the user's stored secret and, if valid, enters sudo mode by
+     * recording a timestamp in the session so subsequent strict checks pass.
+     * Throws if there is no active session or the user has no TOTP secret configured.
+     */
+    async enterSudo(code: string): Promise<boolean> {
+        const [sessionData, session] = await this.#getIronSession();
+        if (sessionData === null) throw new Error("enterSudo called with no active session");
+
+        const user = await prisma().user.findUnique({
+            where: { id: sessionData.uid },
+            select: { totp_secret: true }
+        });
+        if (user === null) throw new Error(`Session references non-existent user id ${sessionData.uid}`);
+        if (user.totp_secret === null) throw new Error("User has no TOTP secret configured");
+
+        if (!(await otplibVerify({ token: code, secret: user.totp_secret, epochTolerance: TFA_EPOCH_TOLERANCE })).valid) return false;
+
+        session.data.sudoVerifiedAt = Date.now();
+        await session.save();
+        return true;
+    }
+
+    /**
      * Remove the session from the current user if they have one.
      */
     async dropSession() {
-        const session = await this.#getIronSession();
+        const [, session] = await this.#getIronSession();
         session.destroy();
     }
 
@@ -225,7 +261,7 @@ export class SessionAccessor {
      * Note, some of this data is optimistic/cached so may not be the most recent version.
      */
     async getUserData() {
-        const session = await this.#getSessionData();
+        const [session] = await this.#getIronSession();
         if (session === null) throw new Error("Expected current user to have a session");
         return {
             username: session.optimistic.username

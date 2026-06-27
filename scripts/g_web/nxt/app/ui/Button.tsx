@@ -9,7 +9,7 @@
 import { ArrowPathIcon } from "@heroicons/react/20/solid";
 import { Url } from "next/dist/shared/lib/router/router";
 import Link from "next/link";
-import { ReactNode, Ref, useTransition } from "react";
+import { ReactNode, Ref, useState } from "react";
 
 // Since we need to specify tailwind colors in full (including "hover:bg-green-123123"), we will use constants
 // This also means colors will be fixed and must hence be consistent
@@ -73,6 +73,7 @@ export function ActionButton({
     children,
     action,
     confirm = () => true,
+    guard,
     color,
     className = "",
     ref  // defaults to undefined
@@ -80,17 +81,23 @@ export function ActionButton({
     children: ReactNode,
     action: () => Promise<void>,
     confirm?: () => boolean,
+    guard?: () => boolean | Promise<boolean>,
     color: ButtonColor,
     className?: string,
     ref?: Ref<HTMLButtonElement>
 }) {
-    // Function to make change on server 
-    const [isPending, startTransition] = useTransition();  // Is pending is true when we've sent the change to the server and are waiting for a response
-    const buttonClicked = () => {
-        if (confirm()) {
-            startTransition(async () => {
-                await action();
-            });
+    const [isPending, setIsPending] = useState(false);
+    const buttonClicked = async () => {
+        if (isPending || !confirm()) return;
+        setIsPending(true);
+        try {
+            if (guard && !await guard()) {
+                console.log("ActionButton guard returned false, aborting action");
+                return;
+            }
+            await action();
+        } finally {
+            setIsPending(false);
         }
     };
     

@@ -5,10 +5,13 @@ import PanelPageSection from "./ui/PanelPageSection";
 import { loadPanelDataAction, Unit, unitAction } from "./actions";
 import { CpuRamGraph } from "./ui/Graphs";
 import { UnitStatus } from "@/lib/panelUtils";
+import { makeAreaSudoGuard, useSudoModal } from "@/app/ui/SudoModal";
 
 export default function PanelPageContent(
     { data }: { data: Awaited<ReturnType<typeof loadPanelDataAction>> }
 ) {
+    const sudoModal = useSudoModal();
+    const panelGuard = makeAreaSudoGuard("panel", sudoModal);
     const gd = data.graphData.timed;
     return ( 
         <>
@@ -40,7 +43,7 @@ export default function PanelPageContent(
                                     </span>
                                 </td>
                                 <td className="flex gap-1 p-1"> {/* All changing controls go into the same <td> as the frequent changing causes firefox to get confused and not render backgrounds correctly */}
-                                    <UnitControls unit={unit} status={status} className="flex-1" /> 
+                                    <UnitControls unit={unit} status={status} className="flex-1" guard={panelGuard} />
                                     {/* TODO: A warning before restart g_web or g_mysql as these may not be easy to revert without ssh access */}
                                 </td>
                             </tr>
@@ -88,7 +91,7 @@ function StatusIndicator({ unit, status }: { unit: Unit, status: UnitStatus | un
  * Create the controls for the given unit.
  * @param className - This will be given to each child.
  */
-function UnitControls({ unit, status, className="" }: { unit: Unit, status: UnitStatus | undefined, className?: string }) {
+function UnitControls({ unit, status, className="", guard }: { unit: Unit, status: UnitStatus | undefined, className?: string, guard: () => Promise<boolean> }) {
 
     if (
         status === "activating" ||
@@ -101,19 +104,19 @@ function UnitControls({ unit, status, className="" }: { unit: Unit, status: Unit
         status === "active" &&
         unit.type === "service" || unit.type === "target"
     ) {
-        return <><_Restart unit={unit} className={className} /><_Stop unit={unit} className={className} /></>;
+        return <><_Restart unit={unit} className={className} guard={guard} /><_Stop unit={unit} className={className} guard={guard} /></>;
 
     } else if (
         status === "active" &&
         unit.type === "timer"
-    ) {  
-        return <_Stop unit={unit} className={className} />;  // Restarting a timer doesn't make sense
+    ) {
+        return <_Stop unit={unit} className={className} guard={guard} />;  // Restarting a timer doesn't make sense
 
     } else if (
         status === "failed" ||
         status === "inactive"
     ) {
-        return <_Start unit={unit} className={className} />;
+        return <_Start unit={unit} className={className} guard={guard} />;
 
     } else  {
         console.error("Unrecognised status", status, "for unit of type", unit.type);
@@ -121,9 +124,10 @@ function UnitControls({ unit, status, className="" }: { unit: Unit, status: Unit
     }
 }
 // Macro functions to create buttons
-const _Stop = ({ unit, className }: { unit: Unit, className: string }) => 
-    <ActionButton action={async () => await unitAction(unit, "stop")} className={className} color={BUTTON_RED}>Stop</ActionButton>;   // TODO: IMplement these actions
-const _Restart = ({ unit, className }: { unit: Unit, className: string }) => 
-    <ActionButton action={async () => await unitAction(unit, "start")} className={className} color={BUTTON_YELLOW}>Restart</ActionButton>;
-const _Start = ({ unit, className }: { unit: Unit, className: string }) => 
-    <ActionButton action={async () => await unitAction(unit, "restart")} className={className} color={BUTTON_GREEN}>Start</ActionButton>; 
+type _BtnProps = { unit: Unit, className: string, guard: () => Promise<boolean> };
+const _Stop = ({ unit, className, guard }: _BtnProps) =>
+    <ActionButton action={async () => await unitAction(unit, "stop")} className={className} color={BUTTON_RED} guard={guard}>Stop</ActionButton>;   
+const _Restart = ({ unit, className, guard }: _BtnProps) =>
+    <ActionButton action={async () => await unitAction(unit, "start")} className={className} color={BUTTON_YELLOW} guard={guard}>Restart</ActionButton>;
+const _Start = ({ unit, className, guard }: _BtnProps) =>
+    <ActionButton action={async () => await unitAction(unit, "restart")} className={className} color={BUTTON_GREEN} guard={guard}>Start</ActionButton>;
