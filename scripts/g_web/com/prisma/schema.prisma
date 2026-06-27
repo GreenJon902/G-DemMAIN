@@ -13,4 +13,5 @@ model user {
   username         String  @unique(map: "username") @db.VarChar(50)
   password_hash    String  @db.VarChar(255)
   has_panel_access Boolean @default(false)
+  totp_secret      String? @db.VarChar(32)
 }

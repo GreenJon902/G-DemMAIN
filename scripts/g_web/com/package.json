@@ -12,10 +12,10 @@
     }
   },
   "scripts": {
-    "build":      "npm run build:_prs && npm run build:_tsc",
+    "build": "npm run build:_prs && npm run build:_tsc",
     "build:_prs": "npx prisma generate",
     "build:_tsc": "tsc -p tsconfig.json",
-    "watch":      "tsc -p tsconfig.json --watch --preserveWatchOutput",
+    "watch": "tsc -p tsconfig.json --watch --preserveWatchOutput",
     "schema:pull": "dotenv -e ../.devenv -- npx prisma db pull"
   },
   "devDependencies": {
@@ -32,6 +32,7 @@
     "argon2": "^0.44.0",
     "dotenv": "^17.4.2",
     "iron-session": "^8.0.4",
+    "otplib": "^13.4.1",
     "pg": "^8.22.0",
     "zod": "^4.4.3"
   }
