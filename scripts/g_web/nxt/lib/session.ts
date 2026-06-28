@@ -1,3 +1,4 @@
+import "server-only";
 import { SessionAccessor, Area } from "@g/com/lib/auth";
 import { cookies } from "next/headers";
 import { forbidden, unauthorized } from "next/navigation";

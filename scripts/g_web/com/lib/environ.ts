@@ -1,5 +1,5 @@
 /**
- * This file loads the config values from the environment. 
+ * This file loads the config values from the environment.
  * We need to load them during runtime as nextjs is stupid and messes up otherwise.
  */
 

@@ -1,3 +1,4 @@
+import "server-only";
 import { patchConsole } from "@g/com/lib/logUtils";
 
 export async function register() {

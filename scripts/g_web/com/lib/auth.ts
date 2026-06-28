@@ -12,8 +12,9 @@ import { z } from "zod";
 import type { ReadonlyDeep } from "type-fest";
 
 const COOKIE_NAME = "auth";  // Name of the cookie that auth data is stored in
-const SUDO_WINDOW_MS = 30 * 60 * 1000;  // How long sudo mode remains active
-const SUDO_WARN_MS = 5 * 1000;          // Warn if sudo mode expires within this time-window
+import { SUDO_WINDOW_MS } from "./authConstants";
+export { SUDO_WINDOW_MS };
+const SUDO_WARN_MS = 5 * 1000;                 // Warn if sudo mode expires within this time-window
 const TFA_EPOCH_TOLERANCE: number | [number, number] = [5, 0];  // Five seconds into past, none into future
 
 // Definition for the different restricted areas
@@ -84,6 +85,14 @@ export class SessionAccessor {
         });
     }
 
+    // Returns true if sudo mode is currently active.
+    // Pass warn=true to treat sessions within SUDO_WARN_MS of expiry as inactive (used to prompt re-entry early).
+    #sudoIsActive(sudoVerifiedAt: number | null, warn = false): boolean {
+        if (sudoVerifiedAt === null) return false;
+        const window = warn ? SUDO_WINDOW_MS - SUDO_WARN_MS : SUDO_WINDOW_MS;
+        return Date.now() - sudoVerifiedAt <= window;
+    }
+
     async #getIronSession() {
         const SESSION_OPTIONS = { password: C().SESSION_PASSWORD, cookieName: COOKIE_NAME, cookieOptions: { secure: false } };
         let session;
@@ -101,7 +110,7 @@ export class SessionAccessor {
             if (WrappedSessionDataSchema.safeParse(session).success) {
                 return [session.data as ReadonlyDeep<SessionData>, session] as const;
             } else {
-                console.log("Session cookie exists, but has invalid schema. This may be from a previous version.")
+                console.log("Session cookie exists, but has invalid schema. This may be from a previous version.");
             }
         }
         return [null, session] as const;
@@ -144,9 +153,7 @@ export class SessionAccessor {
 
         // Check sudo mode if required by area config, or if the user has 2FA enabled
         const needsSudo = AREAS[area].requireSudo || user.totp_secret !== null;
-        if (needsSudo) {
-            if (session.sudoVerifiedAt === null || Date.now() - session.sudoVerifiedAt > SUDO_WINDOW_MS) return false;
-        }
+        if (needsSudo && !this.#sudoIsActive(session.sudoVerifiedAt)) return false;
 
         return true;
     }
@@ -164,9 +171,9 @@ export class SessionAccessor {
      * re-entry before the time-window closes mid-action.
      * Throws if the user has no session.
      */
-    async getSudoStatus(area: Area): Promise<{ requiresSudo: false } | { requiresSudo: true, tfaEnabled: boolean }> {
+    async getAreaSudoStatus(area: Area): Promise<{ requiresSudo: false } | { requiresSudo: true, tfaEnabled: boolean }> {
         const [session] = await this.#getIronSession();
-        if (session === null) throw new Error("getSudoStatus called with no active session");
+        if (session === null) throw new Error("getAreaSudoStatus called with no active session");
 
         const user = await prisma().user.findUnique({
             where: { id: session.uid },
@@ -179,10 +186,8 @@ export class SessionAccessor {
         const requiresSudo = AREAS[area].requireSudo || tfaEnabled;
         if (!requiresSudo) return { requiresSudo: false };
 
-        // Sudo is required; check if the user has an active sudo session
-        const sudoExpired = session.sudoVerifiedAt === null
-            || Date.now() - session.sudoVerifiedAt > SUDO_WINDOW_MS - SUDO_WARN_MS;
-        if (!sudoExpired) return { requiresSudo: false };
+        // Sudo is required; check if the user has an active (non-expiring) sudo session
+        if (this.#sudoIsActive(session.sudoVerifiedAt, true)) return { requiresSudo: false };
 
         return { requiresSudo: true, tfaEnabled };
     }
@@ -245,6 +250,38 @@ export class SessionAccessor {
         session.data.sudoVerifiedAt = Date.now();
         await session.save();
         return true;
+    }
+
+    /**
+     * Returns the current sudo mode status for the user.
+     * Throws if there is no active session.
+     */
+    async getSudoActiveStatus(): Promise<{ sudoVerifiedAt: number | null, tfaEnabled: boolean }> {
+        const [session] = await this.#getIronSession();
+        if (session === null) throw new Error("getSudoActiveStatus called with no active session");
+
+        const user = await prisma().user.findUnique({
+            where: { id: session.uid },
+            select: { totp_secret: true }
+        });
+        if (user === null) throw new Error(`Session references non-existent user id ${session.uid}`);
+
+        return {
+            sudoVerifiedAt: this.#sudoIsActive(session.sudoVerifiedAt) ? session.sudoVerifiedAt : null,
+            tfaEnabled: user.totp_secret !== null
+        };
+    }
+
+    /**
+     * Exits sudo mode by clearing the sudo verification timestamp.
+     * Throws if there is no active session.
+     */
+    async exitSudo(): Promise<void> {
+        const [sessionData, session] = await this.#getIronSession();
+        if (sessionData === null) throw new Error("exitSudo called with no active session");
+
+        session.data.sudoVerifiedAt = null;
+        await session.save();
     }
 
     /**

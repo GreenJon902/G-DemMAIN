@@ -1,3 +1,4 @@
+import "server-only";
 import { C } from "@g/com/lib/environ";
 import Console from "./Console";
 import PanelPageSection from "../ui/PanelPageSection";

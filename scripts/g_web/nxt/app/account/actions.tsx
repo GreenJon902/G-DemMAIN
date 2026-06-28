@@ -9,6 +9,13 @@ import { redirectLogin } from "../login/util";
  * @param next - Optional parameter to navigate to after the login page.
  */
 export async function logoutAction(next?: string) {
-    await NS.dropSession(); 
+    await NS.dropSession();
     redirectLogin(next);
+}
+
+/**
+ * Exits sudo mode for the current user.
+ */
+export async function exitSudoAction(): Promise<void> {
+    await NS.exitSudo();
 }

@@ -5,13 +5,13 @@ import PanelPageSection from "./ui/PanelPageSection";
 import { loadPanelDataAction, Unit, unitAction } from "./actions";
 import { CpuRamGraph } from "./ui/Graphs";
 import { UnitStatus } from "@/lib/panelUtils";
-import { makeAreaSudoGuard, useSudoModal } from "@/app/ui/SudoModal";
+import { makeAreaSudoGuard, useAuthContext } from "@/app/AuthContext";
 
 export default function PanelPageContent(
     { data }: { data: Awaited<ReturnType<typeof loadPanelDataAction>> }
 ) {
-    const sudoModal = useSudoModal();
-    const panelGuard = makeAreaSudoGuard("panel", sudoModal);
+    const ctx = useAuthContext();
+    const panelGuard = makeAreaSudoGuard("panel", ctx);
     const gd = data.graphData.timed;
     return ( 
         <>
