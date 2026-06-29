@@ -20,14 +20,15 @@ const TFA_EPOCH_TOLERANCE: number | [number, number] = [5, 0];  // Five seconds 
 // Definition for the different restricted areas
 //  * requireSudo - Strict checks only. If true then 2FA must be enabled and sudo mode must be active. If false then sudo mode is required only if the user has 2FA enabled.
 const AREAS = {
-    panel: { requireSudo: true }
+    panel: { requireSudo: true },
+    hisdoc: { requireSudo: false }
 } satisfies Record<string, { requireSudo: boolean }>;
 
 export type Area = keyof typeof AREAS;
 
 // Extract the areas a user can access from a database-user
-function userToAreaAccess(user: { has_panel_access: boolean }): Record<Area, boolean> {
-    return { panel: user.has_panel_access };
+function userToAreaAccess(user: { has_panel_access: boolean, has_hisdoc_access: boolean }): Record<Area, boolean> {
+    return { panel: user.has_panel_access, hisdoc: user.has_hisdoc_access };
 }
 
 // Structural equivalent of iron-session's unexported CookieStore
@@ -144,7 +145,7 @@ export class SessionAccessor {
 
         const user = await prisma().user.findUnique({
             where: { id: session.uid },
-            select: { has_panel_access: true, totp_secret: true }
+            select: { has_panel_access: true, has_hisdoc_access: true, totp_secret: true }
         });
         if (user === null) throw new Error(`Session references non-existent user id ${session.uid}`);
 

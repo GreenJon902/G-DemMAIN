@@ -26,6 +26,27 @@ export function sendWebcommandWebhook(name: string, command: string) {
 }
 
 /**
+ * Send a notification that a new HisDoc event was added.
+ * Note this will not wait for the webhook to finish.
+ * @param eventName - The name of the newly added event.
+ * @param authorUsername - The g_web username of the user who added it.
+ */
+export function sendHisDocEventAddedWebhook(eventName: string, authorUsername: string) {
+    executeCommand("hisdoc_event_added", eventName, authorUsername);
+}
+
+/**
+ * Send a notification that an existing HisDoc event was edited.
+ * Note this will not wait for the webhook to finish.
+ * @param eventName - The name of the edited event.
+ * @param authorUsername - The g_web username of the user who made the edit.
+ * @param changelogNote - The human-written summary of what changed.
+ */
+export function sendHisDocEventEditedWebhook(eventName: string, authorUsername: string, changelogNote: string) {
+    executeCommand("hisdoc_event_edited", eventName, authorUsername, changelogNote);
+}
+
+/**
  * Actually execute the webhook and pipe output to console.
  * Note this will not wait for the webhook to finish.
  */

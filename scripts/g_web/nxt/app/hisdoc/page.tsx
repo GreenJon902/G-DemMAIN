@@ -1,0 +1,88 @@
+import "server-only";
+import prisma from "@g/com/lib/prisma";
+import { parseTimelineFilters, buildTimelineWhere } from "./lib/timeline-filter";
+import InfiniteTimeline from "./ui/InfiniteTimeline";
+import TimelineFilters from "./ui/TimelineFilters";
+import { getMinecraftUsername } from "./lib/minecraft";
+
+/**
+ * Main HisDoc timeline page. Fetches the first page of events and all tags/persons
+ * server-side using the current URL filter params, then renders the filter sidebar
+ * alongside the infinite-scroll timeline.
+ *
+ * @param searchParams - Next.js 15 async search params (must be awaited before use).
+ */
+export default async function HisDocPage({
+    searchParams
+}: {
+    searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+    const sp = await searchParams;
+    const urlParams = new URLSearchParams();
+    for (const [k, v] of Object.entries(sp)) {
+        if (typeof v === "string") urlParams.set(k, v);
+        else if (Array.isArray(v)) v.forEach(val => urlParams.append(k, val));
+    }
+
+    const filters = parseTimelineFilters(urlParams);
+
+    const [events, allTags, allPersons] = await Promise.all([
+        prisma().hisdoc_event.findMany({
+            where: buildTimelineWhere(filters),
+            orderBy: [{ sort_key: "desc" }, { id: "desc" }],
+            take: 21,
+            select: {
+                id: true,
+                name: true,
+                description: true,
+                event_date_type: true,
+                event_date1: true,
+                event_date_time_offset: true,
+                event_date_units: true,
+                event_date_diff: true,
+                event_date2: true,
+                tags: {
+                    select: {
+                        tag: { select: { id: true, name: true, color: true } }
+                    }
+                }
+            }
+        }),
+        prisma().hisdoc_tag.findMany({ orderBy: { name: "asc" } }),
+        prisma().hisdoc_person.findMany({ orderBy: { data: "asc" } })
+    ]);
+
+    const hasMore = events.length === 21;
+    const page = events.slice(0, 20);
+
+    // Convert BigInt date fields to Number — all FlexiDate values fit within Number.MAX_SAFE_INTEGER
+    const serialisedPage = page.map(e => ({
+        ...e,
+        event_date1: Number(e.event_date1),
+        event_date_diff: e.event_date_diff !== null ? Number(e.event_date_diff) : null,
+        event_date2: e.event_date2 !== null ? Number(e.event_date2) : null
+    }));
+
+    // Resolve Minecraft UUIDs to usernames; NPC persons use their data field directly
+    const displayNames = await Promise.all(
+        allPersons.map(p =>
+            p.type === "MINECRAFT" ? getMinecraftUsername(p.data) : Promise.resolve(p.data)
+        )
+    );
+
+    const personsWithDisplayNames = allPersons.map((p, i) => ({
+        id: p.id,
+        displayName: displayNames[i]
+    }));
+
+    return (
+        <div className="flex gap-6 p-6">
+            <aside className="w-64 flex-shrink-0">
+                <TimelineFilters tags={allTags} persons={personsWithDisplayNames} />
+            </aside>
+            <main className="flex flex-1 flex-col gap-4">
+                <InfiniteTimeline initialEvents={serialisedPage} initialHasMore={hasMore} />
+            </main>
+        </div>
+    );
+}

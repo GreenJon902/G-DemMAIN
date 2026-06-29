@@ -9,9 +9,123 @@ datasource db {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model user {
-  id               Int     @id @default(autoincrement())
-  username         String  @unique(map: "username") @db.VarChar(50)
-  password_hash    String  @db.VarChar(255)
-  has_panel_access Boolean @default(false)
-  totp_secret      String? @db.VarChar(32)
+  id                       Int                @id @default(autoincrement())
+  username                 String             @unique(map: "username") @db.VarChar(50)
+  password_hash            String             @db.VarChar(255)
+  has_panel_access         Boolean            @default(false)
+  has_hisdoc_access        Boolean            @default(false)
+  totp_secret              String?            @db.VarChar(32)
+  hisdoc_changelog_entries hisdoc_changelog[]
+  hisdoc_posted_events     hisdoc_event[]
+  hisdoc_person            hisdoc_person?
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model hisdoc_changelog {
+  id             Int          @id @default(autoincrement())
+  event_id       Int
+  description    String       @db.LongText
+  author_user_id Int
+  created_at     DateTime     @default(now()) @db.DateTime(0)
+  event          hisdoc_event @relation(fields: [event_id], references: [id], onUpdate: Restrict, map: "hisdoc_changelog_ibfk_1")
+  author_user    user         @relation(fields: [author_user_id], references: [id], onUpdate: Restrict, map: "hisdoc_changelog_ibfk_2")
+
+  @@index([author_user_id], map: "author_user_id")
+  @@index([event_id], map: "event_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model hisdoc_event {
+  id                     Int                            @id @default(autoincrement())
+  name                   String                         @unique(map: "uq_hisdoc_event_name") @db.VarChar(255)
+  description            String                         @db.LongText
+  details                String?                        @db.LongText
+  posted_by_user_id      Int?
+  posted_at              DateTime                       @default(now()) @db.DateTime(0)
+  event_date_type        hisdoc_event_event_date_type
+  event_date1            BigInt
+  event_date_time_offset Int                            @db.SmallInt
+  event_date_units       hisdoc_event_event_date_units?
+  event_date_diff        BigInt?                        @db.UnsignedBigInt
+  event_date2            BigInt?                        @db.UnsignedBigInt
+  sort_key               BigInt?
+  changelog              hisdoc_changelog[]
+  posted_by_user         user?                          @relation(fields: [posted_by_user_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "hisdoc_event_ibfk_1")
+  related_events_a       hisdoc_event_event[]           @relation("hisdoc_event_event_event_a_idTohisdoc_event")
+  related_events_b       hisdoc_event_event[]           @relation("hisdoc_event_event_event_b_idTohisdoc_event")
+  persons                hisdoc_event_person[]
+  tags                   hisdoc_event_tag[]
+
+  @@index([sort_key], map: "idx_hisdoc_event_sort")
+  @@index([posted_by_user_id], map: "posted_by_user_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model hisdoc_event_event {
+  event_a_id Int
+  event_b_id Int
+  event_a    hisdoc_event @relation("hisdoc_event_event_event_a_idTohisdoc_event", fields: [event_a_id], references: [id], onUpdate: Restrict, map: "hisdoc_event_event_ibfk_1")
+  event_b    hisdoc_event @relation("hisdoc_event_event_event_b_idTohisdoc_event", fields: [event_b_id], references: [id], onUpdate: Restrict, map: "hisdoc_event_event_ibfk_2")
+
+  @@id([event_a_id, event_b_id])
+  @@index([event_b_id], map: "event_b_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model hisdoc_event_person {
+  event_id  Int
+  person_id Int
+  event     hisdoc_event  @relation(fields: [event_id], references: [id], onUpdate: Restrict, map: "hisdoc_event_person_ibfk_1")
+  person    hisdoc_person @relation(fields: [person_id], references: [id], onUpdate: Restrict, map: "hisdoc_event_person_ibfk_2")
+
+  @@id([event_id, person_id])
+  @@index([person_id], map: "person_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model hisdoc_event_tag {
+  event_id Int
+  tag_id   Int
+  event    hisdoc_event @relation(fields: [event_id], references: [id], onUpdate: Restrict, map: "hisdoc_event_tag_ibfk_1")
+  tag      hisdoc_tag   @relation(fields: [tag_id], references: [id], onUpdate: Restrict, map: "hisdoc_event_tag_ibfk_2")
+
+  @@id([event_id, tag_id])
+  @@index([tag_id], map: "tag_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model hisdoc_person {
+  id                 Int                   @id @default(autoincrement())
+  type               hisdoc_person_type
+  data               String                @db.VarChar(255)
+  linked_user_id     Int?                  @unique(map: "uq_hisdoc_person_linked_user")
+  involved_in_events hisdoc_event_person[]
+  linked_user        user?                 @relation(fields: [linked_user_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "hisdoc_person_ibfk_1")
+
+  @@unique([type, data], map: "uq_hisdoc_person_data")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model hisdoc_tag {
+  id               Int                @id @default(autoincrement())
+  name             String             @db.VarChar(255)
+  description      String             @db.LongText
+  color            Int
+  hisdoc_event_tag hisdoc_event_tag[]
+}
+
+enum hisdoc_person_type {
+  MINECRAFT
+  NPC
+}
+
+enum hisdoc_event_event_date_type {
+  centered
+  ranged
+}
+
+enum hisdoc_event_event_date_units {
+  d
+  h
+  m
 }

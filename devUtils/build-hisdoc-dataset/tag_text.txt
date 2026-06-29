@@ -1,0 +1,89 @@
+Exploration
+An event related to the discovery of new territories and landmarks.
+
+Building
+Activities centered around construction and architecture.
+
+Trade
+Events involving the exchange of goods and resources between players.
+
+Warfare
+Records of battles and conflicts between factions or players.
+
+Farming
+Documentation of agricultural activities and crop cultivation.
+
+Exploration
+An event related to the discovery of new territories and landmarks.
+
+Crafting
+Instances of players creating items and tools through crafting.
+
+Community Event
+Events that bring the server community together for a shared activity.
+
+Quest Completion
+Achievements or milestones reached through completing in-game quests.
+
+Animal Husbandry
+Documentation of breeding and managing animals.
+
+Technology Advancement
+Achievements related to technological progress and innovation.
+
+Cultural Festival
+Celebrations of cultural diversity and creative expression on the server.
+
+Mining
+Events related to extensive resource extraction and mining activities.
+
+Diplomacy
+Instances of alliances, treaties, or negotiations between factions.
+
+Epic Build
+Monumental construction projects that significantly impact the server's landscape.
+
+Natural Disaster
+Unexpected events like earthquakes, floods, or other disasters affecting the server.
+
+Artifact Discovery
+Uncovering rare and valuable artifacts within the game world.
+
+Seasonal Celebration
+Events and festivities tied to real-world or in-game seasons.
+
+Environmental Conservation
+Efforts to protect and preserve the server's natural environment.
+
+Mysterious Phenomenon
+Strange and unexplained occurrences that capture the community's attention.
+
+Economic Boom
+Periods of rapid economic growth and prosperity on the server.
+
+Underworld Exploration
+Venturing into the depths, documenting activities in caves and dungeons.
+
+Aerial Exploration
+Events related to flying or exploring the server from above.
+
+Legendary Battle
+Epic clashes between powerful players or factions with significant consequences.
+
+Religious Ceremony
+In-game rituals or ceremonies performed for religious or spiritual reasons.
+
+Great Migration
+Massive movements of players or factions relocating to new areas.
+
+Fishing Expedition
+Organized fishing activities and the discovery of aquatic resources.
+
+Epidemic
+Outbreaks of in-game diseases affecting the player population.
+
+Time Capsule
+Burial or preservation of items for future generations to discover.
+
+Moonlight Event
+Special in-game occurrences or activities that happen exclusively at night.

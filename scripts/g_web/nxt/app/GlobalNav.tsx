@@ -66,7 +66,7 @@ export default function GlobalNav() {
                 <Link href="/rules" className="ml-1 border-x border-gray-500 px-1 hover:bg-gray-600">
                     Rules
                 </Link>
-                <Link href="/hisDoc" className="border-r border-gray-500 px-1 hover:bg-gray-600">
+                <Link href="/hisdoc" className="border-r border-gray-500 px-1 hover:bg-gray-600">
                     HisDoc
                 </Link>
                 <Link href="/map" className="border-r border-gray-500 px-1 hover:bg-gray-600">
