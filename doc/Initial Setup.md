@@ -51,11 +51,9 @@ Ensure the g_web user is created.
 sudo rsync -av --delete /opt/infra/scripts/g_web/ /var/lib/g_web
 cd /var/lib/g_web
 sudo chown -R g_web:g_web /var/lib/g_web
-sudo -u g_web HOME=/var/lib/g_web bash
-npm ci
-NODE_OPTIONS='--enable-source-maps' npm run build
-npm prune --omit=dev
-exit
+sudo -u g_web HOME=/var/lib/g_web npm ci
+sudo -u g_web HOME=/var/lib/g_web NODE_OPTIONS='--enable-source-maps' npm run build
+sudo -u g_web HOME=/var/lib/g_web npm prune --omit=dev
 sudo chown -R g_web:g_web /var/lib/g_web
 ```
 
@@ -71,6 +69,7 @@ So ownership is not important. g\_mc group gives read/write access for jon and g
 `sudo systemctl stop g_mc g_web_nxt g_web_mcc g_monitor`
 `sudo systemctl reset-failed g_mc g_web_nxt g_web_mcc g_monitor`
 `sudo systemctl restart g_mc g_web_nxt g_web_mcc g_monitor`
+
 
 
 
