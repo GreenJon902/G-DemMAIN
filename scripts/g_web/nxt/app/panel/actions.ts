@@ -11,23 +11,24 @@ export type Unit = {
     name: string,  // E.g. "g_mc"
     type: UnitType,  // E.g. "service" or "timer"
     controllable: boolean,  // Should the user be able to start or stop this from the dashboard?
-    expectActive: boolean  // Is normal behavior that this is running? E.g. g_mc.service being stopped is abnormal, but g_nightly_restart.service we don't expect to be running all the time
+    expectActive: boolean,  // Is normal behavior that this is running? E.g. g_mc.service being stopped is abnormal, but g_nightly_restart.service we don't expect to be running all the time
+    impactsPanel: boolean  // True if changes to this unit may affect the user's ability to continue using the panel, or may be irreversible without SSH access
 }
 /** A utility function to create a {@link Unit}. */
-const _mkUnit = (name: string, type: UnitType, controllable: boolean, expectActive: boolean): Unit => ({ name, type, controllable, expectActive });
+const _mkUnit = (name: string, type: UnitType, controllable: boolean, expectActive: boolean, impactsPanel: boolean): Unit => ({ name, type, controllable, expectActive, impactsPanel });
 
-/** 
+/**
  * A list of all the units we want to keep track of and display to the user.
  * Note: this is not an exhaustive list of all units running on the system.
  */
 const TRACKED_UNITS = [
-    _mkUnit("g_mc", "service", true, true),
-    _mkUnit("g_web_nxt", "service", true, true),
-    _mkUnit("g_web_mcc", "service", true, true),
-    _mkUnit("g_nightly_restart", "service", false, false),
-    _mkUnit("g_nightly_restart", "timer", true, true),
-    _mkUnit("g_monitor", "service", true, true),
-    _mkUnit("mysql", "service", true, true)
+    _mkUnit("g_mc",               "service", true,  true,  false),
+    _mkUnit("g_web_nxt",          "service", true,  true,  true),
+    _mkUnit("g_web_mcc",          "service", true,  true,  false),
+    _mkUnit("g_nightly_restart",  "service", false, false, false),
+    _mkUnit("g_nightly_restart",  "timer",   true,  true,  false),
+    _mkUnit("g_monitor",          "service", true,  true,  false),
+    _mkUnit("mysql",              "service", true,  true,  true)
 ]; // TODO: DOn't hardcode these
 
 /**

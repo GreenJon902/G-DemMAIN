@@ -1,6 +1,7 @@
 import "@/app/globals.css";
 import GlobalNav from "./GlobalNav";
 import { AuthContextProvider } from "./AuthContext";
+import { ConfirmContextProvider } from "./ConfirmContext";
 import { NS } from "@/lib/session";
 
 export const dynamic = "force-dynamic";  // TODO: Find a better fix this
@@ -25,8 +26,10 @@ export default async function Layout({
                     initialSudoVerifiedAt={sudoVerifiedAt}
                     initialTfaEnabled={tfaEnabled}
                 >
-                    <header><nav> <GlobalNav /> </nav></header>
-                    {children}
+                    <ConfirmContextProvider>
+                        <header><nav> <GlobalNav /> </nav></header>
+                        {children}
+                    </ConfirmContextProvider>
                 </AuthContextProvider>
             </body>
         </html>

@@ -6,14 +6,13 @@ import { loadPanelDataAction, Unit, unitAction } from "./actions";
 import { CpuRamGraph } from "./ui/Graphs";
 import { UnitStatus } from "@/lib/panelUtils";
 import { makeAreaSudoGuard, useAuthContext } from "@/app/AuthContext";
+import { useConfirmContext } from "@/app/ConfirmContext";
 
 export default function PanelPageContent(
     { data }: { data: Awaited<ReturnType<typeof loadPanelDataAction>> }
 ) {
-    const ctx = useAuthContext();
-    const panelGuard = makeAreaSudoGuard("panel", ctx);
     const gd = data.graphData.timed;
-    return ( 
+    return (
         <>
             { /* Resource monitors -------------------------------------------------- */ }
             <PanelPageSection title="Important Graphs">
@@ -43,8 +42,7 @@ export default function PanelPageContent(
                                     </span>
                                 </td>
                                 <td className="flex gap-1 p-1"> {/* All changing controls go into the same <td> as the frequent changing causes firefox to get confused and not render backgrounds correctly */}
-                                    <UnitControls unit={unit} status={status} className="flex-1" guard={panelGuard} />
-                                    {/* TODO: A warning before restart g_web or g_mysql as these may not be easy to revert without ssh access */}
+                                    <UnitControls unit={unit} status={status} className="flex-1" />
                                 </td>
                             </tr>
                         ))
@@ -64,10 +62,10 @@ export default function PanelPageContent(
  */
 function StatusIndicator({ unit, status }: { unit: Unit, status: UnitStatus | undefined }) {
     // Get the color
-    const color = { 
-        "active": "bg-green-600", 
-        "inactive": unit.expectActive ? "bg-orange-600" : "bg-cyan-600", 
-        "failed": "bg-red-600", 
+    const color = {
+        "active": "bg-green-600",
+        "inactive": unit.expectActive ? "bg-orange-600" : "bg-cyan-600",
+        "failed": "bg-red-600",
         "activating": "bg-yellow-600",
         "deactivating": "bg-yellow-600",
         "reloading": "bg-yellow-600",
@@ -78,21 +76,30 @@ function StatusIndicator({ unit, status }: { unit: Unit, status: UnitStatus | un
     if (color === undefined) {
         // Error and just display text
         console.error("Unrecognised status", status);
-        return status;  
+        return status;
     }
-    
+
     // Create a circle with the first letter of status, with hover being full status name
     return <div className={`${color} aspect-square w-6 rounded-full text-center`} title={status}>
         {String(status)[0].toUpperCase()}
     </div>;
 }
 
-/**
- * Create the controls for the given unit.
- * @param className - This will be given to each child.
+/** 
+ * Create the controls for the given unit. 
+ * @param className - This will be given to each child. 
  */
-function UnitControls({ unit, status, className="", guard }: { unit: Unit, status: UnitStatus | undefined, className?: string, guard: () => Promise<boolean> }) {
+function UnitControls({ unit, status, className="" }: { unit: Unit, status: UnitStatus | undefined, className?: string }) {
+    const authCtx = useAuthContext();
+    const guard = makeAreaSudoGuard("panel", authCtx);
+    const { requestConfirm } = useConfirmContext();
 
+    // Warn the user before acting on units that could interrupt panel access or require SSH to recover
+    const confirm = unit.impactsPanel
+        ? () => requestConfirm(`Stopping or restarting ${unit.name} may interrupt your access to this panel and could require SSH to recover. Are you sure?`)
+        : undefined;
+
+    // Create buttons depending on current status and unit type
     if (
         status === "activating" ||
         status === "deactivating" ||
@@ -104,19 +111,19 @@ function UnitControls({ unit, status, className="", guard }: { unit: Unit, statu
         status === "active" &&
         unit.type === "service" || unit.type === "target"
     ) {
-        return <><_Restart unit={unit} className={className} guard={guard} /><_Stop unit={unit} className={className} guard={guard} /></>;
+        return <><_Restart unit={unit} className={className} guard={guard} confirm={confirm} /><_Stop unit={unit} className={className} guard={guard} confirm={confirm} /></>;
 
     } else if (
         status === "active" &&
         unit.type === "timer"
     ) {
-        return <_Stop unit={unit} className={className} guard={guard} />;  // Restarting a timer doesn't make sense
+        return <_Stop unit={unit} className={className} guard={guard} confirm={confirm} />;  // Restarting a timer doesn't make sense
 
     } else if (
         status === "failed" ||
         status === "inactive"
     ) {
-        return <_Start unit={unit} className={className} guard={guard} />;
+        return <_Start unit={unit} className={className} guard={guard} confirm={confirm} />;
 
     } else  {
         console.error("Unrecognised status", status, "for unit of type", unit.type);
@@ -124,10 +131,10 @@ function UnitControls({ unit, status, className="", guard }: { unit: Unit, statu
     }
 }
 // Macro functions to create buttons
-type _BtnProps = { unit: Unit, className: string, guard: () => Promise<boolean> };
-const _Stop = ({ unit, className, guard }: _BtnProps) =>
-    <ActionButton action={async () => await unitAction(unit, "stop")} className={className} color={BUTTON_RED} guard={guard}>Stop</ActionButton>;   
-const _Restart = ({ unit, className, guard }: _BtnProps) =>
-    <ActionButton action={async () => await unitAction(unit, "start")} className={className} color={BUTTON_YELLOW} guard={guard}>Restart</ActionButton>;
-const _Start = ({ unit, className, guard }: _BtnProps) =>
-    <ActionButton action={async () => await unitAction(unit, "restart")} className={className} color={BUTTON_GREEN} guard={guard}>Start</ActionButton>;
+type _BtnProps = { unit: Unit, className: string, guard: () => Promise<boolean>, confirm: (() => Promise<boolean>) | undefined };
+const _Stop = ({ unit, className, guard, confirm }: _BtnProps) =>
+    <ActionButton action={async () => await unitAction(unit, "stop")} className={className} color={BUTTON_RED} guard={guard} confirm={confirm}>Stop</ActionButton>;
+const _Restart = ({ unit, className, guard, confirm }: _BtnProps) =>
+    <ActionButton action={async () => await unitAction(unit, "start")} className={className} color={BUTTON_YELLOW} guard={guard} confirm={confirm}>Restart</ActionButton>;
+const _Start = ({ unit, className, guard, confirm }: _BtnProps) =>
+    <ActionButton action={async () => await unitAction(unit, "restart")} className={className} color={BUTTON_GREEN} guard={guard} confirm={confirm}>Start</ActionButton>;
