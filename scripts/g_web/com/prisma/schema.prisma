@@ -14,7 +14,7 @@ model user {
   password_hash            String             @db.VarChar(255)
   has_panel_access         Boolean            @default(false)
   has_hisdoc_access        Boolean            @default(false)
-  totp_secret              String?            @db.VarChar(32)
+  tfa_secret               String?            @db.VarChar(32)
   hisdoc_changelog_entries hisdoc_changelog[]
   hisdoc_posted_events     hisdoc_event[]
   hisdoc_person            hisdoc_person?

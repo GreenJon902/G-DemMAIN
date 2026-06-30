@@ -14,7 +14,7 @@ export default function Unauthorized() {
     return (
         <AbstractErrorPage
             code="401"
-            head="/b8nji.png"
+            head="/ollieblitzz.png"
         >
             <span>
                 You must be <TextLink href={loginUrl(next)}>logged in</TextLink> to view this page.

@@ -1,14 +1,20 @@
 "use client";
 
-import * as Dialog from "@radix-ui/react-dialog";
 import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import TextInput from "@/app/ui/TextInput";
+import ModalShell from "@/app/ui/ModalShell";
 import { ActionButton, BUTTON_GREEN, SimpleButton, BUTTON_RED } from "@/app/ui/Button";
 import type { Area } from "@g/com/lib/auth";
 import { SUDO_WINDOW_MS } from "@g/com/lib/authConstants";
 import { getAreaSudoStatusAction, enterSudoAction } from "@/app/actions";
 
 type SudoModalMode = "verify" | "disabled" | null;
+
+type AuthBroadcast =
+    | { type: "sudo-entered"; at: number }
+    | { type: "sudo-exited" }
+    | { type: "logged-in" }
+    | { type: "logged-out" };
 
 export type AuthContextType = {
     isLoggedIn: boolean;
@@ -21,6 +27,13 @@ export type AuthContextType = {
 
 const AuthCtx = createContext<AuthContextType | null>(null);
 
+/**
+ * Provides auth state to the component tree.
+ *
+ * Cross-tab sync: login, logout, sudo-entered, and sudo-exited events are broadcast over
+ * BroadcastChannel("auth-sync") so all open tabs stay in sync without polling. Logout triggers
+ * a page reload in other tabs so the server can redirect to the login page as appropriate.
+ */
 export function AuthContextProvider({
     initialIsLoggedIn,
     initialSudoVerifiedAt,
@@ -36,10 +49,34 @@ export function AuthContextProvider({
     const [sudoVerifiedAt, setSudoVerifiedAt] = useState(initialSudoVerifiedAt);
     const [tfaEnabled, setTfaEnabled] = useState(initialTfaEnabled);
 
+    const channelRef = useRef<BroadcastChannel | null>(null);
+    useEffect(() => {
+        const channel = new BroadcastChannel("auth-sync");
+        channelRef.current = channel;
+        // Mirror auth state changes broadcast by other tabs into this tab's local state.
+        channel.onmessage = ({ data }: MessageEvent<AuthBroadcast>) => {
+            switch (data.type) {
+            case "sudo-entered": setSudoVerifiedAt(data.at); break;
+            case "sudo-exited":  setSudoVerifiedAt(null);   break;
+            case "logged-in":    setIsLoggedIn(true);       break;
+            case "logged-out":   window.location.reload();  break;  // Clear all data and let server routing redirect (to login)
+            }
+        };
+        return () => { channel.close(); channelRef.current = null; };
+    }, []);
+
     // Sync with server state on navigation (layout re-renders pass fresh initial values).
     // The set-state-in-effect rule is a false positive: this is prop→state syncing, not derived state
+    const prevIsLoggedInRef = useRef(initialIsLoggedIn);
     /* eslint-disable react-hooks/set-state-in-effect */
-    useEffect(() => { setIsLoggedIn(initialIsLoggedIn); }, [initialIsLoggedIn]);
+    useEffect(() => {
+        const prev = prevIsLoggedInRef.current;
+        prevIsLoggedInRef.current = initialIsLoggedIn;
+        setIsLoggedIn(initialIsLoggedIn);
+        // Broadcast login/logout transitions so other tabs update without waiting for a navigation
+        if (initialIsLoggedIn && !prev)  channelRef.current?.postMessage({ type: "logged-in"  } satisfies AuthBroadcast);
+        if (!initialIsLoggedIn && prev)  channelRef.current?.postMessage({ type: "logged-out" } satisfies AuthBroadcast);
+    }, [initialIsLoggedIn]);
     useEffect(() => { setSudoVerifiedAt(initialSudoVerifiedAt); }, [initialSudoVerifiedAt]);
     useEffect(() => { setTfaEnabled(initialTfaEnabled); }, [initialTfaEnabled]);
     /* eslint-enable react-hooks/set-state-in-effect */
@@ -71,12 +108,19 @@ export function AuthContextProvider({
 
     const settle = (verified: boolean) => {
         setMode(null);
-        if (verified) setSudoVerifiedAt(Date.now());
+        if (verified) {
+            const at = Date.now();
+            setSudoVerifiedAt(at);
+            channelRef.current?.postMessage({ type: "sudo-entered", at } satisfies AuthBroadcast);
+        }
         resolveRef.current?.(verified);
         resolveRef.current = null;
     };
 
-    const onSudoExited = () => setSudoVerifiedAt(null);
+    const onSudoExited = () => {
+        setSudoVerifiedAt(null);
+        channelRef.current?.postMessage({ type: "sudo-exited" } satisfies AuthBroadcast);
+    };
 
     return (
         <AuthCtx.Provider value={{ isLoggedIn, sudoVerifiedAt, tfaEnabled, requestSudo, showSudoUnavailable, onSudoExited }}>
@@ -107,33 +151,6 @@ export function makeAreaSudoGuard(area: Area, ctx: AuthContextType): () => Promi
         }
         return ctx.requestSudo();
     };
-}
-
-function ModalShell({
-    open,
-    onDismiss,
-    title,
-    description,
-    children
-}: {
-    open: boolean;
-    onDismiss: () => void;
-    title: string;
-    description: string;
-    children?: ReactNode;
-}) {
-    return (
-        <Dialog.Root open={open} onOpenChange={(o) => { if (!o) onDismiss(); }}>
-            <Dialog.Portal>
-                <Dialog.Overlay className="fixed inset-0 bg-black/60" />
-                <Dialog.Content className="fixed top-1/2 left-1/2 flex w-72 -translate-x-1/2 -translate-y-1/2 flex-col gap-2 rounded-xl bg-gray-800 p-4">
-                    <Dialog.Title className="text-xl font-bold underline decoration-2">{title}</Dialog.Title>
-                    <Dialog.Description className="text-sm text-gray-400">{description}</Dialog.Description>
-                    {children}
-                </Dialog.Content>
-            </Dialog.Portal>
-        </Dialog.Root>
-    );
 }
 
 function SudoModal({
