@@ -144,7 +144,7 @@ export class SessionAccessor {
 
         const user = await prisma().user.findUnique({
             where: { id: session.uid },
-            select: { has_panel_access: true, totp_secret: true }
+            select: { has_panel_access: true, tfa_secret: true }
         });
         if (user === null) throw new Error(`Session references non-existent user id ${session.uid}`);
 
@@ -152,7 +152,7 @@ export class SessionAccessor {
         if (!userToAreaAccess(user)[area]) return false;
 
         // Check sudo mode if required by area config, or if the user has 2FA enabled
-        const needsSudo = AREAS[area].requireSudo || user.totp_secret !== null;
+        const needsSudo = AREAS[area].requireSudo || user.tfa_secret !== null;
         if (needsSudo && !this.#sudoIsActive(session.sudoVerifiedAt)) return false;
 
         return true;
@@ -177,12 +177,12 @@ export class SessionAccessor {
 
         const user = await prisma().user.findUnique({
             where: { id: session.uid },
-            select: { totp_secret: true }
+            select: { tfa_secret: true }
         });
         if (user === null) throw new Error(`Session references non-existent user id ${session.uid}`);
 
         // Check if we'll require the user to enter sudo mode - area requires it, or user has 2FA enabled
-        const tfaEnabled = user.totp_secret !== null;
+        const tfaEnabled = user.tfa_secret !== null;
         const requiresSudo = AREAS[area].requireSudo || tfaEnabled;
         if (!requiresSudo) return { requiresSudo: false };
 
@@ -240,12 +240,12 @@ export class SessionAccessor {
 
         const user = await prisma().user.findUnique({
             where: { id: sessionData.uid },
-            select: { totp_secret: true }
+            select: { tfa_secret: true }
         });
         if (user === null) throw new Error(`Session references non-existent user id ${sessionData.uid}`);
-        if (user.totp_secret === null) throw new Error("User has no TOTP secret configured");
+        if (user.tfa_secret === null) throw new Error("User has no TOTP secret configured");
 
-        if (!(await otplibVerify({ token: code, secret: user.totp_secret, epochTolerance: TFA_EPOCH_TOLERANCE })).valid) return false;
+        if (!(await otplibVerify({ token: code, secret: user.tfa_secret, epochTolerance: TFA_EPOCH_TOLERANCE })).valid) return false;
 
         session.data.sudoVerifiedAt = Date.now();
         await session.save();
@@ -262,13 +262,13 @@ export class SessionAccessor {
 
         const user = await prisma().user.findUnique({
             where: { id: session.uid },
-            select: { totp_secret: true }
+            select: { tfa_secret: true }
         });
         if (user === null) throw new Error(`Session references non-existent user id ${session.uid}`);
 
         return {
             sudoVerifiedAt: this.#sudoIsActive(session.sudoVerifiedAt) ? session.sudoVerifiedAt : null,
-            tfaEnabled: user.totp_secret !== null
+            tfaEnabled: user.tfa_secret !== null
         };
     }
 
