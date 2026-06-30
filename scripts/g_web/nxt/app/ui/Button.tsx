@@ -64,11 +64,11 @@ export function LinkButton({
  *
  * @param children - the normal content to display inside the button.
  * @param action - the server-action to run when the button is pressed.
- * @param confirm - an optional function to call when the button is clicked to confirm that we want to execute the action. this returns true to run the action, and false otherwise.
+ * @param confirm - an optional function to call when the button is clicked to confirm that we want to execute the action. Returns true (or a Promise resolving to true) to run the action, false to abort. Runs before the loading state is entered.
  * @param color - The {@link ButtonColor} of this button.
  * @param classname - optional extra class names for the button, e.g. size-6.
  * @param ref - An optional reference to the actual button element.
- */ 
+ */
 export function ActionButton({
     children,
     action,
@@ -80,7 +80,7 @@ export function ActionButton({
 }: {
     children: ReactNode,
     action: () => Promise<void>,
-    confirm?: () => boolean,
+    confirm?: () => boolean | Promise<boolean>,
     guard?: () => boolean | Promise<boolean>,
     color: ButtonColor,
     className?: string,
@@ -88,7 +88,7 @@ export function ActionButton({
 }) {
     const [isPending, setIsPending] = useState(false);
     const buttonClicked = async () => {
-        if (isPending || !confirm()) return;
+        if (isPending || !await confirm()) return;
         setIsPending(true);
         try {
             if (guard && !await guard()) {
