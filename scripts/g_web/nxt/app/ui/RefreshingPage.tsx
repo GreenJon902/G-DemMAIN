@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import RefreshingPageClient from "./_RefreshingPageClient";
 
-export type TimeStamped = { timestamp?: number };  // Ms since the epoch
+export type TimeStamped = { timestamp?: number; refreshRate?: number };  // Ms since the epoch; refreshRate in ms
 
 /**
  * A page who's content comes from a server action and is updated by that server action.

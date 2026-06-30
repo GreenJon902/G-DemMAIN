@@ -49,7 +49,8 @@ export type PanelData = {
         status: UnitStatus | undefined
     }[],
     graphData: Awaited<ReturnType<typeof loadMonitorRecords>>,  
-    timestamp: number  // The time that this record was created, in ms since the epoch
+    timestamp: number,  // The time that this record was created, in ms since the epoch
+    refreshRate: number  // How ofter the (graph) data refreshes
 }
 
 /**
@@ -62,7 +63,8 @@ export async function loadPanelDataAction(): Promise<PanelData> {
     return {
         unitsStatuses: await getUnitsStatuses(),
         graphData,  // TODO: This could be improved
-        timestamp: graphData.timestamp
+        timestamp: graphData.timestamp,
+        refreshRate: graphData.refreshRate
     };
 }
 

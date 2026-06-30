@@ -14,8 +14,6 @@ export default function GraphPageContent({
 }) {
     const gd = data.timed;
     return (
-    // TODO: Show indicator for time of last monitor log taken
-
         <>
             {/* Monitor option selector: */}
             {/* 
