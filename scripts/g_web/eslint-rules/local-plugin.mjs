@@ -3,7 +3,7 @@
 // transaction — this whitelist is what catches a write that forgot to do so.
 export const HISDOC_TRACKED_TABLES = new Set([
     "hd_event", "hd_tag", "hd_person",
-    "hd_event_tag", "hd_event_person", "hd_event_event_rea",
+    "hd_event_tag", "hd_event_person", "hd_event_event_wri",
     "hd_changelog"
 ]);
 export const HISDOC_MUTATING_METHODS = new Set([  // TODO: Change this to a whitelist rather than a blacklist

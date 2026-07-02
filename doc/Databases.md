@@ -344,7 +344,9 @@ CREATE OR REPLACE TABLE hd_event_person (
 
 ## hd_event_event
 
-Oe canonical row is stored per relation with `event_id < related_event_id`, enforced by a BEFORE INSERT trigger that swaps the values if needed (modifying `NEW` is allowed). The view `hd_event_event_rea` exposes both directions for reads.
+// TODO: I think the view table should be removed. And we just insert two rows in the js gateway?
+
+One canonical row is stored per relation with `event_id < related_event_id`, enforced by a BEFORE INSERT trigger that swaps the values if needed (modifying `NEW` is alnlowed). The view `hd_event_event_rea` exposes both directions for reads.
 Data is stored in `hd_event_event_wri`.
 
 - **Writes:** `hd_event_event_wri` — insert one row in any order; the trigger normalises it
