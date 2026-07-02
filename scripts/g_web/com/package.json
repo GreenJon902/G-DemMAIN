@@ -12,7 +12,8 @@
     }
   },
   "scripts": {
-    "build": "npm run build:_prs && npm run build:_tsc",
+    "build": "npm run build:_chk && npm run build:_prs && npm run build:_tsc",
+    "build:_chk": "grep -qF '@@unique([event_id, related_event_id])' prisma/schema.prisma || (echo 'ERROR: hd_event_event_rea is missing @@unique([event_id, related_event_id]) in prisma/schema.prisma — add it manually after schema:pull' && exit 1)",
     "build:_prs": "npx prisma generate",
     "build:_tsc": "tsc -p tsconfig.json",
     "watch": "tsc -p tsconfig.json --watch --preserveWatchOutput",

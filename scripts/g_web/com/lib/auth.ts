@@ -28,20 +28,20 @@ type AreaConfig = {
 // Note, the permission specification must be manually mirrored in the database schema - `doc/Databases.md`.
 const AREAS = {
     panel: {
-        levels: ['viewer', 'admin'] as const,
+        levels: ["viewer", "admin"] as const,
         default: null,      // null = no panel access by default
-        sudoFrom: 'admin'   // admin-level panel actions require sudo
+        sudoFrom: "admin"   // admin-level panel actions require sudo
     },
     hisdoc: {
-        levels: ['viewer', 'editor', 'admin'] as const,
-        default: 'viewer',  // all users can view hisdoc by default
+        levels: ["viewer", "editor", "admin"] as const,
+        default: "viewer",  // all users can view hisdoc by default
         sudoFrom: null      // no sudo required for hisdoc operations
     }
 } satisfies Record<string, AreaConfig>;
 
 export type Area = keyof typeof AREAS;
 /** The valid permission level strings for a given area. */
-export type AreaPermission<A extends Area> = typeof AREAS[A]['levels'][number];
+export type AreaPermission<A extends Area> = typeof AREAS[A]["levels"][number];
 
 type StoredPermissions = { [A in Area]: AreaPermission<A> | null };
 
@@ -53,8 +53,8 @@ function checkMinPermission(levels: readonly string[], userLevel: string | null,
 
 // Extract stored permissions for each area from a database user
 function userToPermissions(user: {
-    panel_permission: 'viewer' | 'admin' | null,
-    hisdoc_permission: 'viewer' | 'editor' | 'admin'
+    panel_permission: "viewer" | "admin" | null,
+    hisdoc_permission: "viewer" | "editor" | "admin"
 }): StoredPermissions {
     return {
         panel: user.panel_permission,
