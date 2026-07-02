@@ -5,7 +5,7 @@
 import { getIronSession as getIronSession_ } from "iron-session";
 import { C } from "./environ";
 import { sendWebloginWebhook } from "./webhook";
-import prisma from "./prisma";
+import prisma from "./prisma/client";
 import * as argon2 from "argon2";
 import { verify as otplibVerify } from "otplib";
 import { z } from "zod";

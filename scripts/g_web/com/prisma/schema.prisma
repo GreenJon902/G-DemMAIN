@@ -33,7 +33,7 @@ model hd_event {
   name                                                             String                     @unique(map: "uq_hd_event_name") @db.VarChar(255)
   description                                                      String                     @db.LongText
   details                                                          String?                    @db.LongText
-  posted_by_user_id                                                Int?
+  posted_by_user_id                                                Int
   posted_at                                                        DateTime                   @default(now()) @db.DateTime(0)
   event_date_type                                                  hd_event_event_date_type
   event_date1                                                      BigInt
@@ -43,7 +43,7 @@ model hd_event {
   event_date2                                                      BigInt?                    @db.UnsignedBigInt
   sort_key                                                         BigInt?
   soft_deleted                                                     Boolean                    @default(false)
-  user                                                             user?                      @relation(fields: [posted_by_user_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "hd_event_ibfk_1")
+  user                                                             user                       @relation(fields: [posted_by_user_id], references: [id], onUpdate: Restrict, map: "hd_event_ibfk_1")
   hd_event_event_wri_hd_event_event_wri_event_idTohd_event         hd_event_event_wri[]       @relation("hd_event_event_wri_event_idTohd_event")
   hd_event_event_wri_hd_event_event_wri_related_event_idTohd_event hd_event_event_wri[]       @relation("hd_event_event_wri_related_event_idTohd_event")
   hd_event_person                                                  hd_event_person[]

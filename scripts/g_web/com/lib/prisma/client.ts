@@ -1,6 +1,6 @@
-import { PrismaClient } from "../generated/prisma/client";
+import { PrismaClient } from "../../generated/prisma/client";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
-import C from "./environ";
+import C from "../environ";
 
 /**
  * Creates a new prisma adapter and client. Returns the client.

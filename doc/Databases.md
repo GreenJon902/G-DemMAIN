@@ -31,6 +31,8 @@ Then when `npm run ...` is executed, the schema is converted into ts.
 
 g\_web\_nxt will NOT run if the database and prisma schemas disagree.
 
+All hisdoc/changelogged tables must be listed in `HISDOC_TRACKED_TABLES` to ensure the linting protections.
+
 
 When migrating a table <tablename>:
 1. Stop the any processes that may use this data.
@@ -141,8 +143,8 @@ CREATE OR REPLACE TABLE hd_event (
     details LONGTEXT NULL
         COMMENT 'Optional notes about unknowns, uncertainties, or things needing clarification.',
 
-    posted_by_user_id INT NULL
-        COMMENT 'The g_web user who submitted this event. Nullable for events imported from the legacy system.',
+    posted_by_user_id INT NOT NULL
+        COMMENT 'The g_web user who submitted this event. ',
 
     posted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
         COMMENT 'When this event was submitted to the system.',
@@ -198,6 +200,9 @@ CREATE OR REPLACE TABLE hd_event (
 
 
 ## hd_changelog
+
+NOTE: While we attempt to ensure that this table is complete and accurate, it should not be relied upon (e.g. for counting posts by a certain user).
+
 ```sql
 CREATE OR REPLACE TABLE hd_changelog (
     id INT AUTO_INCREMENT PRIMARY KEY
@@ -273,7 +278,7 @@ If `soft_deleted` is true, then should be rendered as such. Extra information ju
 
 `what = 'EVENT'`
 
-Stores the columns of the `hd_event` table (excluding the generated `sort_key`), plus the current non-soft-deleted relations to tags and persons. Tags include their id, name\*, and colour\*; persons include their id, type\*, and data\*.
+Stores the columns of the `hd_event` table (excluding the generated `sort_key`), plus the current non-soft-deleted relations to tags, persons, and related events. Tags include their id, name\*, and colour\*; persons include their id, type\*, and data\*; related events include their id and name\*.
 *\* This data is taken at the time that the event changes, it shows the values at that time.*
 If `soft_deleted` is true, then should be rendered as such. Extra information just included for completeness and future-proofing.
 
@@ -297,6 +302,9 @@ If `soft_deleted` is true, then should be rendered as such. Extra information ju
   ],
   "persons": [
     { "id": 1, "type": "MINECRAFT", "data": "550e8400-e29b-41d4-a716-446655440000" }
+  ],
+  "relatedEvents": [
+    { "id": 2, "name": "Second Battle" }
   ]
 }
 ```

@@ -7,6 +7,7 @@
         "dev":       "npm run build -w @g/com && concurrently --kill-others -n COM,NXT,MCC \"npm run watch -w @g/com\" \"npm run dev -w @g/nxt\" \"npm run dev -w @g/mcc\"",
         "build":     "npm run build --workspaces",
         "lint":      "eslint",
+        "lint:test": "node --test eslint-rules/*.test.mjs",
         "typecheck": "npm run build -w @g/com && tsc -p com/tsconfig.json --noEmit && tsc -p nxt/tsconfig.json --noEmit && tsc -p mcc/tsconfig.json --noEmit"
     },
     "workspaces": [
@@ -16,6 +17,7 @@
     ],
     "devDependencies": {
         "@types/node": "^20.19.43",
+        "@typescript-eslint/parser": "^8.62.0",
         "concurrently": "^9.2.1",
         "eslint": "^9",
         "eslint-config-next": "16.2.4",
