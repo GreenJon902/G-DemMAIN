@@ -14,7 +14,7 @@ wss.on("connection", async (ws: WebSocket, req: Request) => {
 
     // Check cookies:
     const sa = new SessionAccessor(req, new Response());
-    if (!await sa.strictCheckUser("panel")) {
+    if (!await sa.strictCheckPermission("panel", "admin")) {
         console.log("WSS: 'User does not have permissions'");
         ws.send("You do not have permission to access the console!");
         ws.close();

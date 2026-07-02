@@ -3,6 +3,7 @@
 
 import { getUnitStatus, loadMonitorRecords, tailLatest, UnitStatus, UnitType, unitAction as libUnitAction } from "@/lib/panelUtils";
 import { loadGraphDataAction } from "./graphs/actions";
+import { NS } from "@/lib/session";
 
 /**
  * The js representation of a systemd unit.
@@ -48,9 +49,10 @@ export type PanelData = {
         unit: Unit,
         status: UnitStatus | undefined
     }[],
-    graphData: Awaited<ReturnType<typeof loadMonitorRecords>>,  
+    graphData: Awaited<ReturnType<typeof loadMonitorRecords>>,
     timestamp: number,  // The time that this record was created, in ms since the epoch
-    refreshRate: number  // How ofter the (graph) data refreshes
+    refreshRate: number,  // How ofter the (graph) data refreshes
+    isAdmin: boolean  // Whether the current user holds panel admin permission  // TODO: Should permissions be general inside of auth context?
 }
 
 /**
@@ -59,12 +61,17 @@ export type PanelData = {
  * The timestamp is taken from the graph data.
  */
 export async function loadPanelDataAction(): Promise<PanelData> {
-    const graphData = await loadGraphDataAction();
+    const [graphData, unitsStatuses, isAdmin] = await Promise.all([
+        loadGraphDataAction(),
+        getUnitsStatuses(),
+        NS.optimisticCheckPermission("panel", "admin")
+    ]);
     return {
-        unitsStatuses: await getUnitsStatuses(),
+        unitsStatuses,
         graphData,  // TODO: This could be improved
         timestamp: graphData.timestamp,
-        refreshRate: graphData.refreshRate
+        refreshRate: graphData.refreshRate,
+        isAdmin
     };
 }
 

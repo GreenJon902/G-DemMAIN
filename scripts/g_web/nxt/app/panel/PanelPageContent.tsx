@@ -7,6 +7,7 @@ import { CpuRamGraph } from "./ui/Graphs";
 import { UnitStatus } from "@/lib/panelUtils";
 import { makeAreaSudoGuard, useAuthContext } from "@/app/AuthContext";
 import { useConfirmContext } from "@/app/ConfirmContext";
+import { useErrorContext } from "@/app/ErrorContext";
 
 export default function PanelPageContent(
     { data }: { data: Awaited<ReturnType<typeof loadPanelDataAction>> }
@@ -42,7 +43,7 @@ export default function PanelPageContent(
                                     </span>
                                 </td>
                                 <td className="flex gap-1 p-1"> {/* All changing controls go into the same <td> as the frequent changing causes firefox to get confused and not render backgrounds correctly */}
-                                    <UnitControls unit={unit} status={status} className="flex-1" />
+                                    <UnitControls unit={unit} status={status} className="flex-1" isAdmin={data.isAdmin} />
                                 </td>
                             </tr>
                         ))
@@ -85,19 +86,24 @@ function StatusIndicator({ unit, status }: { unit: Unit, status: UnitStatus | un
     </div>;
 }
 
-/** 
- * Create the controls for the given unit. 
- * @param className - This will be given to each child. 
+/**
+ * Create the controls for the given unit.
+ * @param className - This will be given to each child.
+ * @param isAdmin - Whether the current user has panel admin permission. Controls are disabled when false.
  */
-function UnitControls({ unit, status, className="" }: { unit: Unit, status: UnitStatus | undefined, className?: string }) {
+function UnitControls({ unit, status, className="", isAdmin }: { unit: Unit, status: UnitStatus | undefined, className?: string, isAdmin: boolean }) {
     const authCtx = useAuthContext();
-    const guard = makeAreaSudoGuard("panel", authCtx);
+    const guard = makeAreaSudoGuard("panel", "admin", authCtx);
     const { requestConfirm } = useConfirmContext();
+    const { showError } = useErrorContext();
 
     // Warn the user before acting on units that could interrupt panel access or require SSH to recover
     const confirm = unit.impactsPanel
         ? () => requestConfirm(`Stopping or restarting ${unit.name} may interrupt your access to this panel and could require SSH to recover. Are you sure?`)
         : undefined;
+
+    // Bundled so it can be spread onto each button below instead of repeating every prop
+    const btnProps = { unit, className, guard, confirm, onError: showError, disabled: !isAdmin };
 
     // Create buttons depending on current status and unit type
     if (
@@ -111,19 +117,19 @@ function UnitControls({ unit, status, className="" }: { unit: Unit, status: Unit
         status === "active" &&
         unit.type === "service" || unit.type === "target"
     ) {
-        return <><_Restart unit={unit} className={className} guard={guard} confirm={confirm} /><_Stop unit={unit} className={className} guard={guard} confirm={confirm} /></>;
+        return <><_Restart {...btnProps} /><_Stop {...btnProps} /></>;
 
     } else if (
         status === "active" &&
         unit.type === "timer"
     ) {
-        return <_Stop unit={unit} className={className} guard={guard} confirm={confirm} />;  // Restarting a timer doesn't make sense
+        return <_Stop {...btnProps} />;  // Restarting a timer doesn't make sense
 
     } else if (
         status === "failed" ||
         status === "inactive"
     ) {
-        return <_Start unit={unit} className={className} guard={guard} confirm={confirm} />;
+        return <_Start {...btnProps} />;
 
     } else  {
         console.error("Unrecognised status", status, "for unit of type", unit.type);
@@ -131,10 +137,10 @@ function UnitControls({ unit, status, className="" }: { unit: Unit, status: Unit
     }
 }
 // Macro functions to create buttons
-type _BtnProps = { unit: Unit, className: string, guard: () => Promise<boolean>, confirm: (() => Promise<boolean>) | undefined };
-const _Stop = ({ unit, className, guard, confirm }: _BtnProps) =>
-    <ActionButton action={async () => await unitAction(unit, "stop")} className={className} color={BUTTON_RED} guard={guard} confirm={confirm}>Stop</ActionButton>;
-const _Restart = ({ unit, className, guard, confirm }: _BtnProps) =>
-    <ActionButton action={async () => await unitAction(unit, "start")} className={className} color={BUTTON_YELLOW} guard={guard} confirm={confirm}>Restart</ActionButton>;
-const _Start = ({ unit, className, guard, confirm }: _BtnProps) =>
-    <ActionButton action={async () => await unitAction(unit, "restart")} className={className} color={BUTTON_GREEN} guard={guard} confirm={confirm}>Start</ActionButton>;
+type _BtnProps = { unit: Unit, className: string, guard: () => Promise<boolean>, confirm: (() => Promise<boolean>) | undefined, onError: (error: unknown) => void, disabled: boolean };
+const _Stop = ({ unit, ...props }: _BtnProps) =>
+    <ActionButton action={async () => await unitAction(unit, "stop")} color={BUTTON_RED} {...props}>Stop</ActionButton>;
+const _Restart = ({ unit, ...props }: _BtnProps) =>
+    <ActionButton action={async () => await unitAction(unit, "start")} color={BUTTON_YELLOW} {...props}>Restart</ActionButton>;
+const _Start = ({ unit, ...props }: _BtnProps) =>
+    <ActionButton action={async () => await unitAction(unit, "restart")} color={BUTTON_GREEN} {...props}>Start</ActionButton>;

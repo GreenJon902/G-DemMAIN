@@ -9,9 +9,11 @@ datasource db {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model user {
-  id               Int     @id @default(autoincrement())
-  username         String  @unique(map: "username") @db.VarChar(50)
-  password_hash    String  @db.VarChar(255)
-  has_panel_access Boolean @default(false)
-  tfa_secret       String? @db.VarChar(32)
+  id                Int                    @id @default(autoincrement())
+  username          String                 @unique(map: "username") @db.VarChar(50)
+  password_hash     String                 @db.VarChar(255)
+  panel_permission  user_panel_permission?
+  hisdoc_permission user_hisdoc_permission @default(viewer)
+  tfa_secret        String?                @db.VarChar(32)
 }
+

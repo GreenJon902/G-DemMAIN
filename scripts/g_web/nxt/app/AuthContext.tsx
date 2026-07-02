@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useRef, useState, ReactNode } fro
 import TextInput from "@/app/ui/TextInput";
 import ModalShell from "@/app/ui/ModalShell";
 import { ActionButton, BUTTON_GREEN, SimpleButton, BUTTON_RED } from "@/app/ui/Button";
-import type { Area } from "@g/com/lib/auth";
+import type { Area, AreaPermission } from "@g/com/lib/auth";
 import { SUDO_WINDOW_MS } from "@g/com/lib/authConstants";
 import { getAreaSudoStatusAction, enterSudoAction } from "@/app/actions";
 
@@ -138,12 +138,12 @@ export function useAuthContext(): AuthContextType {
 
 /**
  * Returns a guard function for use with ActionButton that checks whether sudo mode is required
- * for the given area and, if so, either opens the sudo verification modal (if 2FA is enabled on
- * the account) or an unavailability notice (if 2FA is not yet configured).
+ * for the given area and permission level and, if so, either opens the sudo verification modal
+ * (if 2FA is enabled on the account) or an unavailability notice (if 2FA is not yet configured).
  */
-export function makeAreaSudoGuard(area: Area, ctx: AuthContextType): () => Promise<boolean> {
+export function makeAreaSudoGuard<A extends Area>(area: A, minLevel: AreaPermission<A>, ctx: AuthContextType): () => Promise<boolean> {
     return async () => {
-        const status = await getAreaSudoStatusAction(area);
+        const status = await getAreaSudoStatusAction(area, minLevel);
         if (!status.requiresSudo) return true;
         if (!status.tfaEnabled) {
             await ctx.showSudoUnavailable();

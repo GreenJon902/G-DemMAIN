@@ -8,7 +8,7 @@ import fs from "fs/promises";
 import * as path from "node:path";
 import * as z from "zod";
 import { C } from "@g/com/lib/environ";
-import { requireArea } from "./session";
+import { requirePermission } from "./session";
 import { existsSync } from "fs";
 import * as zlib from "zlib";
 import { execFile, spawn } from "node:child_process";
@@ -87,7 +87,7 @@ export const OPERATOR_LIST = { filename: "ops.json", itemSchema: OperatorListIte
  * @param itemSchema  - The schema of a single list item.
  */
 export async function loadListItems(list: List) {
-    await requireArea("panel");
+    await requirePermission("panel", "viewer");
 
     const path_ = path.join(C().LIST_FOLDER, list.filename);
 
@@ -106,7 +106,7 @@ export async function loadListItems(list: List) {
  * @returns A string[] of the file names formatted. These will include file-extensions.
  */
 export async function listLogs() {
-    await requireArea("panel");
+    await requirePermission("panel", "viewer");
     return await fs.readdir(C().MC_LOG_FOLDER);
 }
 
@@ -116,7 +116,7 @@ export async function listLogs() {
  * @returns The content of the file.
  */
 export async function loadLogContent(logName: string): Promise<string | undefined> {
-    await requireArea("panel");
+    await requirePermission("panel", "viewer");
 
     // Sanitize path
     if (logName.includes("..") || logName.includes("/") || logName.includes("\\")) {
@@ -145,7 +145,7 @@ export async function loadLogContent(logName: string): Promise<string | undefine
  * If latest.log does not exist then an array of empty strings will be returned.
  */
 export async function tailLatest(n: number) {
-    await requireArea("panel");
+    await requirePermission("panel", "viewer");
 
     // Check file exists
     const full_path = path.join(C().MC_LOG_FOLDER, "latest.log");
@@ -242,7 +242,7 @@ export type MonitorOption = { interval: number, number?: number | undefined }
  * Lists all the types of monitor records that it can find.
  */
 export async function listMonitorOptions(): Promise<MonitorOption[]> {
-    await requireArea("panel");
+    await requirePermission("panel", "viewer");
 
     return (await fs.readdir(MONITOR_FOLDER))
         .map(name => name.match(/^(\d+)(?:_(\d+))?$/))  // Parse name
@@ -256,7 +256,7 @@ export async function listMonitorOptions(): Promise<MonitorOption[]> {
  * Returns a sorted array of objects with a timestamp (in seconds) and graphdata at that point. The oldest record is first and has a negative value. The newest record is last and has a positive value.
  */
 export async function loadMonitorRecords(interval: number, number?: number | undefined) {
-    await requireArea("panel");
+    await requirePermission("panel", "viewer");
 
     const monitorName = (number === undefined) ? `${interval}` : `${interval}_${number}`;
 
@@ -350,7 +350,7 @@ export type UnitStatus = typeof UNIT_STATUS_VALUES[number];
  * This does not sanitize inputs, so no user-supplied data should come here.
  */
 export async function getUnitStatus(name: string, type: UnitType): Promise<UnitStatus> {
-    await requireArea("panel");
+    await requirePermission("panel", "viewer");
 
     const execFileAsync = promisify(execFile);
     const { stdout } = await execFileAsync("systemctl", ["show", `${name}.${type}`, "-p", "ActiveState"]);  // If this fails then an error should be thrown
@@ -362,7 +362,7 @@ export async function getUnitStatus(name: string, type: UnitType): Promise<UnitS
  * This does not sanitize name or type, so data should be checked.
  */
 export async function unitAction(name: string, type: UnitType, action: "start"|"stop"|"restart") {
-    await requireArea("panel", true);  
+    await requirePermission("panel", "admin", true);
 
     if (action !== "start" && action !== "stop" && action !== "restart") throw new Error("Invalid action");
 

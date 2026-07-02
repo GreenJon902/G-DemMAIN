@@ -1,5 +1,5 @@
 import "server-only";
-import { SessionAccessor, Area } from "@g/com/lib/auth";
+import { SessionAccessor, Area, AreaPermission } from "@g/com/lib/auth";
 import { cookies } from "next/headers";
 import { forbidden, unauthorized } from "next/navigation";
 
@@ -7,15 +7,15 @@ import { forbidden, unauthorized } from "next/navigation";
 export const NS = new SessionAccessor(cookies);
 
 /**
- * Checks if the current user is authorised to access the given area.
+ * Checks if the current user holds at least the given permission level for the given area.
  * Calls unauthorized() or forbidden() as appropriate if not.
  *
- * @param [strict=false] - Whether this should be strict or optimistic. Default false.
+ * @param strict - Whether this should be strict or optimistic. Default false.
  */
-export async function requireArea(area: Area, strict: boolean = false) {
-    const check = (strict) ? NS.strictCheckUser : NS.optimisticCheckUser;
+export async function requirePermission<A extends Area>(area: A, minLevel: AreaPermission<A>, strict: boolean = false) {
+    const check = strict ? NS.strictCheckPermission : NS.optimisticCheckPermission;
 
-    if (!await check(area)) {
+    if (!await check(area, minLevel)) {
         // User not authorised to view this route
 
         // Check if user has session

@@ -10,7 +10,7 @@
  *   2. If sudo is required but 2FA is not enabled, shows the "sudo unavailable" modal and aborts.
  *   3. If sudo is required and 2FA is enabled, opens the 2FA verification modal and waits for the
  *      user to enter their code (`requestSudo()`). Aborts if they cancel.
- *   4. Opens the WebSocket. The server (`@g/mcc`) re-validates sudo via `strictCheckUser` at
+ *   4. Opens the WebSocket. The server (`@g/mcc`) re-validates sudo via `strictCheckPermission` at
  *      connection time, so the server and client checks are always in sync.
  *   5. The server sets a `setTimeout` to close the socket when the sudo window expires, giving
  *      a server-side guarantee even if the client-side enforcement fails.
@@ -69,7 +69,7 @@ export default function Console({ mccwss_port }: { mccwss_port: number }) {
             return new Promise<boolean>((resolve) => {
                 (async () => {
                     // Verify sudo mode on the server before opening the socket
-                    const status = await getAreaSudoStatusAction("panel");
+                    const status = await getAreaSudoStatusAction("panel", "admin");
                     if (!isMountedRef.current) { connectingRef.current = false; resolve(false); return; }
 
                     if (status.requiresSudo) {

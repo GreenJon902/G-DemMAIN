@@ -1,6 +1,6 @@
 "use server";
 
-import { Area } from "@g/com/lib/auth";
+import { Area, AreaPermission } from "@g/com/lib/auth";
 import { NS } from "@/lib/session";
 
 /**
@@ -18,8 +18,8 @@ export async function enterSudoAction(code: string): Promise<boolean> {
 }
 
 /**
- * Check whether the current user needs to enter sudo mode to pass a strict check for the given area.
+ * Check whether the current user needs to enter sudo mode to pass a strict check for the given area and permission level.
  */
-export async function getAreaSudoStatusAction(area: Area) {
-    return NS.getAreaSudoStatus(area);
+export async function getAreaSudoStatusAction<A extends Area>(area: A, minLevel: AreaPermission<A>) {
+    return NS.getAreaSudoStatus(area, minLevel);
 }
