@@ -8,9 +8,9 @@ export default function ItemRow({ item, list }: { item: ListItem, list: List }) 
         <div className="flex justify-between p-1 first:rounded-t-md last:rounded-b-md odd:bg-gray-700 even:bg-gray-800">
             <div>
                 <div className="flex items-center space-x-1">
-                    {list.renderPlayerheads && 
+                    {list.renderPlayerheads &&
                         <div className="relative size-6 overflow-hidden rounded-md">
-                            <PlayerHead item={item} />
+                            <PlayerHead name={item.uniquename} />
                         </div>}
                     <span title={(item.uniquename !== item.rendername) ? item.uniquename : undefined} 
                         className="leading-[100%]"> {item.rendername} </span>

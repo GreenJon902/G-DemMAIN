@@ -1,10 +1,10 @@
 import type { Prisma } from "@g/com/prisma/client";
 
-type TagFilterState = "re" | "ex" | "in";  // required, excluded, inclusive-any-of
-type PersonFilterState = "re" | "ex" | "in";
+type TagFilterState = "re" | "ex" | "ig";  // required, excluded, inclusive-any-of
+type PersonFilterState = "re" | "ex" | "ig";
 
 export type TimelineFilters = {
-    tags: Record<number, TagFilterState>;    // tag id → state; absent = ignore
+    tags: Record<number, TagFilterState>;    // tag id → state; absent = included (no filtering effect)
     persons: Record<number, PersonFilterState>;
     from: bigint | null;    // earliest unix seconds bound (inclusive)
     to: bigint | null;      // latest unix seconds bound (inclusive)
@@ -15,13 +15,13 @@ export type TimelineFilters = {
  * Parses a single `id:state` entry (e.g. `"3:re"`) into a typed tuple.
  * Returns null if the entry is malformed or the state value is unrecognised.
  */
-function parseFilterEntry(entry: string): [number, "re" | "ex" | "in"] | null {
+function parseFilterEntry(entry: string): [number, "re" | "ex" | "ig"] | null {
     const colonIdx = entry.indexOf(":");
     if (colonIdx === -1) return null;
     const id = parseInt(entry.slice(0, colonIdx), 10);
     if (isNaN(id)) return null;
     const state = entry.slice(colonIdx + 1);
-    if (state !== "re" && state !== "ex" && state !== "in") return null;
+    if (state !== "re" && state !== "ex" && state !== "ig") return null;
     return [id, state];
 }
 
@@ -29,11 +29,11 @@ function parseFilterEntry(entry: string): [number, "re" | "ex" | "in"] | null {
  * Parses a comma-separated `id:state` param string into a typed record.
  * Invalid entries are silently skipped.
  *
- * @param raw - The raw param value (e.g. `"3:re,7:ex,12:in"`), or null if absent.
+ * @param raw - The raw param value (e.g. `"3:re,7:ex,12:ig"`), or null if absent.
  */
-function parseFilterParam(raw: string | null): Record<number, "re" | "ex" | "in"> {
+function parseFilterParam(raw: string | null): Record<number, "re" | "ex" | "ig"> {
     if (!raw) return {};
-    const result: Record<number, "re" | "ex" | "in"> = {};
+    const result: Record<number, "re" | "ex" | "ig"> = {};
     for (const entry of raw.split(",")) {
         const parsed = parseFilterEntry(entry.trim());
         if (parsed) result[parsed[0]] = parsed[1];
@@ -45,7 +45,7 @@ function parseFilterParam(raw: string | null): Record<number, "re" | "ex" | "in"
  * Parses URL search params into a TimelineFilters object.
  *
  * Expected params:
- * - `tags` — comma-separated `id:state` pairs (`re`/`ex`/`in`); invalid entries skipped.
+ * - `tags` — comma-separated `id:state` pairs (`re`/`ex`/`ig`); invalid entries skipped.
  * - `persons` — same format as `tags`.
  * - `from` / `to` — YYYY-MM-DD strings converted to unix seconds; absent or unparseable → null.
  * - `q` — raw text string; absent or empty → null.
@@ -81,8 +81,8 @@ export function parseTimelineFilters(params: URLSearchParams): TimelineFilters {
 /**
  * Builds a Prisma `hd_event` WhereInput from the given timeline filters.
  *
- * Tag/person states: `re` (required) → `some`, `ex` (excluded) → `none`, `in`
- * (inclusive any-of) → all `in` ids collapsed into a single `some { in: [...] }`.
+ * Tag/person states: `re` (required) → `some`, `ex` (excluded) → `none`, `ig`
+ * (inclusive any-of, labelled "ignored" in the UI) → all `ig` ids collapsed into a single `some { in: [...] }`.
  * Date bounds are compared against `sort_key` (a pre-computed unix-seconds column).
  * Soft-deleted events, and soft-deleted tag/person applications, are always excluded
  * regardless of which filters are active.

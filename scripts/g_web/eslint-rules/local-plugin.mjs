@@ -45,11 +45,13 @@ export const localPlugin = {
         // Exemptions (neither guard is required):
         //   - import type { ... }       — erased at compile time, no runtime code included
         //   - @g/com/lib/authConstants  — intentionally client-safe constants, contains no server code
+        //   - @g/com/prisma/enums       — Prisma-generated plain const objects, contains no server code
         "require-server-only-for-com": {
             meta: { type: "problem", schema: [] },
             create(context) {
                 let hasGuard = false;  // true if file has `import "server-only"` or `"use server"`
                 const comImports = [];
+                const CLIENT_SAFE_COM_IMPORTS = new Set(["@g/com/lib/authConstants", "@g/com/prisma/enums"]);
                 return {
                     Program(node) {
                         // Check for "use server" directive (must appear before any other statements)
@@ -67,7 +69,7 @@ export const localPlugin = {
                         // Check if file imports a from @g/com (with some exclusions)
                         if (node.importKind !== "type"
                             && node.source.value.startsWith("@g/com/")
-                            && node.source.value !== "@g/com/lib/authConstants") {
+                            && !CLIENT_SAFE_COM_IMPORTS.has(node.source.value)) {
                             comImports.push(node);
                         }
                     },

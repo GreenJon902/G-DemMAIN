@@ -69,22 +69,26 @@ export default async function HisDocPage({
             .map(rel => ({ tag: { id: rel.hd_tag.id, name: rel.hd_tag.name, description: rel.hd_tag.description, color: rel.hd_tag.color } }))
     }));
 
-    // Resolve Minecraft UUIDs to usernames; NPC persons use their data field directly
-    const displayNames = await Promise.all(
+    // Resolve Minecraft uuids to usernames; NPC persons use their data field directly. Both the raw
+    // data (SmallPerson's playerhead image) and resolved name (search matching + display text) are
+    // needed by TimelineFilters, since getMinecraftUsername must stay server-only
+    const resolvedNames = await Promise.all(
         allPersons.map(p =>
             p.type === "MINECRAFT" ? getMinecraftUsername(p.data) : Promise.resolve(p.data)
         )
     );
 
-    const personsWithDisplayNames = allPersons.map((p, i) => ({
+    const personsForFilters = allPersons.map((p, i) => ({
         id: p.id,
-        displayName: displayNames[i]
+        type: p.type,
+        data: p.data,
+        name: resolvedNames[i]
     }));
 
     return (
         <div className="flex gap-6 p-6">
             <aside className="w-64 flex-shrink-0">
-                <TimelineFilters tags={allTags} persons={personsWithDisplayNames} />
+                <TimelineFilters tags={allTags} persons={personsForFilters} />
             </aside>
             <main className="flex flex-1 flex-col gap-4">
                 <InfiniteTimeline initialEvents={serialisedPage} initialHasMore={hasMore} />
