@@ -1,5 +1,6 @@
 import "server-only";
-import prisma from "@g/com/lib/prisma";
+import prisma from "@g/com/lib/prisma/client";
+import { hd_changelog_what } from "@g/com/prisma/client";
 import { NS } from "@/lib/session";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -22,40 +23,47 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
     const id = parseInt(idStr, 10);
     if (isNaN(id)) notFound();
 
-    const [event, canEdit] = await Promise.all([
-        prisma().hisdoc_event.findUnique({
-            where: { id },
+    const [event, canEdit, relatedRows, changelog] = await Promise.all([
+        prisma().hd_event.findUnique({
+            where: { id, soft_deleted: false },
             include: {
-                tags: { include: { tag: true } },
-                persons: { include: { person: true } },
-                related_events_a: { include: { event_b: { select: { id: true, name: true } } } },
-                related_events_b: { include: { event_a: { select: { id: true, name: true } } } },
-                changelog: {
-                    orderBy: { created_at: "desc" },
-                    include: { author_user: { select: { username: true } } }
-                },
-                posted_by_user: { select: { username: true } }
+                hd_event_tag: { where: { soft_deleted: false }, include: { hd_tag: true } },
+                hd_event_person: { where: { soft_deleted: false }, include: { hd_person: true } },
+                user: { select: { username: true } }
             }
         }),
-        NS.optimisticCheckUser("hisdoc")
+        NS.optimisticCheckPermission("hisdoc", "editor"),
+        // hd_event_event_rea is a view exposing both directions of the relation; the write table
+        // (hd_event_event_wri) must never be read directly outside the gateway
+        prisma().hd_event_event_rea.findMany({ where: { event_id: id, soft_deleted: 0 } }),
+        // hd_changelog is polymorphic (keyed by what/entity_id, no FK), so it can't be included
+        // as a direct Prisma relation on hd_event and must be queried separately
+        prisma().hd_changelog.findMany({
+            where: { what: hd_changelog_what.EVENT, entity_id: id, soft_deleted: false },
+            orderBy: { created_at: "desc" },
+            include: { user: { select: { username: true } } }
+        })
     ]);
 
     if (!event) notFound();
 
+    // Drop tag/person applications whose tag or person has itself been soft-deleted
+    const tags = event.hd_event_tag.filter(({ hd_tag }) => !hd_tag.soft_deleted).map(({ hd_tag }) => hd_tag);
+    const persons = event.hd_event_person.filter(({ hd_person }) => !hd_person.soft_deleted).map(({ hd_person }) => hd_person);
+
     // Resolve all person display names concurrently; MINECRAFT type uses UUID→username lookup
     const personNames = await Promise.all(
-        event.persons.map(({ person }) =>
+        persons.map(person =>
             person.type === "MINECRAFT"
                 ? getMinecraftUsername(person.data)
                 : Promise.resolve(person.data)
         )
     );
 
-    // Merge both sides of the self-referential relation into one flat list
-    const relatedEvents = [
-        ...event.related_events_a.map(r => r.event_b),
-        ...event.related_events_b.map(r => r.event_a)
-    ];
+    const relatedEvents = await prisma().hd_event.findMany({
+        where: { id: { in: relatedRows.map(r => r.related_event_id) }, soft_deleted: false },
+        select: { id: true, name: true }
+    });
 
     return (
         <article className="mx-auto flex max-w-3xl flex-col gap-8 p-6">
@@ -67,9 +75,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                     )}
                 </div>
                 <FlexiDateDisplay {...event} />
-                {event.posted_by_user && (
-                    <p className="text-sm text-gray-400">Posted by {event.posted_by_user.username}</p>
-                )}
+                <p className="text-sm text-gray-400">Posted by {event.user.username}</p>
             </div>
 
             <p className="whitespace-pre-wrap text-gray-200">{event.description}</p>
@@ -81,22 +87,22 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                 </section>
             )}
 
-            {event.tags.length > 0 && (
+            {tags.length > 0 && (
                 <section className="flex flex-col gap-2">
                     <h2 className="text-xl font-semibold text-white">Tags</h2>
                     <div className="flex flex-wrap gap-2">
-                        {event.tags.map(({ tag }) => (
+                        {tags.map(tag => (
                             <TagChip key={tag.id} id={tag.id} name={tag.name} color={tag.color} />
                         ))}
                     </div>
                 </section>
             )}
 
-            {event.persons.length > 0 && (
+            {persons.length > 0 && (
                 <section className="flex flex-col gap-2">
                     <h2 className="text-xl font-semibold text-white">Persons</h2>
                     <div className="flex flex-wrap gap-4">
-                        {event.persons.map(({ person }, i) => (
+                        {persons.map((person, i) => (
                             <Link
                                 key={person.id}
                                 href={"/hisdoc/person/" + person.id}
@@ -128,16 +134,16 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                 </section>
             )}
 
-            {event.changelog.length > 0 && (
+            {changelog.length > 0 && (
                 <section className="flex flex-col gap-3">
                     <h2 className="text-xl font-semibold text-white">Changelog</h2>
                     <ul className="flex flex-col gap-4">
-                        {event.changelog.map(entry => (
+                        {changelog.map(entry => (
                             <li key={entry.id} className="flex flex-col gap-1">
                                 <p className="text-sm text-gray-400">
-                                    {entry.author_user.username} · {entry.created_at.toLocaleDateString()}
+                                    {entry.user?.username ?? "System"} · {entry.created_at.toLocaleDateString()}
                                 </p>
-                                <p className="whitespace-pre-wrap text-gray-200">{entry.description}</p>
+                                <p className="whitespace-pre-wrap text-gray-200">{entry.message}</p>
                             </li>
                         ))}
                     </ul>

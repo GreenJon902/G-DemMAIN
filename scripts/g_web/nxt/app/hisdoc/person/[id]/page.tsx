@@ -1,5 +1,5 @@
 import "server-only";
-import prisma from "@g/com/lib/prisma";
+import prisma from "@g/com/lib/prisma/client";
 import { notFound } from "next/navigation";
 import { PersonAvatar } from "../../ui/PersonAvatar";
 import { TimelineItem } from "../../ui/TimelineItem";
@@ -19,12 +19,13 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
     const id = parseInt(idStr, 10);
     if (isNaN(id)) notFound();
 
-    const person = await prisma().hisdoc_person.findUnique({
-        where: { id },
+    const person = await prisma().hd_person.findUnique({
+        where: { id, soft_deleted: false },
         include: {
-            involved_in_events: {
+            hd_event_person: {
+                where: { soft_deleted: false, hd_event: { soft_deleted: false } },
                 include: {
-                    event: {
+                    hd_event: {
                         select: {
                             id: true,
                             name: true,
@@ -35,17 +36,18 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
                             event_date_units: true,
                             event_date_diff: true,
                             event_date2: true,
-                            tags: {
+                            hd_event_tag: {
+                                where: { soft_deleted: false },
                                 include: {
-                                    tag: { select: { id: true, name: true, color: true } }
+                                    hd_tag: true
                                 }
                             }
                         }
                     }
                 },
-                orderBy: { event: { sort_key: "desc" } }
+                orderBy: { hd_event: { sort_key: "desc" } }
             },
-            linked_user: { select: { username: true } }
+            user: { select: { username: true } }
         }
     });
 
@@ -55,15 +57,16 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
         ? await getMinecraftUsername(person.data)
         : person.data;
 
-    // Tally how many of this person's events share each tag
+    // Tally how many of this person's events share each (non-soft-deleted) tag
     const tagCounts = new Map<number, { name: string; color: number; count: number }>();
-    for (const { event } of person.involved_in_events) {
-        for (const { tag } of event.tags) {
-            const existing = tagCounts.get(tag.id);
+    for (const { hd_event } of person.hd_event_person) {
+        for (const { hd_tag } of hd_event.hd_event_tag) {
+            if (hd_tag.soft_deleted) continue;
+            const existing = tagCounts.get(hd_tag.id);
             if (existing) {
                 existing.count++;
             } else {
-                tagCounts.set(tag.id, { name: tag.name, color: tag.color, count: 1 });
+                tagCounts.set(hd_tag.id, { name: hd_tag.name, color: hd_tag.color, count: 1 });
             }
         }
     }
@@ -87,23 +90,25 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
                         </span>
                     </div>
                 </div>
-                {person.linked_user && (
-                    <p className="text-gray-400">Linked account: {person.linked_user.username}</p>
+                {person.user && (
+                    <p className="text-gray-400">Linked account: {person.user.username}</p>
                 )}
             </div>
 
             <section className="flex flex-col gap-3">
                 <h2 className="text-xl font-semibold text-white">Events</h2>
-                {person.involved_in_events.length > 0 ? (
+                {person.hd_event_person.length > 0 ? (
                     <div className="flex flex-col gap-3">
-                        {person.involved_in_events.map(({ event }) => (
+                        {person.hd_event_person.map(({ hd_event }) => (
                             <TimelineItem
-                                key={event.id}
-                                id={event.id}
-                                name={event.name}
-                                description={event.description}
-                                date={event}
-                                tags={event.tags.map(({ tag }) => tag)}
+                                key={hd_event.id}
+                                id={hd_event.id}
+                                name={hd_event.name}
+                                description={hd_event.description}
+                                date={hd_event}
+                                tags={hd_event.hd_event_tag
+                                    .filter(({ hd_tag }) => !hd_tag.soft_deleted)
+                                    .map(({ hd_tag }) => hd_tag)}
                             />
                         ))}
                     </div>

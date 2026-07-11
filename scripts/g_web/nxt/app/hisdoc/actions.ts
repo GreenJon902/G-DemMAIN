@@ -3,7 +3,8 @@
 import { z } from "zod";
 import { redirect, notFound } from "next/navigation";
 import { NS } from "@/lib/session";
-import prisma from "@g/com/lib/prisma";
+import prisma from "@g/com/lib/prisma/client";
+import { createEvent, updateEvent, type EventDateFields } from "@g/com/lib/prisma/hisdoc/event";
 import { sendHisDocEventAddedWebhook, sendHisDocEventEditedWebhook } from "@g/com/lib/webhook";
 import { parseFlexiDateForm } from "./lib/flexidate";
 
@@ -77,7 +78,7 @@ function assertFlexiDateInvariants(flexiDate: NonNullable<ReturnType<typeof pars
  *   related_event_ids, and FlexiDate fields (date_type, date1, date_time_offset, etc.).
  */
 export async function addEvent(formData: FormData): Promise<void> {
-    await NS.strictRequireUser("hisdoc");
+    await NS.strictRequirePermission("hisdoc", "editor");
     const userData = await NS.getUserData();
 
     // Resolve the DB user id — the session only caches the username
@@ -94,48 +95,23 @@ export async function addEvent(formData: FormData): Promise<void> {
     if (!flexiDate) throw new Error("Invalid or missing FlexiDate fields in form data");
     assertFlexiDateInvariants(flexiDate);
 
-    const event = await prisma().$transaction(async (tx) => {
-        const newEvent = await tx.hisdoc_event.create({
-            data: {
-                name,
-                description,
-                details,
-                posted_by_user_id: userRecord.id,
-                event_date_type: flexiDate.event_date_type,
-                event_date1: flexiDate.event_date1,
-                event_date_time_offset: flexiDate.event_date_time_offset,
-                event_date_units: flexiDate.event_date_units,
-                event_date_diff: flexiDate.event_date_diff,
-                event_date2: flexiDate.event_date2
-                // sort_key is a STORED generated column — never set explicitly
-            }
-        });
-
-        if (tag_ids.length > 0) {
-            await tx.hisdoc_event_tag.createMany({
-                data: tag_ids.map(tag_id => ({ event_id: newEvent.id, tag_id }))
-            });
+    const event = await createEvent(
+        { userId: userRecord.id },
+        `Created event '${name}'`,
+        {
+            name,
+            description,
+            details,
+            event_date_time_offset: flexiDate.event_date_time_offset,
+            // assertFlexiDateInvariants above has already checked flexiDate matches one of the two
+            // centered/ranged shapes; the cast just restores that discriminated-union narrowing,
+            // which parseFlexiDateForm's flattened FlexiDateInput return type loses
+            ...(flexiDate as EventDateFields),
+            tagIds: tag_ids,
+            personIds: person_ids,
+            relatedEventIds: related_event_ids
         }
-
-        if (person_ids.length > 0) {
-            await tx.hisdoc_event_person.createMany({
-                data: person_ids.map(person_id => ({ event_id: newEvent.id, person_id }))
-            });
-        }
-
-        if (related_event_ids.length > 0) {
-            // Enforce event_a_id < event_b_id to maintain the canonical ordering constraint
-            await tx.hisdoc_event_event.createMany({
-                data: related_event_ids.map(rel_id => ({
-                    event_a_id: Math.min(newEvent.id, rel_id),
-                    event_b_id: Math.max(newEvent.id, rel_id)
-                })),
-                skipDuplicates: true
-            });
-        }
-
-        return newEvent;
-    });
+    );
 
     sendHisDocEventAddedWebhook(name, userData.username);
     // redirect throws internally, so it must run outside the transaction
@@ -150,7 +126,7 @@ export async function addEvent(formData: FormData): Promise<void> {
  * @param formData - FormData with the same fields as addEvent, plus a `changelog_note` field.
  */
 export async function editEvent(id: number, formData: FormData): Promise<void> {
-    await NS.strictRequireUser("hisdoc");
+    await NS.strictRequirePermission("hisdoc", "editor");
     const userData = await NS.getUserData();
 
     const userRecord = await prisma().user.findUnique({
@@ -160,7 +136,7 @@ export async function editEvent(id: number, formData: FormData): Promise<void> {
     if (!userRecord) throw new Error("Authenticated user not found in database");
 
     // Verify the event exists before attempting to update it
-    const existing = await prisma().hisdoc_event.findUnique({ where: { id } });
+    const existing = await prisma().hd_event.findUnique({ where: { id, soft_deleted: false } });
     if (!existing) notFound();
 
     const { name, description, details, tag_ids, person_ids, related_event_ids } =
@@ -172,61 +148,22 @@ export async function editEvent(id: number, formData: FormData): Promise<void> {
     if (!flexiDate) throw new Error("Invalid or missing FlexiDate fields in form data");
     assertFlexiDateInvariants(flexiDate);
 
-    await prisma().$transaction(async (tx) => {
-        await tx.hisdoc_event.update({
-            where: { id },
-            data: {
-                name,
-                description,
-                details,
-                event_date_type: flexiDate.event_date_type,
-                event_date1: flexiDate.event_date1,
-                event_date_time_offset: flexiDate.event_date_time_offset,
-                event_date_units: flexiDate.event_date_units,
-                event_date_diff: flexiDate.event_date_diff,
-                event_date2: flexiDate.event_date2
-                // sort_key is a STORED generated column — never set explicitly
-            }
-        });
-
-        // Replace all relations — delete then recreate
-        await tx.hisdoc_event_tag.deleteMany({ where: { event_id: id } });
-        await tx.hisdoc_event_person.deleteMany({ where: { event_id: id } });
-        // Composite-PK junction tables don't support OR in deleteMany, so use two calls
-        await tx.hisdoc_event_event.deleteMany({ where: { event_a_id: id } });
-        await tx.hisdoc_event_event.deleteMany({ where: { event_b_id: id } });
-
-        if (tag_ids.length > 0) {
-            await tx.hisdoc_event_tag.createMany({
-                data: tag_ids.map(tag_id => ({ event_id: id, tag_id }))
-            });
+    await updateEvent(
+        { userId: userRecord.id },
+        changelogNote,
+        id,
+        {
+            name,
+            description,
+            details,
+            event_date_time_offset: flexiDate.event_date_time_offset,
+            // See the equivalent cast in addEvent above for why this is needed
+            ...(flexiDate as EventDateFields),
+            tagIds: tag_ids,
+            personIds: person_ids,
+            relatedEventIds: related_event_ids
         }
-
-        if (person_ids.length > 0) {
-            await tx.hisdoc_event_person.createMany({
-                data: person_ids.map(person_id => ({ event_id: id, person_id }))
-            });
-        }
-
-        if (related_event_ids.length > 0) {
-            // Enforce event_a_id < event_b_id to maintain the canonical ordering constraint
-            await tx.hisdoc_event_event.createMany({
-                data: related_event_ids.map(rel_id => ({
-                    event_a_id: Math.min(id, rel_id),
-                    event_b_id: Math.max(id, rel_id)
-                })),
-                skipDuplicates: true
-            });
-        }
-
-        await tx.hisdoc_changelog.create({
-            data: {
-                event_id: id,
-                description: changelogNote,
-                author_user_id: userRecord.id
-            }
-        });
-    });
+    );
 
     sendHisDocEventEditedWebhook(name, userData.username, changelogNote);
     // redirect throws internally, so it must run outside the transaction

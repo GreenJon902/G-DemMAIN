@@ -5,7 +5,7 @@ import { ReactNode } from "react";
 
 /** Layout wrapping all /hisdoc routes with a dark header navbar and main content area. */
 export default async function HisDocLayout({ children }: { children: ReactNode }) {
-    const canEdit = await NS.optimisticCheckUser("hisdoc");
+    const canEdit = await NS.optimisticCheckPermission("hisdoc", "editor");
 
     return (
         <>

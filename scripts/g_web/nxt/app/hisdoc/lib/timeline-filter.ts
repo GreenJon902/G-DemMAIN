@@ -79,32 +79,34 @@ export function parseTimelineFilters(params: URLSearchParams): TimelineFilters {
 }
 
 /**
- * Builds a Prisma `hisdoc_event` WhereInput from the given timeline filters.
+ * Builds a Prisma `hd_event` WhereInput from the given timeline filters.
  *
  * Tag/person states: `re` (required) → `some`, `ex` (excluded) → `none`, `in`
  * (inclusive any-of) → all `in` ids collapsed into a single `some { in: [...] }`.
  * Date bounds are compared against `sort_key` (a pre-computed unix-seconds column).
+ * Soft-deleted events, and soft-deleted tag/person applications, are always excluded
+ * regardless of which filters are active.
  *
  * @param filters - The parsed timeline filters to apply.
- * @returns A Prisma WhereInput, or `{}` if no filters are active.
+ * @returns A Prisma WhereInput; always includes a `soft_deleted: false` condition.
  */
-export function buildTimelineWhere(filters: TimelineFilters): Prisma.hisdoc_eventWhereInput {
-    const andClauses: Prisma.hisdoc_eventWhereInput[] = [];
+export function buildTimelineWhere(filters: TimelineFilters): Prisma.hd_eventWhereInput {
+    const andClauses: Prisma.hd_eventWhereInput[] = [{ soft_deleted: false }];
 
     // Tag filters
     const inclusiveTags: number[] = [];
     for (const [idStr, state] of Object.entries(filters.tags)) {
         const id = Number(idStr);
         if (state === "re") {
-            andClauses.push({ tags: { some: { tag_id: id } } });
+            andClauses.push({ hd_event_tag: { some: { tag_id: id, soft_deleted: false } } });
         } else if (state === "ex") {
-            andClauses.push({ tags: { none: { tag_id: id } } });
+            andClauses.push({ hd_event_tag: { none: { tag_id: id, soft_deleted: false } } });
         } else {
             inclusiveTags.push(id);
         }
     }
     if (inclusiveTags.length > 0) {
-        andClauses.push({ tags: { some: { tag_id: { in: inclusiveTags } } } });
+        andClauses.push({ hd_event_tag: { some: { tag_id: { in: inclusiveTags }, soft_deleted: false } } });
     }
 
     // Person filters
@@ -112,15 +114,15 @@ export function buildTimelineWhere(filters: TimelineFilters): Prisma.hisdoc_even
     for (const [idStr, state] of Object.entries(filters.persons)) {
         const id = Number(idStr);
         if (state === "re") {
-            andClauses.push({ persons: { some: { person_id: id } } });
+            andClauses.push({ hd_event_person: { some: { person_id: id, soft_deleted: false } } });
         } else if (state === "ex") {
-            andClauses.push({ persons: { none: { person_id: id } } });
+            andClauses.push({ hd_event_person: { none: { person_id: id, soft_deleted: false } } });
         } else {
             inclusivePersons.push(id);
         }
     }
     if (inclusivePersons.length > 0) {
-        andClauses.push({ persons: { some: { person_id: { in: inclusivePersons } } } });
+        andClauses.push({ hd_event_person: { some: { person_id: { in: inclusivePersons }, soft_deleted: false } } });
     }
 
     // Date range — compared via the sort_key generated column (unix seconds)
@@ -139,6 +141,5 @@ export function buildTimelineWhere(filters: TimelineFilters): Prisma.hisdoc_even
         ] });
     }
 
-    if (andClauses.length === 0) return {};
     return { AND: andClauses };
 }

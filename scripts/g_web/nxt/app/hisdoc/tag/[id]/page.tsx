@@ -1,5 +1,5 @@
 import "server-only";
-import prisma from "@g/com/lib/prisma";
+import prisma from "@g/com/lib/prisma/client";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FlexiDateDisplay } from "../../ui/FlexiDateDisplay";
@@ -10,12 +10,13 @@ export default async function TagPage({ params }: { params: Promise<{ id: string
     const { id: idStr } = await params;
     const id = parseInt(idStr, 10);
 
-    const tag = await prisma().hisdoc_tag.findUnique({
-        where: { id },
+    const tag = await prisma().hd_tag.findUnique({
+        where: { id, soft_deleted: false },
         include: {
-            hisdoc_event_tag: {
+            hd_event_tag: {
+                where: { soft_deleted: false, hd_event: { soft_deleted: false } },
                 include: {
-                    event: {
+                    hd_event: {
                         select: {
                             id: true, name: true,
                             event_date_type: true, event_date1: true,
@@ -24,7 +25,7 @@ export default async function TagPage({ params }: { params: Promise<{ id: string
                         }
                     }
                 },
-                orderBy: { event: { sort_key: "desc" } },
+                orderBy: { hd_event: { sort_key: "desc" } },
                 take: 20
             }
         }
@@ -49,14 +50,14 @@ export default async function TagPage({ params }: { params: Promise<{ id: string
             )}
             <h2 className="mb-3 text-xl font-semibold text-white">Recent Events</h2>
             <ul className="space-y-2">
-                {tag.hisdoc_event_tag.map(({ event }) => (
-                    <li key={event.id} className="flex items-center gap-4">
-                        <FlexiDateDisplay {...event} />
+                {tag.hd_event_tag.map(({ hd_event }) => (
+                    <li key={hd_event.id} className="flex items-center gap-4">
+                        <FlexiDateDisplay {...hd_event} />
                         <Link
-                            href={"/hisdoc/event/" + event.id}
+                            href={"/hisdoc/event/" + hd_event.id}
                             className="text-indigo-400 hover:text-indigo-300"
                         >
-                            {event.name}
+                            {hd_event.name}
                         </Link>
                     </li>
                 ))}

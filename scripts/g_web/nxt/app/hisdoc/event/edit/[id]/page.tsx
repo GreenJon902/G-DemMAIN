@@ -1,6 +1,6 @@
 import "server-only";
-import prisma from "@g/com/lib/prisma";
-import { requireArea } from "@/lib/session";
+import prisma from "@g/com/lib/prisma/client";
+import { requirePermission } from "@/lib/session";
 import { notFound } from "next/navigation";
 import EventForm from "../../../ui/EventForm";
 import { editEvent } from "../../../actions";
@@ -17,34 +17,38 @@ import { getMinecraftUsername } from "../../../lib/minecraft";
  * @param params - Next.js 15 route params Promise; contains `id` as a decimal string.
  */
 export default async function EditEventPage({ params }: { params: Promise<{ id: string }> }) {
-    await requireArea("hisdoc");
+    await requirePermission("hisdoc", "editor");
 
     const { id: idStr } = await params;
     const id = parseInt(idStr, 10);
     if (isNaN(id)) notFound();
 
-    const [event, rawTags, rawPersons, rawEvents] = await Promise.all([
-        prisma().hisdoc_event.findUnique({
-            where: { id },
+    const [event, rawTags, rawPersons, rawEvents, relatedRows] = await Promise.all([
+        prisma().hd_event.findUnique({
+            where: { id, soft_deleted: false },
             include: {
-                tags: { select: { tag_id: true } },
-                persons: { select: { person_id: true } },
-                related_events_a: { select: { event_b_id: true } },
-                related_events_b: { select: { event_a_id: true } }
+                hd_event_tag: { where: { soft_deleted: false }, select: { tag_id: true } },
+                hd_event_person: { where: { soft_deleted: false }, select: { person_id: true } }
             }
         }),
-        prisma().hisdoc_tag.findMany({
+        prisma().hd_tag.findMany({
+            where: { soft_deleted: false },
             orderBy: { name: "asc" },
             select: { id: true, name: true, color: true }
         }),
-        prisma().hisdoc_person.findMany({
+        prisma().hd_person.findMany({
+            where: { soft_deleted: false },
             orderBy: { data: "asc" },
             select: { id: true, type: true, data: true }
         }),
-        prisma().hisdoc_event.findMany({
+        prisma().hd_event.findMany({
+            where: { soft_deleted: false },
             orderBy: { name: "asc" },
             select: { id: true, name: true }
-        })
+        }),
+        // hd_event_event_rea is a view exposing both directions of the relation; the write table
+        // (hd_event_event_wri) must never be read directly outside the gateway
+        prisma().hd_event_event_rea.findMany({ where: { event_id: id, soft_deleted: 0 } })
     ]);
 
     if (!event) notFound();
@@ -62,6 +66,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
 
     // Exclude this event from its own related-events selector
     const allEvents = rawEvents.filter(e => e.id !== id);
+    const activeEventIds = new Set(allEvents.map(e => e.id));
 
     const defaultValues = {
         name: event.name,
@@ -73,13 +78,13 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
         event_date_units: event.event_date_units,
         event_date_diff: event.event_date_diff,
         event_date2: event.event_date2,
-        tag_ids: event.tags.map(t => t.tag_id),
-        person_ids: event.persons.map(p => p.person_id),
-        // Merge both sides of the self-referential relation into one flat list
-        related_event_ids: [
-            ...event.related_events_a.map(r => r.event_b_id),
-            ...event.related_events_b.map(r => r.event_a_id)
-        ]
+        tag_ids: event.hd_event_tag.map(t => t.tag_id),
+        person_ids: event.hd_event_person.map(p => p.person_id),
+        // The view already exposes both directions, and soft-deleted related events are dropped
+        // since they wouldn't appear (and so couldn't be re-selected) in the selector below
+        related_event_ids: relatedRows
+            .map(r => r.related_event_id)
+            .filter(rid => activeEventIds.has(rid))
     };
 
     // Thin server action wrapper that binds the event id for editEvent

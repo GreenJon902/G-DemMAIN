@@ -28,6 +28,8 @@ tagColMax = 16581375
 minEventDateTimeOffset = -1440
 maxEventDateTimeOffset = 1440
 
+changelog_schema_version = 1  # Must match CURRENT_SCHEMA_VERSION in com/lib/prisma/hisdoc/changelog.ts
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Build a HisDoc dev dataset.")
@@ -97,13 +99,13 @@ def make_clear_tables():
     # FK checks must be disabled for TRUNCATE to work across referenced tables.
     # TRUNCATE resets AUTO_INCREMENT, which matches our explicit id values.
     tables = [
-        "hisdoc_event_event",
-        "hisdoc_event_person",
-        "hisdoc_event_tag",
-        "hisdoc_changelog",
-        "hisdoc_event",
-        "hisdoc_tag",
-        "hisdoc_person",
+        "hd_event_event_wri",
+        "hd_event_person",
+        "hd_event_tag",
+        "hd_changelog",
+        "hd_event",
+        "hd_tag",
+        "hd_person",
     ]
     out.write("SET FOREIGN_KEY_CHECKS = 0;\n")
     for table in tables:
@@ -112,7 +114,7 @@ def make_clear_tables():
 
 
 def make_person_list():
-    string = "INSERT INTO hisdoc_person (id, type, data, linked_user_id) VALUES \n"
+    string = "INSERT INTO hd_person (id, type, data, linked_user_id) VALUES \n"
 
     for n, person in enumerate(persons):
         linked = person_linked_user.get(n + 1)
@@ -126,13 +128,13 @@ def make_person_list():
 
 def make_event_list():
     c_dates = (
-        "INSERT INTO hisdoc_event"
+        "INSERT INTO hd_event"
         " (id, name, event_date_type, event_date1, event_date_units, event_date_diff,"
         " posted_at, description, posted_by_user_id, details, event_date_time_offset)"
         " VALUES \n"
     )
     r_dates = (
-        "INSERT INTO hisdoc_event"
+        "INSERT INTO hd_event"
         " (id, name, event_date_type, event_date1, event_date2,"
         " posted_at, description, posted_by_user_id, details, event_date_time_offset)"
         " VALUES \n"
@@ -144,9 +146,8 @@ def make_event_list():
         description = event_text[1]
         date1 = randint(min_event_date, max_event_date)
         posted_at = random_datetime()
-        # NULL with the same probability as any single user.
-        posted_by = choice(user_ids + [None])
-        posted_by_str = str(posted_by) if posted_by is not None else "NULL"
+        # posted_by_user_id is NOT NULL, so always pick a real user.
+        posted_by_str = str(choice(user_ids))
         detail = "'" + choice(details) + "'" if randint(0, 1) == 1 else "NULL"
         event_date_offset = randint(minEventDateTimeOffset, maxEventDateTimeOffset)
 
@@ -176,7 +177,7 @@ def make_event_list():
 
 
 def make_tag_list():
-    string = "INSERT INTO hisdoc_tag (id, name, description, color) VALUES \n"
+    string = "INSERT INTO hd_tag (id, name, description, color) VALUES \n"
 
     for n, tag in enumerate(tags):
         string += f"({n + 1}, '{tag[0]}', '{tag[1]}', {randint(tagColMin, tagColMax)}), \n"
@@ -187,8 +188,9 @@ def make_tag_list():
 
 
 def make_event_event_relation():
-    # event_a_id < event_b_id is enforced by the table constraint.
-    string = "INSERT INTO hisdoc_event_event (event_a_id, event_b_id) VALUES \n"
+    # event_id < related_event_id is enforced by chk_hd_event_event_order (and would otherwise
+    # be normalised by trg_hd_event_event_sort on insert anyway).
+    string = "INSERT INTO hd_event_event_wri (event_id, related_event_id) VALUES \n"
 
     done = set()
 
@@ -208,7 +210,7 @@ def make_event_event_relation():
 
 
 def make_event_person_relation():
-    string = "INSERT INTO hisdoc_event_person (event_id, person_id) VALUES \n"
+    string = "INSERT INTO hd_event_person (event_id, person_id) VALUES \n"
 
     done = set()
 
@@ -226,7 +228,7 @@ def make_event_person_relation():
 
 
 def make_event_tag_relation():
-    string = "INSERT INTO hisdoc_event_tag (event_id, tag_id) VALUES \n"
+    string = "INSERT INTO hd_event_tag (event_id, tag_id) VALUES \n"
 
     done = set()
 
@@ -244,14 +246,25 @@ def make_event_tag_relation():
 
 
 def make_changelogs():
-    string = "INSERT INTO hisdoc_changelog (event_id, description, author_user_id, created_at) VALUES \n"
+    # hd_changelog is now generic (what/entity_id rather than a dedicated event_id column), so
+    # every row here targets an EVENT. old_values/new_values are left NULL — reconstructing a
+    # realistic schema_version-1 snapshot isn't meaningful for synthetic seed data.
+    string = (
+        "INSERT INTO hd_changelog"
+        " (user_id, message, created_at, what, entity_id, old_values, new_values, action, schema_version)"
+        " VALUES \n"
+    )
 
     for i in range(len(event_texts) - 1):
         count = randint(0, len(changelogs))
         for _ in range(count - 1):
             author_id = choice(user_ids)
             created_at = random_datetime()
-            string += f"({i + 1}, '{choice(changelogs)}', {author_id}, '{created_at}'), \n"
+            message = choice(changelogs)
+            string += (
+                f"({author_id}, '{message}', '{created_at}', 'EVENT', {i + 1},"
+                f" NULL, NULL, 'UPDATE', {changelog_schema_version}), \n"
+            )
 
     string = string.rstrip(", \n")
     string += ";\n"

@@ -1,10 +1,10 @@
 import "server-only";
-import prisma from "@g/com/lib/prisma";
+import prisma from "@g/com/lib/prisma/client";
 import { TagChip } from "../ui/TagChip";
 
 /** Lists all tags ordered alphabetically. */
 export default async function TagsPage() {
-    const tags = await prisma().hisdoc_tag.findMany({ orderBy: { name: "asc" } });
+    const tags = await prisma().hd_tag.findMany({ where: { soft_deleted: false }, orderBy: { name: "asc" } });
 
     return (
         <>

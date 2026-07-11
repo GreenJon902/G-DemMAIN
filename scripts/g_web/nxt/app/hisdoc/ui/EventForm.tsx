@@ -199,7 +199,7 @@ export default function EventForm(props: EventFormProps) {
 
                 <ActionButton
                     color={BUTTON_GREEN}
-                    guard={makeAreaSudoGuard("hisdoc", ctx)}
+                    guard={makeAreaSudoGuard("hisdoc", "editor", ctx)}
                     action={async () => {
                         const fd = new FormData(formRef.current!);
                         await props.action(fd);

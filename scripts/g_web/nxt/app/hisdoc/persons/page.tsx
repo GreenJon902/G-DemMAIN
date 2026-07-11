@@ -1,11 +1,11 @@
 import "server-only";
-import prisma from "@g/com/lib/prisma";
+import prisma from "@g/com/lib/prisma/client";
 import Link from "next/link";
 import { getMinecraftUsername } from "../lib/minecraft";
 
 /** Lists all persons ordered by their data field, with display names resolved in parallel. */
 export default async function PersonsPage() {
-    const persons = await prisma().hisdoc_person.findMany({ orderBy: { data: "asc" } });
+    const persons = await prisma().hd_person.findMany({ where: { soft_deleted: false }, orderBy: { data: "asc" } });
 
     // Resolve all display names concurrently rather than sequentially
     const displayNames = await Promise.all(

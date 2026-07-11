@@ -1,5 +1,5 @@
 import "server-only";
-import prisma from "@g/com/lib/prisma";
+import prisma from "@g/com/lib/prisma/client";
 import { parseTimelineFilters, buildTimelineWhere } from "./lib/timeline-filter";
 import InfiniteTimeline from "./ui/InfiniteTimeline";
 import TimelineFilters from "./ui/TimelineFilters";
@@ -27,7 +27,7 @@ export default async function HisDocPage({
     const filters = parseTimelineFilters(urlParams);
 
     const [events, allTags, allPersons] = await Promise.all([
-        prisma().hisdoc_event.findMany({
+        prisma().hd_event.findMany({
             where: buildTimelineWhere(filters),
             orderBy: [{ sort_key: "desc" }, { id: "desc" }],
             take: 21,
@@ -41,26 +41,32 @@ export default async function HisDocPage({
                 event_date_units: true,
                 event_date_diff: true,
                 event_date2: true,
-                tags: {
+                hd_event_tag: {
+                    where: { soft_deleted: false },
                     select: {
-                        tag: { select: { id: true, name: true, color: true } }
+                        hd_tag: { select: { id: true, name: true, color: true, soft_deleted: true } }
                     }
                 }
             }
         }),
-        prisma().hisdoc_tag.findMany({ orderBy: { name: "asc" } }),
-        prisma().hisdoc_person.findMany({ orderBy: { data: "asc" } })
+        prisma().hd_tag.findMany({ where: { soft_deleted: false }, orderBy: { name: "asc" } }),
+        prisma().hd_person.findMany({ where: { soft_deleted: false }, orderBy: { data: "asc" } })
     ]);
 
     const hasMore = events.length === 21;
     const page = events.slice(0, 20);
 
-    // Convert BigInt date fields to Number — all FlexiDate values fit within Number.MAX_SAFE_INTEGER
-    const serialisedPage = page.map(e => ({
+    // Convert BigInt date fields to Number (all FlexiDate values fit within Number.MAX_SAFE_INTEGER),
+    // and collapse hd_event_tag into the { tag: {...} }[] shape expected by InfiniteTimeline, dropping
+    // any tag applications whose tag has itself been soft-deleted
+    const serialisedPage = page.map(({ hd_event_tag, ...e }) => ({
         ...e,
         event_date1: Number(e.event_date1),
         event_date_diff: e.event_date_diff !== null ? Number(e.event_date_diff) : null,
-        event_date2: e.event_date2 !== null ? Number(e.event_date2) : null
+        event_date2: e.event_date2 !== null ? Number(e.event_date2) : null,
+        tags: hd_event_tag
+            .filter(rel => !rel.hd_tag.soft_deleted)
+            .map(rel => ({ tag: { id: rel.hd_tag.id, name: rel.hd_tag.name, color: rel.hd_tag.color } }))
     }));
 
     // Resolve Minecraft UUIDs to usernames; NPC persons use their data field directly
