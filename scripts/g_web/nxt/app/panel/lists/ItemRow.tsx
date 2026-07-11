@@ -1,6 +1,6 @@
 import { ListItem } from "@/lib/panelUtils";
 import { List } from "./page";
-import PlayerHead from "./PlayerHead";
+import PlayerHead from "@/app/ui/PlayerHead";
 
 
 export default function ItemRow({ item, list }: { item: ListItem, list: List }) {
