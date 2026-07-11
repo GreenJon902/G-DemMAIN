@@ -44,7 +44,7 @@ export default async function HisDocPage({
                 hd_event_tag: {
                     where: { soft_deleted: false },
                     select: {
-                        hd_tag: { select: { id: true, name: true, color: true, soft_deleted: true } }
+                        hd_tag: { select: { id: true, name: true, description: true, color: true, soft_deleted: true } }
                     }
                 }
             }
@@ -66,7 +66,7 @@ export default async function HisDocPage({
         event_date2: e.event_date2 !== null ? Number(e.event_date2) : null,
         tags: hd_event_tag
             .filter(rel => !rel.hd_tag.soft_deleted)
-            .map(rel => ({ tag: { id: rel.hd_tag.id, name: rel.hd_tag.name, color: rel.hd_tag.color } }))
+            .map(rel => ({ tag: { id: rel.hd_tag.id, name: rel.hd_tag.name, description: rel.hd_tag.description, color: rel.hd_tag.color } }))
     }));
 
     // Resolve Minecraft UUIDs to usernames; NPC persons use their data field directly

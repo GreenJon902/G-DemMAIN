@@ -34,7 +34,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
         prisma().hd_tag.findMany({
             where: { soft_deleted: false },
             orderBy: { name: "asc" },
-            select: { id: true, name: true, color: true }
+            select: { id: true, name: true, description: true, color: true }
         }),
         prisma().hd_person.findMany({
             where: { soft_deleted: false },

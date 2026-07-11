@@ -4,12 +4,12 @@ import { useRef, useState } from "react";
 import { useAuthContext, makeAreaSudoGuard } from "@/app/AuthContext";
 import { ActionButton, BUTTON_GREEN } from "@/app/ui/Button";
 import FlexiDateInput from "./FlexiDateInput";
-import TagSelector from "./TagSelector";
+import { TagChip } from "./TagChip";
 
 interface EventFormProps {
     /** The server action to call on submit. For add: addEvent directly. For edit: a bound wrapper like (fd) => editEvent(id, fd). */
     action: (formData: FormData) => Promise<void>;
-    tags: { id: number; name: string; color: number }[];
+    tags: { id: number; name: string; description: string; color: number }[];
     persons: { id: number; displayName: string; type: "MINECRAFT" | "NPC" }[];
     /** All existing events for the related-events selector. */
     events: { id: number; name: string }[];
@@ -53,12 +53,24 @@ export default function EventForm(props: EventFormProps) {
     const formRef = useRef<HTMLFormElement>(null);
     const ctx = useAuthContext();
 
+    const [selectedTagIds, setSelectedTagIds] = useState<Set<number>>(
+        () => new Set(props.defaultValues?.tag_ids ?? [])
+    );
     const [selectedPersonIds, setSelectedPersonIds] = useState<Set<number>>(
         () => new Set(props.defaultValues?.person_ids ?? [])
     );
     const [selectedEventIds, setSelectedEventIds] = useState<Set<number>>(
         () => new Set(props.defaultValues?.related_event_ids ?? [])
     );
+
+    /** Toggles a tag's selection state. */
+    function toggleTag(id: number) {
+        setSelectedTagIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id); else next.add(id);
+            return next;
+        });
+    }
 
     /** Toggles a person's selection state. */
     function togglePerson(id: number) {
@@ -134,7 +146,27 @@ export default function EventForm(props: EventFormProps) {
 
                 <div className="flex flex-col gap-2">
                     <h3 className="text-sm font-semibold tracking-wide text-gray-400 uppercase">Tags</h3>
-                    <TagSelector tags={props.tags} defaultSelected={props.defaultValues?.tag_ids} />
+                    <div className="flex flex-wrap gap-2">
+                        {props.tags.map(tag => {
+                            // >>> 0 coerces to unsigned 32-bit so negative signed integers produce a valid hex string
+                            const hexColor = "#" + (tag.color >>> 0).toString(16).padStart(6, "0");
+                            const isSelected = selectedTagIds.has(tag.id);
+                            return (
+                                <TagChip
+                                    key={tag.id}
+                                    id={tag.id}
+                                    name={tag.name}
+                                    description={tag.description}
+                                    bgColor={isSelected ? hexColor : "#374151"}
+                                    holeColor={isSelected ? "#111827" : hexColor}
+                                    onClick={() => toggleTag(tag.id)}
+                                />
+                            );
+                        })}
+                    </div>
+                    {Array.from(selectedTagIds).map(id => (
+                        <input key={id} type="hidden" name="tag_ids" value={id} />
+                    ))}
                 </div>
 
                 <div className="flex flex-col gap-2">

@@ -16,7 +16,7 @@ type ApiTimelineEvent = {
     event_date_units: string | null;
     event_date_diff: number | null;
     event_date2: number | null;
-    tags: { tag: { id: number; name: string; color: number } }[];
+    tags: { tag: { id: number; name: string; description: string; color: number } }[];
 };
 
 /** Converts an ApiTimelineEvent's numeric date fields to the bigint FlexiDateInput shape. */
@@ -45,9 +45,20 @@ function EventCard({ e }: { e: ApiTimelineEvent }) {
             <span className="text-sm text-gray-300">{formatFlexiDate(toFlexiDateInput(e))}</span>
             <p className="line-clamp-3 text-sm text-gray-300">{e.description}</p>
             <div className="flex flex-row flex-wrap gap-2">
-                {e.tags.map(({ tag }) => (
-                    <TagChip key={tag.id} id={tag.id} name={tag.name} color={tag.color} />
-                ))}
+                {e.tags.map(({ tag }) => {
+                    // >>> 0 coerces to unsigned 32-bit so negative signed integers produce a valid hex string
+                    const hexColor = "#" + (tag.color >>> 0).toString(16).padStart(6, "0");
+                    return (
+                        <TagChip
+                            key={tag.id}
+                            id={tag.id}
+                            name={tag.name}
+                            description={tag.description}
+                            bgColor={hexColor}
+                            holeColor="#1f2937"
+                        />
+                    );
+                })}
             </div>
         </div>
     );

@@ -18,7 +18,7 @@ export function TimelineItem({ id, name, description, date, tags }: {
     name: string;
     description: string;
     date: FlexiDateInput;
-    tags: { id: number; name: string; color: number }[];
+    tags: { id: number; name: string; description: string; color: number }[];
 }) {
     return (
         <div className="flex flex-col gap-3 rounded-lg bg-gray-800 p-4">
@@ -28,9 +28,20 @@ export function TimelineItem({ id, name, description, date, tags }: {
             <FlexiDateDisplay {...date} />
             <p className="line-clamp-3 text-gray-300">{description}</p>
             <div className="flex flex-row flex-wrap gap-2">
-                {tags.map(tag => (
-                    <TagChip key={tag.id} id={tag.id} name={tag.name} color={tag.color} />
-                ))}
+                {tags.map(tag => {
+                    // >>> 0 coerces to unsigned 32-bit so negative signed integers produce a valid hex string
+                    const hexColor = "#" + (tag.color >>> 0).toString(16).padStart(6, "0");
+                    return (
+                        <TagChip
+                            key={tag.id}
+                            id={tag.id}
+                            name={tag.name}
+                            description={tag.description}
+                            bgColor={hexColor}
+                            holeColor="#1f2937"
+                        />
+                    );
+                })}
             </div>
         </div>
     );

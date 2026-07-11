@@ -2,6 +2,7 @@
 
 import { Suspense, useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { TagChip } from "./TagChip";
 
 type FilterState = "re" | "ex" | "in";
 
@@ -18,6 +19,15 @@ const STATE_CLASS: Record<FilterState, string> = {
     ex: "bg-red-700",
     in: "bg-blue-700"
 };
+
+// Same colours as STATE_CLASS (green-700/red-700/blue-700) and bg-gray-700, but as CSS
+// strings for TagChip's bgColor prop
+const STATE_BG_COLOR: Record<FilterState, string> = {
+    re: "oklch(52.7% 0.154 150.069)",
+    ex: "oklch(50.5% 0.213 27.518)",
+    in: "oklch(48.8% 0.243 264.376)"
+};
+const GRAY_BG_COLOR = "oklch(37.3% 0.034 259.733)";
 
 /** Parses a filter param string (e.g. "1:re,2:ex") into a Map of id→state. */
 function parseFilterParam(param: string | null): Map<number, FilterState> {
@@ -52,7 +62,7 @@ function TimelineFiltersInner({
     tags,
     persons
 }: {
-    tags: { id: number; name: string; color: number }[];
+    tags: { id: number; name: string; description: string; color: number }[];
     persons: { id: number; displayName: string }[];
 }) {
     const router = useRouter();
@@ -181,22 +191,19 @@ function TimelineFiltersInner({
                     </h3>
                     <div className="flex flex-wrap gap-2">
                         {tags.map(tag => {
+                            // >>> 0 coerces to unsigned 32-bit so negative signed integers produce a valid hex string
                             const hexColor = "#" + (tag.color >>> 0).toString(16).padStart(6, "0");
                             const state = tagStates.get(tag.id) ?? "absent";
                             return (
-                                <button
+                                <TagChip
                                     key={tag.id}
-                                    type="button"
+                                    id={tag.id}
+                                    name={tag.name}
+                                    description={tag.description}
+                                    bgColor={state === "absent" ? GRAY_BG_COLOR : STATE_BG_COLOR[state]}
+                                    holeColor={hexColor}
                                     onClick={() => cycleTag(tag.id)}
-                                    className={
-                                        state === "absent"
-                                            ? "rounded border-l-4 bg-gray-700 px-3 py-1 text-sm text-gray-300"
-                                            : `rounded border-l-4 px-3 py-1 text-sm text-white ${STATE_CLASS[state]}`
-                                    }
-                                    style={{ borderLeftColor: hexColor }}
-                                >
-                                    {tag.name}
-                                </button>
+                                />
                             );
                         })}
                     </div>
@@ -257,7 +264,7 @@ export default function TimelineFilters({
     tags,
     persons
 }: {
-    tags: { id: number; name: string; color: number }[];
+    tags: { id: number; name: string; description: string; color: number }[];
     persons: { id: number; displayName: string }[];
 }) {
     return (

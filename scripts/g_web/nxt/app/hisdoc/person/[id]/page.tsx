@@ -38,8 +38,8 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
                             event_date2: true,
                             hd_event_tag: {
                                 where: { soft_deleted: false },
-                                include: {
-                                    hd_tag: true
+                                select: {
+                                    hd_tag: { select: { id: true, name: true, description: true, color: true, soft_deleted: true } }
                                 }
                             }
                         }
