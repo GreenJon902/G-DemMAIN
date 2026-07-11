@@ -10,4 +10,14 @@ MINECRAFT_RCON_PASSWORD
 MINECRAFT_LOG_PATH
 # The path to the folder where minecraft logs are stored.
 
+MINECRAFT_MONITOR_AUTH_KEY
+# The shared key g_mc_monitor's console/chat sockets require clients to present.
+# This must match the "authKey" set in the mod's own config/g_mc_monitor.json - nothing syncs the two automatically.
+
+MINECRAFT_MONITOR_CONSOLE_PORT
+# The port g_mc_monitor's console socket listens on (see doc/G-DemMAIN Monitor Mod.md). Loopback-only, so no firewall rule is needed.
+
+MINECRAFT_MONITOR_CHAT_PORT
+# The port g_mc_monitor's chat socket listens on (see doc/G-DemMAIN Monitor Mod.md). Loopback-only, so no firewall rule is needed.
+
 

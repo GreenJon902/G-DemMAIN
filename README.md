@@ -26,6 +26,8 @@ TODO: Add documentation on use of fail2ban (brute force attacks)
 |  3000         | Website  # TODO Make this port 80       | No                       |
 |  3001         | Website Websocket                       | No                       |
 | 25575         | RCON management of the Minecraft Server | Yes                      |
+| 25585         | g_mc_monitor console socket (loopback-only, see [doc](doc/G-DemMAIN%20Monitor%20Mod.md)) | Yes |
+| 25586         | g_mc_monitor chat socket (loopback-only, see [doc](doc/G-DemMAIN%20Monitor%20Mod.md)) | Yes |
 | 31415         | SSH Access                              | No                       |
 |  3306         | MySQL                                   | Yes                      |
 | _All others_  |                                         | Yes                      |

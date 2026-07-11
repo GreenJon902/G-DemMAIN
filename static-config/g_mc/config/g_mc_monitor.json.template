@@ -1,0 +1,16 @@
+{
+  "authKey": "${g_mc_g_web_minecraft/MINECRAFT_MONITOR_AUTH_KEY}",
+  "socketBindAddress": "127.0.0.1",
+  "consolePort": ${g_mc_g_web_minecraft/MINECRAFT_MONITOR_CONSOLE_PORT},
+  "chatPort": ${g_mc_g_web_minecraft/MINECRAFT_MONITOR_CHAT_PORT},
+  "fuseMountPath": "/var/lib/g_mc/monitor",
+  "messageTemplates": {
+    "playerJoined": "{player} joined the game",
+    "playerLeft": "{player} left the game",
+    "playerDied": "{message}",
+    "serverStarted": "Server started",
+    "serverStopped": "Server stopped",
+    "playerAdvancement": "{player} has made the advancement {advancement}",
+    "chatRelay": "[{source}] <{username}>: {message}"
+  }
+}

@@ -1,0 +1,29 @@
+{
+	"schemaVersion": 1,
+	"id": "g_mc_monitor",
+	"version": "${version}",
+	"name": "G-DemMAIN Monitor",
+	"description": "Exposes TPS, heap usage and the player list over the filesystem (FUSE), and bridges console/chat over authenticated TCP sockets.",
+	"authors": [
+		"GreenJon902"
+	],
+	"contact": {
+		"sources": "https://github.com/GreenJon902/G-DemMAIN"
+	},
+	"license": "AllRightsReserved",
+	"environment": "server",
+	"entrypoints": {
+		"server": [
+			"net.gdemmain.gmcmonitor.GMcMonitor"
+		]
+	},
+	"mixins": [
+		"g_mc_monitor.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.19.3",
+		"minecraft": "~26.2",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}

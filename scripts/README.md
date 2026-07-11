@@ -10,6 +10,10 @@ To do this, run `make` in the mcrcon directory.
 
 The minecraft server jar file should be at `/var/lib/g_mc/minecraft_server.jar`.
 
+## Monitor mod - `g_mc_monitor`
+A Fabric mod exposing TPS/heap/player-list over a FUSE filesystem and bridging console/chat over authenticated sockets - see [G-DemMAIN Monitor Mod.md](../doc/G-DemMAIN%20Monitor%20Mod.md) for the protocols and setup prerequisites (FUSE permissions, config, ports).
+Build it with `./gradlew build` in the `g_mc_monitor` directory, then drop the resulting jar from `build/libs` into `/var/lib/g_mc/mods`.
+
 # Webhooks - `webhooks.py`
 This script is used to send messages in discord (e.g. status updates).
 It requires certain env-variables to be set.

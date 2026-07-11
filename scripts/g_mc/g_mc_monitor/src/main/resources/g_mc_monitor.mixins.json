@@ -1,0 +1,11 @@
+{
+	"required": true,
+	"package": "net.gdemmain.gmcmonitor.mixin",
+	"compatibilityLevel": "JAVA_25",
+	"mixins": [
+		"AdvancementAnnounceMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}
