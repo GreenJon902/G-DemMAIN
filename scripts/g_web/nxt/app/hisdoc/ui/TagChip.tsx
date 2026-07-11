@@ -16,9 +16,10 @@ export function TagChip({ id, name, color }: { id: number; name: string; color: 
     return (
         <Link
             href={"/hisdoc/tag/" + id}
-            className="inline-block rounded-full px-3 py-1 text-sm text-white"
-            style={{ backgroundColor: hexColor }}
+            className="inline-block rounded-full px-3 py-1 text-sm text-white bg-gray-600 flex flex-row text-no-wrap flex-no-wrap gap-2 align-center"
+
         >
+            <div className="size-4 rounded-full inline-block mr-1" style={{ backgroundColor: hexColor }}/> 
             {name}
         </Link>
     );
