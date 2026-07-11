@@ -34,6 +34,9 @@ export default function RefreshingPageClient<T extends TimeStamped, U>({
 
     // Routinely refresh the data from the serveraction
     const [data, setData] = useState(initialData);
+    // Tracks the effective refresh rate; updated each render so pullData always reads the latest value without being a dep
+    const refreshRateRef = useRef<number>(refreshRate);
+    refreshRateRef.current = data.refreshRate ?? refreshRate;
     useEffect(() => {
         // Use a timeout for this so we don't get behind if the internet is bad
         let timeout: ReturnType<typeof setTimeout>;
@@ -50,9 +53,9 @@ export default function RefreshingPageClient<T extends TimeStamped, U>({
             } catch (e) {
                 console.error(e);
             }
-            timeout = setTimeout(pullData, refreshRate);
+            timeout = setTimeout(pullData, refreshRateRef.current);
         };
-        timeout = setTimeout(pullData, (isFirstRender.current) ? refreshRate : 0);  // If this is the first render then we want to wait the refreshRate. If this isn't the first render then this was called because some property/state changed, in which case data should be refreshed now
+        timeout = setTimeout(pullData, (isFirstRender.current) ? refreshRateRef.current : 0);  // If this is the first render then we want to wait the refreshRate. If this isn't the first render then this was called because some property/state changed, in which case data should be refreshed now
         isFirstRender.current = false;
 
         return () => {

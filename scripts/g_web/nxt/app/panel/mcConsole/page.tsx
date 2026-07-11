@@ -6,6 +6,8 @@ import RefreshingPage from "../../ui/RefreshingPage";
 import LogDisplay from "./LogDisplay";
 import { tailLatestAction } from "../actions";
 
+// TODO: Update how permissions are managed. Viewer can see live console, admin can view and send commands
+
 export default function Page() {
     return (
         <>

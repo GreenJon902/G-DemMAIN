@@ -22,6 +22,7 @@ export async function loadGraphDataAction(monopt?: MonitorOption | undefined) {
     return {
         currentOption: currentMonitorOption,
         options: monitorOptions,
+        refreshRate: currentMonitorOption.interval * 1000,
         ...await loadMonitorRecords(currentMonitorOption.interval, currentMonitorOption.number)
     };
 }

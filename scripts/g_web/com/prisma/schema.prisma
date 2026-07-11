@@ -1,6 +1,7 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider        = "prisma-client"
+  output          = "../generated/prisma"
+  previewFeatures = ["views"]
 }
 
 datasource db {
@@ -8,123 +9,164 @@ datasource db {
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-model user {
-  id                       Int                @id @default(autoincrement())
-  username                 String             @unique(map: "username") @db.VarChar(50)
-  password_hash            String             @db.VarChar(255)
-  has_panel_access         Boolean            @default(false)
-  has_hisdoc_access        Boolean            @default(false)
-  tfa_secret               String?            @db.VarChar(32)
-  hisdoc_changelog_entries hisdoc_changelog[]
-  hisdoc_posted_events     hisdoc_event[]
-  hisdoc_person            hisdoc_person?
+model hd_changelog {
+  id             Int                 @id @default(autoincrement())
+  user_id        Int?
+  message        String              @db.LongText
+  created_at     DateTime            @default(now()) @db.DateTime(0)
+  what           hd_changelog_what
+  entity_id      Int
+  old_values     String?             @db.LongText
+  new_values     String?             @db.LongText
+  action         hd_changelog_action
+  schema_version Int
+  soft_deleted   Boolean             @default(false)
+  user           user?               @relation(fields: [user_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "hd_changelog_ibfk_1")
+
+  @@index([user_id], map: "user_id")
+  @@index([what, entity_id], map: "idx_hd_changelog_entity")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-model hisdoc_changelog {
-  id             Int          @id @default(autoincrement())
-  event_id       Int
-  description    String       @db.LongText
-  author_user_id Int
-  created_at     DateTime     @default(now()) @db.DateTime(0)
-  event          hisdoc_event @relation(fields: [event_id], references: [id], onUpdate: Restrict, map: "hisdoc_changelog_ibfk_1")
-  author_user    user         @relation(fields: [author_user_id], references: [id], onUpdate: Restrict, map: "hisdoc_changelog_ibfk_2")
+model hd_event {
+  id                                                               Int                        @id @default(autoincrement())
+  name                                                             String                     @unique(map: "uq_hd_event_name") @db.VarChar(255)
+  description                                                      String                     @db.LongText
+  details                                                          String?                    @db.LongText
+  posted_by_user_id                                                Int
+  posted_at                                                        DateTime                   @default(now()) @db.DateTime(0)
+  event_date_type                                                  hd_event_event_date_type
+  event_date1                                                      BigInt
+  event_date_time_offset                                           Int                        @db.SmallInt
+  event_date_units                                                 hd_event_event_date_units?
+  event_date_diff                                                  BigInt?                    @db.UnsignedBigInt
+  event_date2                                                      BigInt?                    @db.UnsignedBigInt
+  sort_key                                                         BigInt?
+  soft_deleted                                                     Boolean                    @default(false)
+  user                                                             user                       @relation(fields: [posted_by_user_id], references: [id], onUpdate: Restrict, map: "hd_event_ibfk_1")
+  hd_event_event_wri_hd_event_event_wri_event_idTohd_event         hd_event_event_wri[]       @relation("hd_event_event_wri_event_idTohd_event")
+  hd_event_event_wri_hd_event_event_wri_related_event_idTohd_event hd_event_event_wri[]       @relation("hd_event_event_wri_related_event_idTohd_event")
+  hd_event_person                                                  hd_event_person[]
+  hd_event_tag                                                     hd_event_tag[]
 
-  @@index([author_user_id], map: "author_user_id")
-  @@index([event_id], map: "event_id")
-}
-
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-model hisdoc_event {
-  id                     Int                            @id @default(autoincrement())
-  name                   String                         @unique(map: "uq_hisdoc_event_name") @db.VarChar(255)
-  description            String                         @db.LongText
-  details                String?                        @db.LongText
-  posted_by_user_id      Int?
-  posted_at              DateTime                       @default(now()) @db.DateTime(0)
-  event_date_type        hisdoc_event_event_date_type
-  event_date1            BigInt
-  event_date_time_offset Int                            @db.SmallInt
-  event_date_units       hisdoc_event_event_date_units?
-  event_date_diff        BigInt?                        @db.UnsignedBigInt
-  event_date2            BigInt?                        @db.UnsignedBigInt
-  sort_key               BigInt?
-  changelog              hisdoc_changelog[]
-  posted_by_user         user?                          @relation(fields: [posted_by_user_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "hisdoc_event_ibfk_1")
-  related_events_a       hisdoc_event_event[]           @relation("hisdoc_event_event_event_a_idTohisdoc_event")
-  related_events_b       hisdoc_event_event[]           @relation("hisdoc_event_event_event_b_idTohisdoc_event")
-  persons                hisdoc_event_person[]
-  tags                   hisdoc_event_tag[]
-
-  @@index([sort_key], map: "idx_hisdoc_event_sort")
+  @@index([sort_key], map: "idx_hd_event_sort")
   @@index([posted_by_user_id], map: "posted_by_user_id")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-model hisdoc_event_event {
-  event_a_id Int
-  event_b_id Int
-  event_a    hisdoc_event @relation("hisdoc_event_event_event_a_idTohisdoc_event", fields: [event_a_id], references: [id], onUpdate: Restrict, map: "hisdoc_event_event_ibfk_1")
-  event_b    hisdoc_event @relation("hisdoc_event_event_event_b_idTohisdoc_event", fields: [event_b_id], references: [id], onUpdate: Restrict, map: "hisdoc_event_event_ibfk_2")
+model hd_event_event_wri {
+  event_id                                               Int
+  related_event_id                                       Int
+  soft_deleted                                           Boolean  @default(false)
+  hd_event_hd_event_event_wri_event_idTohd_event         hd_event @relation("hd_event_event_wri_event_idTohd_event", fields: [event_id], references: [id], onUpdate: Restrict, map: "hd_event_event_wri_ibfk_1")
+  hd_event_hd_event_event_wri_related_event_idTohd_event hd_event @relation("hd_event_event_wri_related_event_idTohd_event", fields: [related_event_id], references: [id], onUpdate: Restrict, map: "hd_event_event_wri_ibfk_2")
 
-  @@id([event_a_id, event_b_id])
-  @@index([event_b_id], map: "event_b_id")
+  @@id([event_id, related_event_id])
+  @@index([related_event_id], map: "related_event_id")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-model hisdoc_event_person {
-  event_id  Int
-  person_id Int
-  event     hisdoc_event  @relation(fields: [event_id], references: [id], onUpdate: Restrict, map: "hisdoc_event_person_ibfk_1")
-  person    hisdoc_person @relation(fields: [person_id], references: [id], onUpdate: Restrict, map: "hisdoc_event_person_ibfk_2")
+model hd_event_person {
+  event_id     Int
+  person_id    Int
+  soft_deleted Boolean   @default(false)
+  hd_event     hd_event  @relation(fields: [event_id], references: [id], onUpdate: Restrict, map: "hd_event_person_ibfk_1")
+  hd_person    hd_person @relation(fields: [person_id], references: [id], onUpdate: Restrict, map: "hd_event_person_ibfk_2")
 
   @@id([event_id, person_id])
   @@index([person_id], map: "person_id")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-model hisdoc_event_tag {
-  event_id Int
-  tag_id   Int
-  event    hisdoc_event @relation(fields: [event_id], references: [id], onUpdate: Restrict, map: "hisdoc_event_tag_ibfk_1")
-  tag      hisdoc_tag   @relation(fields: [tag_id], references: [id], onUpdate: Restrict, map: "hisdoc_event_tag_ibfk_2")
+model hd_event_tag {
+  event_id     Int
+  tag_id       Int
+  soft_deleted Boolean  @default(false)
+  hd_event     hd_event @relation(fields: [event_id], references: [id], onUpdate: Restrict, map: "hd_event_tag_ibfk_1")
+  hd_tag       hd_tag   @relation(fields: [tag_id], references: [id], onUpdate: Restrict, map: "hd_event_tag_ibfk_2")
 
   @@id([event_id, tag_id])
   @@index([tag_id], map: "tag_id")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-model hisdoc_person {
-  id                 Int                   @id @default(autoincrement())
-  type               hisdoc_person_type
-  data               String                @db.VarChar(255)
-  linked_user_id     Int?                  @unique(map: "uq_hisdoc_person_linked_user")
-  involved_in_events hisdoc_event_person[]
-  linked_user        user?                 @relation(fields: [linked_user_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "hisdoc_person_ibfk_1")
+model hd_person {
+  id              Int               @id @default(autoincrement())
+  type            hd_person_type
+  data            String            @db.VarChar(255)
+  linked_user_id  Int?              @unique(map: "uq_hd_person_linked_user")
+  soft_deleted    Boolean           @default(false)
+  hd_event_person hd_event_person[]
+  user            user?             @relation(fields: [linked_user_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "hd_person_ibfk_1")
 
-  @@unique([type, data], map: "uq_hisdoc_person_data")
+  @@unique([type, data], map: "uq_hd_person_data")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-model hisdoc_tag {
-  id               Int                @id @default(autoincrement())
-  name             String             @db.VarChar(255)
-  description      String             @db.LongText
-  color            Int
-  hisdoc_event_tag hisdoc_event_tag[]
+model hd_tag {
+  id           Int            @id @default(autoincrement())
+  name         String         @db.VarChar(255)
+  description  String         @db.LongText
+  color        Int
+  soft_deleted Boolean        @default(false)
+  hd_event_tag hd_event_tag[]
 }
 
-enum hisdoc_person_type {
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model user {
+  id                Int                    @id @default(autoincrement())
+  username          String                 @unique(map: "username") @db.VarChar(50)
+  password_hash     String                 @db.VarChar(255)
+  panel_permission  user_panel_permission?
+  hisdoc_permission user_hisdoc_permission @default(viewer)
+  tfa_secret        String?                @db.VarChar(32)
+  hd_changelog      hd_changelog[]
+  hd_event          hd_event[]
+  hd_person         hd_person?
+}
+
+view hd_event_event_rea {
+  event_id         Int @default(0)
+  related_event_id Int @default(0)
+  soft_deleted     Int @default(0) @db.TinyInt
+
+  @@unique([event_id, related_event_id])
+}
+
+enum hd_person_type {
   MINECRAFT
   NPC
 }
 
-enum hisdoc_event_event_date_type {
+enum user_panel_permission {
+  viewer
+  admin
+}
+
+enum user_hisdoc_permission {
+  viewer
+  editor
+  admin
+}
+
+enum hd_changelog_what {
+  EVENT
+  TAG
+  PERSON
+}
+
+enum hd_event_event_date_type {
   centered
   ranged
 }
 
-enum hisdoc_event_event_date_units {
+enum hd_changelog_action {
+  INSERT
+  UPDATE
+  DELETE
+}
+
+enum hd_event_event_date_units {
   d
   h
   m

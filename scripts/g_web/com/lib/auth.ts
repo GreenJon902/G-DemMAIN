@@ -5,7 +5,7 @@
 import { getIronSession as getIronSession_ } from "iron-session";
 import { C } from "./environ";
 import { sendWebloginWebhook } from "./webhook";
-import prisma from "./prisma";
+import prisma from "./prisma/client";
 import * as argon2 from "argon2";
 import { verify as otplibVerify } from "otplib";
 import { z } from "zod";
@@ -17,18 +17,49 @@ export { SUDO_WINDOW_MS };
 const SUDO_WARN_MS = 5 * 1000;                 // Warn if sudo mode expires within this time-window
 const TFA_EPOCH_TOLERANCE: number | [number, number] = [5, 0];  // Five seconds into past, none into future
 
-// Definition for the different restricted areas
-//  * requireSudo - Strict checks only. If true then 2FA must be enabled and sudo mode must be active. If false then sudo mode is required only if the user has 2FA enabled.
+type AreaConfig = {
+    readonly levels: readonly string[],
+    readonly default: string | null,  // Null means no access by default
+    readonly sudoFrom: string | null  // This level and above require sudo; null means none required. This only applies to write operations; read never requires sudo
+}
+
+// Definition for the different restricted areas.
+//  * sudoFrom - The minimum level that requires sudo. null means no sudo is ever required by this area. If a user has 2FA enabled, sudo is always required regardless of this setting.
+// Note, the permission specification must be manually mirrored in the database schema - `doc/Databases.md`.
 const AREAS = {
-    panel: { requireSudo: true },
-    hisdoc: { requireSudo: false }
-} satisfies Record<string, { requireSudo: boolean }>;
+    panel: {
+        levels: ["viewer", "admin"] as const,
+        default: null,      // null = no panel access by default
+        sudoFrom: "admin"   // admin-level panel actions require sudo
+    },
+    hisdoc: {
+        levels: ["viewer", "editor", "admin"] as const,
+        default: "viewer",  // all users can view hisdoc by default
+        sudoFrom: null      // no sudo required for hisdoc operations
+    }
+} satisfies Record<string, AreaConfig>;
 
 export type Area = keyof typeof AREAS;
+/** The valid permission level strings for a given area. */
+export type AreaPermission<A extends Area> = typeof AREAS[A]["levels"][number];
 
-// Extract the areas a user can access from a database-user
-function userToAreaAccess(user: { has_panel_access: boolean, has_hisdoc_access: boolean }): Record<Area, boolean> {
-    return { panel: user.has_panel_access, hisdoc: user.has_hisdoc_access };
+type StoredPermissions = { [A in Area]: AreaPermission<A> | null };
+
+/** Returns true if userLevel meets or exceeds minLevel in the given ordered levels array. */
+function checkMinPermission(levels: readonly string[], userLevel: string | null, minLevel: string): boolean {
+    if (userLevel === null) return false;
+    return levels.indexOf(userLevel) >= levels.indexOf(minLevel);
+}
+
+// Extract stored permissions for each area from a database user
+function userToPermissions(user: {
+    panel_permission: "viewer" | "admin" | null,
+    hisdoc_permission: "viewer" | "editor" | "admin"
+}): StoredPermissions {
+    return {
+        panel: user.panel_permission,
+        hisdoc: user.hisdoc_permission
+    };
 }
 
 // Structural equivalent of iron-session's unexported CookieStore
@@ -41,9 +72,10 @@ const SessionDataSchema = z.object({
     uid: z.number(),                        // User ID
     optimistic: z.object({                  // Cached data, not to be used for sensitive operations
         username: z.string(),
-        areaAccess: z.object(
-            Object.fromEntries(Object.keys(AREAS).map(k => [k, z.boolean()])) as { [K in Area]: z.ZodBoolean }
-        )
+        permissions: z.object({
+            panel: z.enum(AREAS.panel.levels).nullable(),
+            hisdoc: z.enum(AREAS.hisdoc.levels).nullable()
+        })
     }),
     sudoVerifiedAt: z.number().nullable()   // Timestamp when sudo mode was last entered, null if not active
 });
@@ -118,61 +150,66 @@ export class SessionAccessor {
     }
 
     /**
-     * Checks if the user's cached session data grants access to the given area.
-     * Does not consult the database — use strictCheckUser for sensitive operations.
+     * Checks if the user's cached session data grants at least the given permission level for the given area.
+     * Does not consult the database — use strictCheckPermission for sensitive operations.
      */
-    async optimisticCheckUser(area: Area) {
+    async optimisticCheckPermission<A extends Area>(area: A, minLevel: AreaPermission<A>): Promise<boolean> {
         const [session] = await this.#getIronSession();
         if (session === null) return false;
-        return session.optimistic.areaAccess[area] === true;
+        const permissions = session.optimistic.permissions as unknown as StoredPermissions;
+        return checkMinPermission(AREAS[area].levels, permissions[area], minLevel);
     }
 
     /**
-     * Like optimisticCheckUser but throws if the optimistic check fails.
+     * Like optimisticCheckPermission but throws if the optimistic check fails.
      */
-    async optimisticRequireUser(area: Area) {
-        if (!await this.optimisticCheckUser(area)) throw new Error("User does not have optimistic permission to access " + area);
+    async optimisticRequirePermission<A extends Area>(area: A, minLevel: AreaPermission<A>): Promise<void> {
+        if (!await this.optimisticCheckPermission(area, minLevel))
+            throw new Error(`User does not have optimistic permission '${minLevel}' for area '${area}'`);
     }
 
     /**
-     * Checks area access against the database and validates sudo mode if required.
+     * Checks area permission against the database and validates sudo mode if required.
      * Use this for sensitive operations where the cached session data is not sufficient.
      * This is slower than an optimistic check so should only be used when required.
      */
-    async strictCheckUser(area: Area): Promise<boolean> {
+    async strictCheckPermission<A extends Area>(area: A, minLevel: AreaPermission<A>): Promise<boolean> {
         const [session] = await this.#getIronSession();
         if (session === null) return false;
 
         const user = await prisma().user.findUnique({
             where: { id: session.uid },
-            select: { has_panel_access: true, has_hisdoc_access: true, tfa_secret: true }
+            select: { panel_permission: true, hisdoc_permission: true, tfa_secret: true }
         });
         if (user === null) throw new Error(`Session references non-existent user id ${session.uid}`);
 
-        // Check user can access area
-        if (!userToAreaAccess(user)[area]) return false;
+        const { levels, sudoFrom } = AREAS[area];
+        const userPermission = userToPermissions(user)[area];
+        if (!checkMinPermission(levels, userPermission, minLevel)) return false;
 
-        // Check sudo mode if required by area config, or if the user has 2FA enabled
-        const needsSudo = AREAS[area].requireSudo || user.tfa_secret !== null;
+        // Check sudo mode if this level requires it by area config, or if the user has 2FA enabled
+        const areaRequiresSudo = sudoFrom !== null && checkMinPermission(levels, minLevel, sudoFrom);
+        const needsSudo = areaRequiresSudo || user.tfa_secret !== null;
         if (needsSudo && !this.#sudoIsActive(session.sudoVerifiedAt)) return false;
 
         return true;
     }
 
     /**
-     * Like strictCheckUser but throws if the strict check fails.
+     * Like strictCheckPermission but throws if the strict check fails.
      */
-    async strictRequireUser(area: Area) {
-        if (!await this.strictCheckUser(area)) throw new Error("User does not have strict permission to access " + area);
+    async strictRequirePermission<A extends Area>(area: A, minLevel: AreaPermission<A>): Promise<void> {
+        if (!await this.strictCheckPermission(area, minLevel))
+            throw new Error(`User does not have strict permission '${minLevel}' for area '${area}'`);
     }
 
     /**
-     * Returns whether the user needs to enter sudo mode to pass a strict check for the given area.
+     * Returns whether the user needs to enter sudo mode to pass a strict check for the given area and permission level.
      * Also triggers when sudo mode is within SUDO_WARN_MS of expiring, so the caller can prompt
      * re-entry before the time-window closes mid-action.
      * Throws if the user has no session.
      */
-    async getAreaSudoStatus(area: Area): Promise<{ requiresSudo: false } | { requiresSudo: true, tfaEnabled: boolean }> {
+    async getAreaSudoStatus<A extends Area>(area: A, minLevel: AreaPermission<A>): Promise<{ requiresSudo: false } | { requiresSudo: true, tfaEnabled: boolean }> {
         const [session] = await this.#getIronSession();
         if (session === null) throw new Error("getAreaSudoStatus called with no active session");
 
@@ -182,9 +219,11 @@ export class SessionAccessor {
         });
         if (user === null) throw new Error(`Session references non-existent user id ${session.uid}`);
 
-        // Check if we'll require the user to enter sudo mode - area requires it, or user has 2FA enabled
+        const { levels, sudoFrom } = AREAS[area];
         const tfaEnabled = user.tfa_secret !== null;
-        const requiresSudo = AREAS[area].requireSudo || tfaEnabled;
+        // Check if we'll require the user to enter sudo mode — area requires it for this level, or user has 2FA enabled
+        const areaRequiresSudo = sudoFrom !== null && checkMinPermission(levels, minLevel, sudoFrom);
+        const requiresSudo = areaRequiresSudo || tfaEnabled;
         if (!requiresSudo) return { requiresSudo: false };
 
         // Sudo is required; check if the user has an active (non-expiring) sudo session
@@ -210,7 +249,8 @@ export class SessionAccessor {
 
         // Check with database if user exists and password is correct
         const user = await prisma().user.findUnique({
-            where: { username }
+            where: { username },
+            select: { id: true, password_hash: true, panel_permission: true, hisdoc_permission: true }
         });
         if (user === null || !await argon2.verify(user.password_hash, password)) return false;
 
@@ -221,7 +261,7 @@ export class SessionAccessor {
             uid: user.id,
             optimistic: {
                 username: username,
-                areaAccess: userToAreaAccess(user)
+                permissions: userToPermissions(user)
             },
             sudoVerifiedAt: null
         };
