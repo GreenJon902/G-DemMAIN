@@ -10,7 +10,7 @@ It has three parts:
   feedback) and accepting commands, replacing RCON for interactive use.
 - A **chat socket** relaying real chat messages both ways and one-way event notifications
   (join/leave/death/advancement/server start-stop).
-- In-game commands (`/gmcmonitor tps`, `/gmcmonitor heap`) mirroring the filesystem's stats.
+- In-game commands (`/tps`, `/heap`) mirroring the filesystem's stats.
 
 ## Why not RCON?
 
@@ -159,7 +159,8 @@ chat and appear in the normal chat log, but isn't cryptographically attributed t
 
 ## In-game commands
 
-- `/gmcmonitor tps` - current TPS and average ms/tick.
-- `/gmcmonitor heap` - heap used/allocated, human-readable.
+| Command | Permission node        | Fallback (no permission plugin) | Output                                  |
+|---------|-------------------------|----------------------------------|------------------------------------------|
+| `/tps`  | `g_mc_monitor:tps`  | Permission level 2 (gamemaster/moderator) | Current TPS and average ms/tick. |
+| `/heap` | `g_mc_monitor:heap` | Permission level 2 (gamemaster/moderator) | Heap used/allocated, human-readable. |
 
-Both require permission level 2 (gamemaster/moderator) or higher.
