@@ -70,6 +70,8 @@ const STATE_BG_COLOR: Record<FilterState, string> = {
 const GRAY_BG_COLOR = "oklch(37.3% 0.034 259.733)";
 const DISPLAY_BG_COLOR: Record<DisplayState, string> = { in: GRAY_BG_COLOR, ...STATE_BG_COLOR };
 
+const SEARCH_BOX_DEBOUNCE = 300;
+
 /**
  * Titled card wrapper shared by every filter section: a bold underlined heading over arbitrary
  * content, inside a rounded, shaded box.
@@ -243,7 +245,7 @@ function TimelineFiltersInner({
             }
             const qs = params.toString();
             router.push(pathname + (qs ? "?" + qs : ""));
-        }, 300);
+        }, SEARCH_BOX_DEBOUNCE);
         return () => clearTimeout(timer);
     }, [queryText, router, pathname]);
 

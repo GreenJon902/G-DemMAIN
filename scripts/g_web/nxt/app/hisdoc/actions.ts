@@ -7,6 +7,8 @@ import prisma from "@g/com/lib/prisma/client";
 import { createEvent, updateEvent, type EventDateFields } from "@g/com/lib/prisma/hisdoc/event";
 import { sendHisDocEventAddedWebhook, sendHisDocEventEditedWebhook } from "@g/com/lib/webhook";
 import { parseFlexiDateForm } from "./lib/flexidate";
+import { parseTimelineFilters } from "./lib/timeline-filter";
+import { fetchTimelinePage, TimelineEvent } from "./lib/timeline-data";
 
 /** Zod schema for fields shared by both add and edit. */
 const eventFieldSchema = z.object({
@@ -168,4 +170,21 @@ export async function editEvent(id: number, formData: FormData): Promise<void> {
     sendHisDocEventEditedWebhook(name, userData.username, changelogNote);
     // redirect throws internally, so it must run outside the transaction
     redirect("/hisdoc/event/" + id);
+}
+
+/**
+ * Server action: fetches one page of timeline events matching the given filter query string.
+ * Public — the timeline has no authentication requirement. Shared by InfiniteTimeline's
+ * client-side re-fetches (initial filtering, and "load more"); the initial server-rendered page
+ * calls fetchTimelinePage directly instead, since it's already running on the server.
+ *
+ * @param qs - URL-encoded filter query string, same format as the timeline page's search params.
+ * @param cursor - id of the last event already loaded, or null to start from the beginning.
+ */
+export async function getTimelinePage(
+    qs: string,
+    cursor: number | null
+): Promise<{ events: TimelineEvent[]; hasMore: boolean }> {
+    const filters = parseTimelineFilters(new URLSearchParams(qs));
+    return fetchTimelinePage(filters, cursor);
 }

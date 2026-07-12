@@ -6,20 +6,12 @@ import Link from "next/link";
 import { formatFlexiDate, FlexiDateInput } from "../lib/flexidate";
 import { TagChip } from "./TagChip";
 import SmallPerson from "./SmallPerson";
+import { getTimelinePage } from "../actions";
+import { TimelineEvent as ApiTimelineEvent } from "../lib/timeline-data";
 
-type ApiTimelineEvent = {
-    id: number;
-    name: string;
-    description: string;
-    event_date_type: string;
-    event_date1: number;
-    event_date_time_offset: number | null;
-    event_date_units: string | null;
-    event_date_diff: number | null;
-    event_date2: number | null;
-    tags: { tag: { id: number; name: string; description: string; color: number } }[];
-    persons: { id: number; type: "MINECRAFT" | "NPC"; data: string; name: string }[];
-};
+// How long a re-fetch (filter change or "load more") can run before the loading indicator is
+// shown — keeps quick re-fetches from flashing a spinner, while slow ones still give feedback
+const LOADING_INDICATOR_DELAY_MS = 400;
 
 /** Converts an ApiTimelineEvent's numeric date fields to the bigint FlexiDateInput shape. */
 function toFlexiDateInput(e: ApiTimelineEvent): FlexiDateInput {
@@ -101,6 +93,9 @@ function InfiniteTimelineInner({
     const [events, setEvents] = useState<ApiTimelineEvent[]>(initialEvents);
     const [hasMore, setHasMore] = useState(initialHasMore);
     const [loadingMore, setLoadingMore] = useState(false);
+    // True once a filter re-fetch has been running longer than LOADING_INDICATOR_DELAY_MS. Old
+    // events stay on screen the whole time — this only adds an indicator alongside them, it never
+    // clears the list, so filter changes don't flash to empty while the new page loads
     const [filterLoading, setFilterLoading] = useState(false);
 
     // Skip the re-fetch on initial mount — initialEvents already covers page 0
@@ -112,27 +107,32 @@ function InfiniteTimelineInner({
             return;
         }
 
-        setEvents([]);
-        setHasMore(false);
-        setFilterLoading(true);
+        let cancelled = false;
+        const loadingTimer = setTimeout(() => {
+            if (!cancelled) setFilterLoading(true);
+        }, LOADING_INDICATOR_DELAY_MS);
 
-        fetch(`/hisdoc/api/timeline?${searchParamsStr}`)
-            .then(r => r.json())
-            .then((data: { events: ApiTimelineEvent[]; hasMore: boolean }) => {
-                setEvents(data.events);
-                setHasMore(data.hasMore);
-                setFilterLoading(false);
-            });
+        getTimelinePage(searchParamsStr, null).then(data => {
+            if (cancelled) return;
+            clearTimeout(loadingTimer);
+            setEvents(data.events);
+            setHasMore(data.hasMore);
+            setFilterLoading(false);
+        });
+
+        // Cancel a stale in-flight request if the filters change again before it resolves, so it
+        // can't clobber a newer result
+        return () => {
+            cancelled = true;
+            clearTimeout(loadingTimer);
+        };
     }, [searchParamsStr]);
 
     /** Fetches the next page using the last event's id as cursor, then appends the results. */
     async function loadMore() {
         setLoadingMore(true);
-        const cursor = events[events.length - 1]?.id;
-        const qs = searchParamsStr ? `${searchParamsStr}&` : "";
-        const url = `/hisdoc/api/timeline?${qs}${cursor !== undefined ? `cursor=${cursor}` : ""}`;
-        const r = await fetch(url);
-        const data: { events: ApiTimelineEvent[]; hasMore: boolean } = await r.json();
+        const cursor = events[events.length - 1]?.id ?? null;
+        const data = await getTimelinePage(searchParamsStr, cursor);
         setEvents(prev => [...prev, ...data.events]);
         setHasMore(data.hasMore);
         setLoadingMore(false);
@@ -140,11 +140,8 @@ function InfiniteTimelineInner({
 
     return (
         <div className="flex flex-col gap-4">
-            {filterLoading ? (
-                <p className="text-gray-400">Loading…</p>
-            ) : (
-                events.map(e => <EventCard key={e.id} e={e} showTags={showTags} showPersons={showPersons} />)
-            )}
+            {filterLoading && <p className="text-gray-400">Loading…</p>}
+            {events.map(e => <EventCard key={e.id} e={e} showTags={showTags} showPersons={showPersons} />)}
             {hasMore && (
                 <button
                     onClick={loadMore}
