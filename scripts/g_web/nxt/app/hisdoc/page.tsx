@@ -86,7 +86,7 @@ export default async function HisDocPage({
     }));
 
     return (
-        <div className="flex gap-6 p-6">
+        <div className="flex gap-6">
             <aside className="w-64 flex-shrink-0">
                 <TimelineFilters tags={allTags} persons={personsForFilters} />
             </aside>

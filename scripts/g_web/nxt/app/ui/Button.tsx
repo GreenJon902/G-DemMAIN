@@ -13,13 +13,15 @@ import { ReactNode, Ref, useState } from "react";
 
 // Since we need to specify tailwind colors in full (including "hover:bg-green-123123"), we will use constants
 // This also means colors will be fixed and must hence be consistent
-type ButtonColor = { normal: string, focusVisible: string, hover: string }
+export type ButtonColor = { normal: string, focusVisible: string, hover: string }
 const ButtonColor = (normal: string, focusVisible: string, hover: string): ButtonColor => ({ normal, focusVisible, hover });
 export const BUTTON_GREEN:  ButtonColor = ButtonColor("bg-green-600",  "focus-visible:bg-green-800",  "hover:bg-green-800");
 export const BUTTON_YELLOW: ButtonColor = ButtonColor("bg-yellow-600", "focus-visible:bg-yellow-800", "hover:bg-yellow-800");
 export const BUTTON_RED:    ButtonColor = ButtonColor("bg-red-600",    "focus-visible:bg-red-800",    "hover:bg-red-800");
 export const BUTTON_CYAN:    ButtonColor = ButtonColor("bg-cyan-600",    "focus-visible:bg-cyan-800",    "hover:bg-cyan-800");
 export const BUTTON_INDIGO:    ButtonColor = ButtonColor("bg-indigo-600",    "focus-visible:bg-indigo-800",    "hover:bg-indigo-800");
+export const BUTTON_GRAY:    ButtonColor = ButtonColor("bg-gray-600",    "focus-visible:bg-gray-800",    "hover:bg-gray-800");
+export const BUTTON_BLUE:    ButtonColor = ButtonColor("bg-blue-600",    "focus-visible:bg-blue-800",    "hover:bg-blue-800");
 
 /**
  * Gets the `className` that all button-like components will use.
@@ -142,21 +144,24 @@ export function ActionButton({
  * @param callback - The function to call when this is clicked.
  * @param color - The {@link ButtonColor} of this button.
  * @param className - Optional extra class names for the button, e.g. size-6.
+ * @param title - Optional tooltip text shown on hover.
  */
 export function SimpleButton({
     children,
     callback,
     color,
-    className = ""
+    className = "",
+    title
 }: {
     children: ReactNode,
     callback: () => void,
     color: ButtonColor,
     className?: string,
+    title?: string,
 }) {
-    return ( 
-        <button onClick={callback} className={getButtonClass(color, className)} >
-            {children} 
-        </button> 
+    return (
+        <button onClick={callback} className={getButtonClass(color, className)} title={title}>
+            {children}
+        </button>
     );
 }

@@ -9,7 +9,7 @@ export default async function HisDocLayout({ children }: { children: ReactNode }
 
     return (
         <>
-            <header className="flex w-full items-center justify-between bg-gray-800 px-6 py-3">
+            <header className="flex w-full items-center justify-between bg-gray-800 p-2">
                 <Link href="/hisdoc" className="text-2xl font-bold text-white">
                     HisDoc
                 </Link>
@@ -24,7 +24,7 @@ export default async function HisDocLayout({ children }: { children: ReactNode }
                     )}
                 </div>
             </header>
-            <main className="min-h-screen bg-gray-900 p-6">{children}</main>
+            <main className="min-h-screen bg-gray-900 p-4">{children}</main>
         </>
     );
 }

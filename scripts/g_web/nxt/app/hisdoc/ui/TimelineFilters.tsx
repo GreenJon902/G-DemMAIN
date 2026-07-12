@@ -1,15 +1,20 @@
 "use client";
 
-import { cloneElement, ReactElement, Suspense, useState, useEffect, useRef } from "react";
+import { cloneElement, ReactElement, ReactNode, Suspense, useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { TagChip } from "./TagChip";
 import SmallPerson from "./SmallPerson";
+import { SimpleButton, ButtonColor, BUTTON_GRAY, BUTTON_GREEN, BUTTON_RED, BUTTON_BLUE } from "@/app/ui/Button";
+import TextInput, { VALUE_INPUT_CLASS } from "@/app/ui/TextInput";
 
 // Serialised (URL-persisted) states: required, excluded, inclusive-any-of
 type FilterState = "re" | "ex" | "ig";
 // FilterState plus "in" — the default/untouched state, which is never actually written to the
 // URL (absent from the param map), but is given its own code here for symmetry and clarity
 type DisplayState = "in" | FilterState;
+
+// The two URL params that hold a serialised filter-state Map, as parsed/set by cycleFilter/setAllFilter
+type FilterParamName = "tags" | "persons";
 
 /** Returns the next state in the in → re → ex → ig → in cycle. */
 function nextFilterState(state: DisplayState): DisplayState {
@@ -33,11 +38,26 @@ const DISPLAY_ORDER: DisplayState[] = ["in", "re", "ex", "ig"];
 
 // Short codes shown on the "Set all to" buttons
 const STATE_SHORT_LABEL: Record<DisplayState, string> = {
-    in: "In",
-    re: "Re",
-    ex: "Ex",
-    ig: "Ig"
+    in: "In.",
+    re: "Re.",
+    ex: "Ex.",
+    ig: "Ig."
 };
+
+// SimpleButton colors for the "Set all to" buttons, matching the semantic hues used elsewhere
+// (green = required, red = excluded, blue = ignored, gray = included/default)
+const DISPLAY_BUTTON_COLOR: Record<DisplayState, ButtonColor> = {
+    in: BUTTON_GRAY,
+    re: BUTTON_GREEN,
+    ex: BUTTON_RED,
+    ig: BUTTON_BLUE
+};
+
+/** Capitalises the first letter of a state's label, e.g. "ignored" -> "Ignored". */
+function capitalizedStateLabel(state: DisplayState): string {
+    const label = STATE_LABEL[state];
+    return label.charAt(0).toUpperCase() + label.slice(1);
+}
 
 const STATE_CLASS: Record<FilterState, string> = {
     re: "bg-green-700",
@@ -78,8 +98,26 @@ function serializeFilterParam(map: Map<number, FilterState>): string | null {
 }
 
 /**
- * A labelled group of cycle-able filter chips (tags or persons): a header, a live count of items
- * in each state, a row of coloured "set all" buttons that bulk-apply a state to every currently
+ * Titled card wrapper shared by every filter section: a bold underlined heading over arbitrary
+ * content, inside a rounded, shaded box.
+ *
+ * @param title - Section heading.
+ * @param children - The section's content.
+ */
+function FilterContainer({ title, children }: { title: string; children: ReactNode }) {
+    return (
+        <div className="flex flex-col gap-2 rounded-lg bg-gray-800 p-3">
+            <h3 className="text-xl leading-none font-bold underline decoration-4">
+                {title}
+            </h3>
+            {children}
+        </div>
+    );
+}
+
+/**
+ * A labelled group of cycle-able filter chips (tags or persons): a live count of items in each
+ * state, a row of coloured "set all" buttons that bulk-apply a state to every currently
  * search-matched item, a local search box for narrowing the visible items, and the chips
  * themselves.
  *
@@ -119,42 +157,35 @@ function FilterGroup<T extends { id: number }>({
     const visibleIds = visibleItems.map(item => item.id);
 
     return (
-        <div className="flex flex-col gap-2 rounded-lg bg-gray-800 p-3">
-            <h3 className="text-sm font-semibold tracking-wide text-gray-400 uppercase underline">
-                {title}
-            </h3>
-
-            <p className="text-xs text-gray-400">
+        <FilterContainer title={title}>
+            <p className="text-sm text-gray-400">
                 {DISPLAY_ORDER.map((state, i) => (
                     <span key={state}>
                         {i > 0 && ", "}
                         <span style={{ color: DISPLAY_BG_COLOR[state] }}>{globalCounts[state]} {STATE_LABEL[state]}</span>
                     </span>
-                ))}
+                ))}.
             </p>
 
-            <div className="flex items-center gap-2 text-xs text-gray-400">
+            <div className="flex items-center gap-2 text-sm text-gray-400">
                 <span>Set all to:</span>
                 {DISPLAY_ORDER.map(state => (
-                    <button
+                    <SimpleButton
                         key={state}
-                        type="button"
-                        title={`Set all visible ${title.toLowerCase()} to ${STATE_LABEL[state]}`}
-                        onClick={() => onSetAll(state, visibleIds)}
-                        className="rounded px-2 py-0.5 text-white"
-                        style={{ backgroundColor: DISPLAY_BG_COLOR[state] }}
+                        title={`Set all to ${capitalizedStateLabel(state)}`}
+                        callback={() => onSetAll(state, visibleIds)}
+                        color={DISPLAY_BUTTON_COLOR[state]}
+                        className="px-2 py-0.5 text-sm text-white"
                     >
                         {STATE_SHORT_LABEL[state]}
-                    </button>
+                    </SimpleButton>
                 ))}
             </div>
 
-            <input
-                type="text"
+            <TextInput
                 value={query}
                 onChange={e => setQuery(e.target.value)}
                 placeholder={`Search ${title.toLowerCase()}…`}
-                className="w-full rounded bg-gray-700 px-2 py-1 text-sm text-white"
             />
             <div className="border-t border-gray-700" />
 
@@ -164,7 +195,7 @@ function FilterGroup<T extends { id: number }>({
                     return cloneElement(renderItem(item, state, () => onCycle(item.id)), { key: item.id });
                 })}
             </div>
-        </div>
+        </FilterContainer>
     );
 }
 
@@ -191,11 +222,13 @@ function TimelineFiltersInner({
     // eslint-disable-next-line react-hooks/refs
     searchParamsRef.current = searchParams;
 
+    // Text for the search box
     const [queryText, setQueryText] = useState(searchParams.get("q") ?? "");
 
     // Skip the initial debounce flush so mounting doesn't push a redundant navigation
     const isFirstTextMount = useRef(true);
-
+    
+    // Debounce the search box, wait 300ms after a key press before updating the filters
     useEffect(() => {
         if (isFirstTextMount.current) {
             isFirstTextMount.current = false;
@@ -228,47 +261,30 @@ function TimelineFiltersInner({
         router.push(pathname + (qs ? "?" + qs : ""));
     }
 
-    /** Cycles a tag's filter state and pushes the updated `tags` param to the URL. */
-    function cycleTag(id: number) {
-        const map = parseFilterParam(searchParams.get("tags"));
+    /** Cycles a single item's filter state within the given URL param and pushes the result. */
+    function cycleFilter(param: FilterParamName, id: number) {
+        const map = parseFilterParam(searchParams.get(param));
         const next = nextFilterState(map.get(id) ?? "in");
         if (next === "in") {
             map.delete(id);
         } else {
             map.set(id, next);
         }
-        pushParams({ tags: serializeFilterParam(map) });
+        pushParams({ [param]: serializeFilterParam(map) });
     }
+    const cycleTag = (id: number) => cycleFilter("tags", id);
+    const cyclePerson = (id: number) => cycleFilter("persons", id);
 
-    /** Cycles a person's filter state and pushes the updated `persons` param to the URL. */
-    function cyclePerson(id: number) {
-        const map = parseFilterParam(searchParams.get("persons"));
-        const next = nextFilterState(map.get(id) ?? "in");
-        if (next === "in") {
-            map.delete(id);
-        } else {
-            map.set(id, next);
-        }
-        pushParams({ persons: serializeFilterParam(map) });
-    }
-
-    /** Sets every given tag id to `state` (or clears it, for "in") and pushes the result. */
-    function setAllTags(state: DisplayState, ids: number[]) {
-        const map = parseFilterParam(searchParams.get("tags"));
+    /** Sets every given id's filter state within the given URL param (or clears it, for "in") and pushes the result. */
+    function setAllFilter(param: FilterParamName, state: DisplayState, ids: number[]) {
+        const map = parseFilterParam(searchParams.get(param));
         for (const id of ids) {
             if (state === "in") map.delete(id); else map.set(id, state);
         }
-        pushParams({ tags: serializeFilterParam(map) });
+        pushParams({ [param]: serializeFilterParam(map) });
     }
-
-    /** Sets every given person id to `state` (or clears it, for "in") and pushes the result. */
-    function setAllPersons(state: DisplayState, ids: number[]) {
-        const map = parseFilterParam(searchParams.get("persons"));
-        for (const id of ids) {
-            if (state === "in") map.delete(id); else map.set(id, state);
-        }
-        pushParams({ persons: serializeFilterParam(map) });
-    }
+    const setAllTags = (state: DisplayState, ids: number[]) => setAllFilter("tags", state, ids);
+    const setAllPersons = (state: DisplayState, ids: number[]) => setAllFilter("persons", state, ids);
 
     const tagStates = parseFilterParam(searchParams.get("tags"));
     const personStates = parseFilterParam(searchParams.get("persons"));
@@ -282,30 +298,22 @@ function TimelineFiltersInner({
 
     return (
         <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-                <h3 className="text-sm font-semibold tracking-wide text-gray-400 uppercase">
-                    Search
-                </h3>
-                <input
-                    type="text"
+            <FilterContainer title="Search">
+                <TextInput
                     value={queryText}
                     onChange={e => setQueryText(e.target.value)}
                     placeholder="Search events…"
-                    className="w-full rounded bg-gray-700 px-2 py-1 text-white"
                 />
-            </div>
+            </FilterContainer>
 
-            <div className="flex flex-col gap-2">
-                <h3 className="text-sm font-semibold tracking-wide text-gray-400 uppercase">
-                    Date range
-                </h3>
+            <FilterContainer title="Date range">
                 <div className="flex flex-col gap-1">
                     <label className="text-xs text-gray-400">From</label>
                     <input
                         type="date"
                         value={searchParams.get("from") ?? ""}
                         onChange={e => pushParams({ from: e.target.value || null })}
-                        className="rounded bg-gray-700 px-2 py-1 text-white"
+                        className={VALUE_INPUT_CLASS}
                     />
                 </div>
                 <div className="flex flex-col gap-1">
@@ -314,10 +322,10 @@ function TimelineFiltersInner({
                         type="date"
                         value={searchParams.get("to") ?? ""}
                         onChange={e => pushParams({ to: e.target.value || null })}
-                        className="rounded bg-gray-700 px-2 py-1 text-white"
+                        className={VALUE_INPUT_CLASS}
                     />
                 </div>
-            </div>
+            </FilterContainer>
 
             {tags.length > 0 && (
                 <FilterGroup
@@ -358,8 +366,8 @@ function TimelineFiltersInner({
                             onClick={onClick}
                             className={
                                 state === "in"
-                                    ? "rounded bg-gray-700 px-3 py-1 text-sm"
-                                    : `rounded px-3 py-1 text-sm ${STATE_CLASS[state]}`
+                                    ? "cursor-pointer rounded bg-gray-700 px-3 py-1 text-sm"
+                                    : `cursor-pointer rounded px-3 py-1 text-sm ${STATE_CLASS[state]}`
                             }
                         >
                             <SmallPerson id={person.id} type={person.type} playerdata={person.data} name={person.name} isLink={false} />

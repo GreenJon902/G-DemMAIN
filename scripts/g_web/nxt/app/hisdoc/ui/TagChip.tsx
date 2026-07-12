@@ -25,7 +25,7 @@ export function TagChip({ id, name, description, bgColor, holeColor, onClick }: 
     holeColor: string;
     onClick?: () => void;
 }) {
-    const className = "group relative inline-flex h-6 flex-row flex-nowrap items-center gap-2 rounded-full pl-1.5 pr-3 text-sm text-white whitespace-nowrap";
+    const className = "group relative inline-flex h-6 flex-row flex-nowrap items-center gap-2 rounded-full pl-1.5 pr-3 text-sm text-white whitespace-nowrap cursor-pointer";
 
     const content = (
         <>
