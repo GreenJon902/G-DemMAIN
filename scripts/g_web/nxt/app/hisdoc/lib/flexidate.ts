@@ -71,7 +71,7 @@ export function formatFlexiDate(date: FlexiDateInput): string {
     if (date.event_date_type === "ranged") {
         const start = formatDate(date.event_date1 * 86400n, offset);
         const end = formatDate(date.event_date2! * 86400n, offset);
-        return `Between ${start} and ${end}${suffix}`;
+        return `Sometime between ${start} and ${end}${suffix}`;
     }
 
     const units = date.event_date_units!;

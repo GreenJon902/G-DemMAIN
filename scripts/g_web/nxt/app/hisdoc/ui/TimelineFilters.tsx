@@ -4,9 +4,11 @@ import { cloneElement, ReactElement, ReactNode, Suspense, useState, useEffect, u
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { TagChip } from "./TagChip";
 import SmallPerson from "./SmallPerson";
-import { SimpleButton, ButtonColor, BUTTON_GRAY, BUTTON_GREEN, BUTTON_RED, BUTTON_BLUE } from "@/app/ui/Button";
+import { SimpleButton, ButtonColor, BUTTON_GRAY, BUTTON_LIGHTER_GRAY, BUTTON_GREEN, BUTTON_RED, BUTTON_BLUE } from "@/app/ui/Button";
 import TextInput, { VALUE_INPUT_CLASS } from "@/app/ui/TextInput";
-import { FilterState, parseFilterParam, serializeFilterParam } from "../lib/timeline-filter";
+import RadioButtons from "@/app/ui/RadioButtons";
+import ToggleButton from "@/app/ui/ToggleButton";
+import { FilterState, SearchMode, DateRangeMode, parseFilterParam, serializeFilterParam } from "../lib/timeline-filter";
 
 // FilterState plus "in" — the default/untouched state, which is never actually written to the
 // URL (absent from the param map), but is given its own code here for symmetry and clarity
@@ -46,7 +48,7 @@ const STATE_SHORT_LABEL: Record<DisplayState, string> = {
 // SimpleButton colors for the "Set all to" buttons, matching the semantic hues used elsewhere
 // (green = required, red = excluded, blue = ignored, gray = included/default)
 const DISPLAY_BUTTON_COLOR: Record<DisplayState, ButtonColor> = {
-    in: BUTTON_GRAY,
+    in: BUTTON_LIGHTER_GRAY,
     re: BUTTON_GREEN,
     ex: BUTTON_RED,
     ig: BUTTON_BLUE
@@ -98,7 +100,7 @@ function FilterContainer({
                 {collapsible && (
                     <SimpleButton
                         callback={() => setOpen(o => !o)}
-                        color={BUTTON_GRAY}
+                        color={BUTTON_LIGHTER_GRAY}
                         className="px-2 py-0.5 text-sm text-white"
                     >
                         {open ? "Collapse" : "Expand"}
@@ -286,12 +288,20 @@ function TimelineFiltersInner({
 
     const tagStates = parseFilterParam(searchParams.get("tags"));
     const personStates = parseFilterParam(searchParams.get("persons"));
+
+    const qMode: SearchMode = searchParams.get("qmode") === "exact" ? "exact" : "keywords";
+    const qSearchDescription = searchParams.get("qdesc") !== "0";
+    const dateMode: DateRangeMode = searchParams.get("datemode") === "exclusive" ? "exclusive" : "inclusive";
+
     const hasFilters = !!(
         searchParams.get("tags") ||
         searchParams.get("persons") ||
         searchParams.get("q") ||
+        searchParams.get("qmode") ||
+        searchParams.get("qdesc") ||
         searchParams.get("from") ||
-        searchParams.get("to")
+        searchParams.get("to") ||
+        searchParams.get("datemode")
     );
 
     return (
@@ -301,6 +311,21 @@ function TimelineFiltersInner({
                     value={queryText}
                     onChange={e => setQueryText(e.target.value)}
                     placeholder="Search events…"
+                />
+                <RadioButtons<SearchMode>
+                    className="text-sm"
+                    lightBg
+                    choices={["exact", "keywords"]}
+                    selected={qMode}
+                    setter={mode => pushParams({ qmode: mode === "keywords" ? null : mode })}
+                    nameConv={mode => mode === "exact" ? "Exact" : "Keywords"}
+                    titleConv={mode => mode === "exact" ? "Text must match exactly" : "Each word must be contained by the text"}
+                />
+                <ToggleButton
+                    className="text-sm"
+                    checked={qSearchDescription}
+                    setter={checked => pushParams({ qdesc: checked ? null : "0" })}
+                    label="Search description"
                 />
             </FilterContainer>
 
@@ -323,6 +348,15 @@ function TimelineFiltersInner({
                         className={VALUE_INPUT_CLASS}
                     />
                 </div>
+                <RadioButtons<DateRangeMode>
+                    className="text-sm"
+                    lightBg
+                    choices={["exclusive", "inclusive"]}
+                    selected={dateMode}
+                    setter={mode => pushParams({ datemode: mode === "inclusive" ? null : mode })}
+                    nameConv={mode => mode === "exclusive" ? "Exclusive" : "Inclusive"}
+                    titleConv={mode => mode === "exclusive" ? "Event must be entirely contained in the date range" : "Event must overlap with the date range"}
+                />
             </FilterContainer>
 
             {tags.length > 0 && (

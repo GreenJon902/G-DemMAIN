@@ -6,12 +6,23 @@ import type { Prisma } from "@g/com/prisma/client";
 // display state on top of this for the UI's cycle order.
 export type FilterState = "re" | "ex" | "ig";
 
+// "exact" — q must appear as a substring as-is. "keywords" — q is split on whitespace and every
+// word must appear as a substring (independently of the others).
+export type SearchMode = "exact" | "keywords";
+
+// "inclusive" — the event's date range must overlap [from, to]. "exclusive" — the event's date
+// range must fall entirely within [from, to].
+export type DateRangeMode = "inclusive" | "exclusive";
+
 export type TimelineFilters = {
     tags: Map<number, FilterState>;
     persons: Map<number, FilterState>;
-    from: bigint | null;    // earliest unix seconds bound (inclusive)
-    to: bigint | null;      // latest unix seconds bound (inclusive)
+    from: bigint | null;    // earliest unix seconds bound
+    to: bigint | null;      // latest unix seconds bound
     q: string | null;       // text search
+    qMode: SearchMode;
+    qSearchDescription: boolean;   // also match against description, not just name
+    dateMode: DateRangeMode;
 };
 
 /**
@@ -59,6 +70,9 @@ export function serializeFilterParam(map: Map<number, FilterState>): string | nu
  * - `persons` — same format as `tags`.
  * - `from` / `to` — YYYY-MM-DD strings converted to unix seconds; absent or unparseable → null.
  * - `q` — raw text string; absent or empty → null.
+ * - `qmode` — `"exact"` selects exact-match mode; anything else (including absent) → `"keywords"`.
+ * - `qdesc` — `"0"` disables searching the description; anything else (including absent) → true.
+ * - `datemode` — `"exclusive"` selects exclusive mode; anything else (including absent) → `"inclusive"`.
  *
  * @param params - The URL search params to parse.
  */
@@ -78,14 +92,22 @@ export function parseTimelineFilters(params: URLSearchParams): TimelineFilters {
         if (!isNaN(ms)) from = BigInt(Math.floor(ms / 1000));
     }
     if (toStr) {
+        // Date.parse gives midnight UTC
+        //   of that day for both — fine for `from` (start of day), but `to` needs pushing to the last
+        //   second of that day, since FlexiDates can carry a time (h/m units) and would otherwise be
+        //   excluded by an end-of-range date that's meant to include its whole day
         const ms = Date.parse(toStr);
-        if (!isNaN(ms)) to = BigInt(Math.floor(ms / 1000));
+        if (!isNaN(ms)) to = BigInt(Math.floor(ms / 1000)) + 86399n;
     }
 
     const qRaw = params.get("q");
     const q = qRaw && qRaw.length > 0 ? qRaw : null;
 
-    return { tags, persons, from, to, q };
+    const qMode: SearchMode = params.get("qmode") === "exact" ? "exact" : "keywords";
+    const qSearchDescription = params.get("qdesc") !== "0";
+    const dateMode: DateRangeMode = params.get("datemode") === "exclusive" ? "exclusive" : "inclusive";
+
+    return { tags, persons, from, to, q, qMode, qSearchDescription, dateMode };
 }
 
 /**
@@ -124,8 +146,35 @@ function buildAxisClauses(
 }
 
 /**
+ * Builds the text-search AND clause for a non-null query string.
+ * - `"exact"` mode: the whole query must appear as a substring in the search field(s).
+ * - `"keywords"` mode: the query is split on whitespace, and every word must independently
+ *   appear as a substring in the search field(s).
+ * `name` is always searched; `description` is included too when `searchDescription` is true.
+ *
+ * @param q - The query string (non-empty).
+ * @param mode - Exact-match vs keyword-match.
+ * @param searchDescription - Whether to also match against `description`.
+ */
+function buildTextSearchClause(q: string, mode: SearchMode, searchDescription: boolean): Prisma.hd_eventWhereInput {
+    const fieldClauses = (text: string): Prisma.hd_eventWhereInput[] => {
+        const clauses: Prisma.hd_eventWhereInput[] = [{ name: { contains: text } }];
+        if (searchDescription) clauses.push({ description: { contains: text } });
+        return clauses;
+    };
+
+    if (mode === "exact") {
+        return { OR: fieldClauses(q) };
+    }
+
+    const words = q.split(/\s+/).filter(word => word.length > 0);
+    return { AND: words.map(word => ({ OR: fieldClauses(word) })) };
+}
+
+/**
  * Builds a Prisma `hd_event` WhereInput from the given timeline filters.
- * Date bounds are compared against `sort_key` (a pre-computed unix-seconds column).
+ * Date bounds are compared against `event_start_key`/`event_end_key` (the event's true earliest/
+ * latest possible instant — see earliestUnix/latestUnix in flexidate.ts).
  * Soft-deleted events, and soft-deleted tag/person applications, are always excluded
  * regardless of which filters are active.
  *
@@ -159,20 +208,20 @@ export function buildTimelineWhere(filters: TimelineFilters): Prisma.hd_eventWhe
         })
     ));
 
-    // Date range — compared via the sort_key generated column (unix seconds)
-    if (filters.from !== null) {
-        andClauses.push({ sort_key: { gte: filters.from } });
-    }
-    if (filters.to !== null) {
-        andClauses.push({ sort_key: { lte: filters.to } });
+    // Date range — inclusive requires the event's range to overlap [from, to]; exclusive requires
+    //   it to fall entirely within [from, to]
+    // TODO: This ignores timezones. Is this correct?
+    if (filters.dateMode === "exclusive") {
+        if (filters.from !== null) andClauses.push({ event_start_key: { gte: filters.from } });
+        if (filters.to !== null) andClauses.push({ event_end_key: { lte: filters.to } });
+    } else {
+        if (filters.from !== null) andClauses.push({ event_end_key: { gte: filters.from } });
+        if (filters.to !== null) andClauses.push({ event_start_key: { lte: filters.to } });
     }
 
-    // Text search across name and description
+    // Text search across name and (optionally) description
     if (filters.q !== null) {
-        andClauses.push({ OR: [
-            { name: { contains: filters.q } },
-            { description: { contains: filters.q } }
-        ] });
+        andClauses.push(buildTextSearchClause(filters.q, filters.qMode, filters.qSearchDescription));
     }
 
     return { AND: andClauses };

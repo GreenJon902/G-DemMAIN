@@ -181,11 +181,41 @@ CREATE OR REPLACE TABLE hd_event (
     ) STORED
         COMMENT 'Computed sort key for timeline ordering (event_date1 converted to seconds since epoch). Maintained automatically by MariaDB as a STORED generated column; do not write manually.',
 
+    event_start_key BIGINT GENERATED ALWAYS AS (
+        CASE event_date_type
+            WHEN 'centered' THEN (CAST(event_date1 AS SIGNED) - CAST(event_date_diff AS SIGNED)) * CASE event_date_units
+                WHEN 'd' THEN 86400
+                WHEN 'h' THEN 3600
+                WHEN 'm' THEN 60
+                ELSE 1
+            END
+            WHEN 'ranged' THEN event_date1 * 86400
+            ELSE 1
+        END
+    ) STORED
+        COMMENT 'Computed earliest possible unix-seconds bound for this event. Mirrors earliestUnix() in app/hisdoc/lib/flexidate.ts. Maintained automatically by MariaDB as a STORED generated column; do not write manually.',
+
+    event_end_key BIGINT GENERATED ALWAYS AS (
+        CASE event_date_type
+            WHEN 'centered' THEN (CAST(event_date1 AS SIGNED) + CAST(event_date_diff AS SIGNED)) * CASE event_date_units
+                WHEN 'd' THEN 86400
+                WHEN 'h' THEN 3600
+                WHEN 'm' THEN 60
+                ELSE 1
+            END
+            WHEN 'ranged' THEN event_date2 * 86400
+            ELSE 1
+        END
+    ) STORED
+        COMMENT 'Computed latest possible unix-seconds bound for this event. Mirrors latestUnix() in app/hisdoc/lib/flexidate.ts. Maintained automatically by MariaDB as a STORED generated column; do not write manually.',
+
     soft_deleted BOOLEAN NOT NULL DEFAULT FALSE
         COMMENT 'If true, this record is treated as deleted but retained for audit history.',
 
     UNIQUE KEY uq_hd_event_name (name),
     KEY idx_hd_event_sort (sort_key),
+    KEY idx_hd_event_start (event_start_key),
+    KEY idx_hd_event_end (event_end_key),
     FOREIGN KEY (posted_by_user_id) REFERENCES user(id),
 
     CONSTRAINT chk_flexidate_centered_units CHECK (event_date_type != 'centered' OR event_date_units IS NOT NULL),
