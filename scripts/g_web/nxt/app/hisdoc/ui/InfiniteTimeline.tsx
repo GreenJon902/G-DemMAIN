@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { formatFlexiDate, FlexiDateInput } from "../lib/flexidate";
 import { TagChip } from "./TagChip";
+import SmallPerson from "./SmallPerson";
 
 type ApiTimelineEvent = {
     id: number;
@@ -17,6 +18,7 @@ type ApiTimelineEvent = {
     event_date_diff: number | null;
     event_date2: number | null;
     tags: { tag: { id: number; name: string; description: string; color: number } }[];
+    persons: { id: number; type: "MINECRAFT" | "NPC"; data: string; name: string }[];
 };
 
 /** Converts an ApiTimelineEvent's numeric date fields to the bigint FlexiDateInput shape. */
@@ -32,11 +34,13 @@ function toFlexiDateInput(e: ApiTimelineEvent): FlexiDateInput {
 }
 
 /**
- * Inline event card. Cannot use TimelineItem (Server Component) from client code.
+ * Inline event card.
  *
  * @param e - The event data to render.
+ * @param showTags - Whether to render the event's tags row.
+ * @param showPersons - Whether to render the event's persons row.
  */
-function EventCard({ e }: { e: ApiTimelineEvent }) {
+function EventCard({ e, showTags, showPersons }: { e: ApiTimelineEvent; showTags: boolean; showPersons: boolean }) {
     return (
         <div className="flex flex-col gap-2 rounded-lg bg-gray-800 p-4">
             <Link href={"/hisdoc/event/" + e.id} className="font-semibold text-white">
@@ -44,22 +48,33 @@ function EventCard({ e }: { e: ApiTimelineEvent }) {
             </Link>
             <span className="text-sm text-gray-300">{formatFlexiDate(toFlexiDateInput(e))}</span>
             <p className="line-clamp-3 text-sm text-gray-300">{e.description}</p>
-            <div className="flex flex-row flex-wrap gap-2">
-                {e.tags.map(({ tag }) => {
-                    // >>> 0 coerces to unsigned 32-bit so negative signed integers produce a valid hex string
-                    const hexColor = "#" + (tag.color >>> 0).toString(16).padStart(6, "0");
-                    return (
-                        <TagChip
-                            key={tag.id}
-                            id={tag.id}
-                            name={tag.name}
-                            description={tag.description}
-                            bgColor={hexColor}
-                            holeColor="#1f2937"
-                        />
-                    );
-                })}
-            </div>
+            {showTags && e.tags.length > 0 && (
+                <div className="flex flex-row flex-wrap gap-2">
+                    {e.tags.map(({ tag }) => {
+                        // >>> 0 coerces to unsigned 32-bit so negative signed integers produce a valid hex string
+                        const hexColor = "#" + (tag.color >>> 0).toString(16).padStart(6, "0");
+                        return (
+                            <TagChip
+                                key={tag.id}
+                                id={tag.id}
+                                name={tag.name}
+                                description={tag.description}
+                                bgColor={hexColor}
+                                holeColor="#1f2937"
+                            />
+                        );
+                    })}
+                </div>
+            )}
+            {showPersons && e.persons.length > 0 && (
+                <div className="flex flex-row flex-wrap gap-2">
+                    {e.persons.map(person => (
+                        <div key={person.id} className="rounded bg-gray-700 px-2 py-1">
+                            <SmallPerson id={person.id} type={person.type} playerdata={person.data} name={person.name} />
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
@@ -80,6 +95,8 @@ function InfiniteTimelineInner({
 }) {
     const searchParams = useSearchParams();
     const searchParamsStr = searchParams.toString();
+    const showTags = searchParams.get("showtags") !== "0";
+    const showPersons = searchParams.get("showpersons") !== "0";
 
     const [events, setEvents] = useState<ApiTimelineEvent[]>(initialEvents);
     const [hasMore, setHasMore] = useState(initialHasMore);
@@ -126,7 +143,7 @@ function InfiniteTimelineInner({
             {filterLoading ? (
                 <p className="text-gray-400">Loading…</p>
             ) : (
-                events.map(e => <EventCard key={e.id} e={e} />)
+                events.map(e => <EventCard key={e.id} e={e} showTags={showTags} showPersons={showPersons} />)
             )}
             {hasMore && (
                 <button

@@ -2,6 +2,7 @@ import "server-only";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@g/com/lib/prisma/client";
 import { parseTimelineFilters, buildTimelineWhere } from "../../lib/timeline-filter";
+import { resolveEventPersons } from "../../lib/persons";
 
 /**
  * GET /hisdoc/api/timeline
@@ -51,6 +52,12 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
                 select: {
                     hd_tag: { select: { id: true, name: true, description: true, color: true, soft_deleted: true } }
                 }
+            },
+            hd_event_person: {
+                where: { soft_deleted: false },
+                select: {
+                    hd_person: { select: { id: true, type: true, data: true, soft_deleted: true } }
+                }
             }
         }
     });
@@ -59,17 +66,18 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const page = events.slice(0, 20);
 
     // JSON.stringify throws on BigInt — convert all FlexiDate bigint fields to Number, and collapse
-    // hd_event_tag into the { tag: {...} }[] shape expected by InfiniteTimeline, dropping any tag
-    // applications whose tag has itself been soft-deleted
-    const serialised = page.map(({ hd_event_tag, ...e }) => ({
+    // hd_event_tag/hd_event_person into the shapes expected by InfiniteTimeline, dropping any
+    // applications whose tag/person has itself been soft-deleted
+    const serialised = await Promise.all(page.map(async ({ hd_event_tag, hd_event_person, ...e }) => ({
         ...e,
         event_date1: Number(e.event_date1),
         event_date_diff: e.event_date_diff !== null ? Number(e.event_date_diff) : null,
         event_date2: e.event_date2 !== null ? Number(e.event_date2) : null,
         tags: hd_event_tag
             .filter(rel => !rel.hd_tag.soft_deleted)
-            .map(rel => ({ tag: { id: rel.hd_tag.id, name: rel.hd_tag.name, description: rel.hd_tag.description, color: rel.hd_tag.color } }))
-    }));
+            .map(rel => ({ tag: { id: rel.hd_tag.id, name: rel.hd_tag.name, description: rel.hd_tag.description, color: rel.hd_tag.color } })),
+        persons: await resolveEventPersons(hd_event_person)
+    })));
 
     return NextResponse.json({ events: serialised, hasMore });
 }

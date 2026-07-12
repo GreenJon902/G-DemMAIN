@@ -1,8 +1,9 @@
 import "server-only";
 import prisma from "@g/com/lib/prisma/client";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PersonAvatar } from "../../ui/PersonAvatar";
-import { TimelineItem } from "../../ui/TimelineItem";
+import { FlexiDateDisplay } from "../../ui/FlexiDateDisplay";
 import { BarGraph } from "../../ui/BarGraph";
 import { getMinecraftUsername } from "../../lib/minecraft";
 
@@ -29,7 +30,6 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
                         select: {
                             id: true,
                             name: true,
-                            description: true,
                             event_date_type: true,
                             event_date1: true,
                             event_date_time_offset: true,
@@ -39,7 +39,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
                             hd_event_tag: {
                                 where: { soft_deleted: false },
                                 select: {
-                                    hd_tag: { select: { id: true, name: true, description: true, color: true, soft_deleted: true } }
+                                    hd_tag: { select: { id: true, name: true, color: true, soft_deleted: true } }
                                 }
                             }
                         }
@@ -98,20 +98,19 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
             <section className="flex flex-col gap-3">
                 <h2 className="text-xl font-semibold text-white">Events</h2>
                 {person.hd_event_person.length > 0 ? (
-                    <div className="flex flex-col gap-3">
+                    <ul className="space-y-2">
                         {person.hd_event_person.map(({ hd_event }) => (
-                            <TimelineItem
-                                key={hd_event.id}
-                                id={hd_event.id}
-                                name={hd_event.name}
-                                description={hd_event.description}
-                                date={hd_event}
-                                tags={hd_event.hd_event_tag
-                                    .filter(({ hd_tag }) => !hd_tag.soft_deleted)
-                                    .map(({ hd_tag }) => hd_tag)}
-                            />
+                            <li key={hd_event.id} className="flex items-center gap-4">
+                                <FlexiDateDisplay {...hd_event} />
+                                <Link
+                                    href={"/hisdoc/event/" + hd_event.id}
+                                    className="text-indigo-400 hover:text-indigo-300"
+                                >
+                                    {hd_event.name}
+                                </Link>
+                            </li>
                         ))}
-                    </div>
+                    </ul>
                 ) : (
                     <p className="text-gray-400">No events</p>
                 )}

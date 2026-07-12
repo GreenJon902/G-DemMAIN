@@ -4,6 +4,7 @@ import { parseTimelineFilters, buildTimelineWhere } from "./lib/timeline-filter"
 import InfiniteTimeline from "./ui/InfiniteTimeline";
 import TimelineFilters from "./ui/TimelineFilters";
 import { getMinecraftUsername } from "./lib/minecraft";
+import { resolveEventPersons } from "./lib/persons";
 
 /**
  * Main HisDoc timeline page. Fetches the first page of events and all tags/persons
@@ -46,6 +47,12 @@ export default async function HisDocPage({
                     select: {
                         hd_tag: { select: { id: true, name: true, description: true, color: true, soft_deleted: true } }
                     }
+                },
+                hd_event_person: {
+                    where: { soft_deleted: false },
+                    select: {
+                        hd_person: { select: { id: true, type: true, data: true, soft_deleted: true } }
+                    }
                 }
             }
         }),
@@ -57,17 +64,18 @@ export default async function HisDocPage({
     const page = events.slice(0, 20);
 
     // Convert BigInt date fields to Number (all FlexiDate values fit within Number.MAX_SAFE_INTEGER),
-    // and collapse hd_event_tag into the { tag: {...} }[] shape expected by InfiniteTimeline, dropping
-    // any tag applications whose tag has itself been soft-deleted
-    const serialisedPage = page.map(({ hd_event_tag, ...e }) => ({
+    // and collapse hd_event_tag/hd_event_person into the shapes expected by InfiniteTimeline, dropping
+    // any tag/person applications whose tag/person has itself been soft-deleted
+    const serialisedPage = await Promise.all(page.map(async ({ hd_event_tag, hd_event_person, ...e }) => ({
         ...e,
         event_date1: Number(e.event_date1),
         event_date_diff: e.event_date_diff !== null ? Number(e.event_date_diff) : null,
         event_date2: e.event_date2 !== null ? Number(e.event_date2) : null,
         tags: hd_event_tag
             .filter(rel => !rel.hd_tag.soft_deleted)
-            .map(rel => ({ tag: { id: rel.hd_tag.id, name: rel.hd_tag.name, description: rel.hd_tag.description, color: rel.hd_tag.color } }))
-    }));
+            .map(rel => ({ tag: { id: rel.hd_tag.id, name: rel.hd_tag.name, description: rel.hd_tag.description, color: rel.hd_tag.color } })),
+        persons: await resolveEventPersons(hd_event_person)
+    })));
 
     // Resolve Minecraft uuids to usernames; NPC persons use their data field directly. Both the raw
     // data (SmallPerson's playerhead image) and resolved name (search matching + display text) are

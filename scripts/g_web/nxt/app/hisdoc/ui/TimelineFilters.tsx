@@ -292,6 +292,8 @@ function TimelineFiltersInner({
     const qMode: SearchMode = searchParams.get("qmode") === "exact" ? "exact" : "keywords";
     const qSearchDescription = searchParams.get("qdesc") !== "0";
     const dateMode: DateRangeMode = searchParams.get("datemode") === "exclusive" ? "exclusive" : "inclusive";
+    const showTags = searchParams.get("showtags") !== "0";
+    const showPersons = searchParams.get("showpersons") !== "0";
 
     const hasFilters = !!(
         searchParams.get("tags") ||
@@ -301,11 +303,26 @@ function TimelineFiltersInner({
         searchParams.get("qdesc") ||
         searchParams.get("from") ||
         searchParams.get("to") ||
-        searchParams.get("datemode")
+        searchParams.get("datemode") ||
+        searchParams.get("showtags") ||
+        searchParams.get("showpersons")
     );
 
     return (
         <div className="flex flex-col gap-4">
+            <FilterContainer title="Show">
+                <ToggleButton
+                    checked={showTags}
+                    setter={checked => pushParams({ showtags: checked ? null : "0" })}
+                    label="Show tags"
+                />
+                <ToggleButton
+                    checked={showPersons}
+                    setter={checked => pushParams({ showpersons: checked ? null : "0" })}
+                    label="Show persons"
+                />
+            </FilterContainer>
+
             <FilterContainer title="Search">
                 <TextInput
                     value={queryText}
