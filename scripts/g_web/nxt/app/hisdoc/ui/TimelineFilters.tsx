@@ -103,14 +103,39 @@ function serializeFilterParam(map: Map<number, FilterState>): string | null {
  *
  * @param title - Section heading.
  * @param children - The section's content.
+ * @param collapsible - If true, children are hidden behind a Expand/Collapse toggle, collapsed by default.
+ * @param summary - Content shown above children regardless of collapsed state (e.g. live stats).
  */
-function FilterContainer({ title, children }: { title: string; children: ReactNode }) {
+function FilterContainer({
+    title,
+    children,
+    collapsible = false,
+    summary
+}: {
+    title: string;
+    children: ReactNode;
+    collapsible?: boolean;
+    summary?: ReactNode;
+}) {
+    const [open, setOpen] = useState(false);
     return (
         <div className="flex flex-col gap-2 rounded-lg bg-gray-800 p-3">
-            <h3 className="text-xl leading-none font-bold underline decoration-4">
-                {title}
-            </h3>
-            {children}
+            <div className="flex items-center justify-between gap-2">
+                <h3 className="text-xl leading-none font-bold underline decoration-4">
+                    {title}
+                </h3>
+                {collapsible && (
+                    <button
+                        type="button"
+                        onClick={() => setOpen(o => !o)}
+                        className="cursor-pointer text-sm text-gray-400 underline hover:text-white"
+                    >
+                        {open ? "Collapse" : "Expand"}
+                    </button>
+                )}
+            </div>
+            {summary}
+            {(!collapsible || open) && children}
         </div>
     );
 }
@@ -156,17 +181,19 @@ function FilterGroup<T extends { id: number }>({
     }
     const visibleIds = visibleItems.map(item => item.id);
 
-    return (
-        <FilterContainer title={title}>
-            <p className="text-sm text-gray-400">
-                {DISPLAY_ORDER.map((state, i) => (
-                    <span key={state}>
-                        {i > 0 && ", "}
-                        <span style={{ color: DISPLAY_BG_COLOR[state] }}>{globalCounts[state]} {STATE_LABEL[state]}</span>
-                    </span>
-                ))}.
-            </p>
+    const stats = (
+        <p className="text-sm text-gray-400">
+            {DISPLAY_ORDER.map((state, i) => (
+                <span key={state}>
+                    {i > 0 && ", "}
+                    <span style={{ color: DISPLAY_BG_COLOR[state] }}>{globalCounts[state]} {STATE_LABEL[state]}</span>
+                </span>
+            ))}.
+        </p>
+    );
 
+    return (
+        <FilterContainer title={title} collapsible summary={stats}>
             <div className="flex items-center gap-2 text-sm text-gray-400">
                 <span>Set all to:</span>
                 {DISPLAY_ORDER.map(state => (
