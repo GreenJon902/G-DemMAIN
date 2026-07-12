@@ -2,6 +2,14 @@ import { NS } from "@/lib/session";
 import { LinkButton, BUTTON_GREEN, BUTTON_INDIGO } from "@/app/ui/Button";
 import Link from "next/link";
 import { ReactNode } from "react";
+import { Great_Vibes } from "next/font/google";
+
+const greatVibes = Great_Vibes({ weight: "400", subsets: ["latin"] });
+
+// Flourish (arrow) drawn under the logo text
+const LOGO_FLOURISH =
+    "absolute left-[0.8em] -bottom-[1em] h-[1.5em] w-[3em] bg-white " +
+    "[clip-path:polygon(0em_0.2em,calc(100%-0.15em)_0.2em,calc(100%-0.15em)_0em,100%_0.25em,calc(100%-0.15em)_0.5em,calc(100%-0.15em)_0.3em,0em_0.3em)]";
 
 /** Layout wrapping all /hisdoc routes with a dark header navbar and main content area. */
 export default async function HisDocLayout({ children }: { children: ReactNode }) {
@@ -10,8 +18,12 @@ export default async function HisDocLayout({ children }: { children: ReactNode }
     return (
         <>
             <header className="flex w-full items-center justify-between bg-gray-800 p-2">
-                <Link href="/hisdoc" className="text-2xl font-bold text-white">
+                <Link
+                    href="/hisdoc"
+                    className={`${greatVibes.className} relative inline-block cursor-pointer text-3xl font-bold text-white no-underline`}
+                >
                     HisDoc
+                    <div aria-hidden className={LOGO_FLOURISH} />
                 </Link>
                 <nav className="flex gap-2">
                     <LinkButton href="/hisdoc" color={BUTTON_INDIGO}>Timeline</LinkButton>
