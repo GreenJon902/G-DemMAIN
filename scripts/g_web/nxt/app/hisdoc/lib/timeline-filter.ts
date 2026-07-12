@@ -1,11 +1,14 @@
 import type { Prisma } from "@g/com/prisma/client";
 
-type TagFilterState = "re" | "ex" | "ig";  // required, excluded, inclusive-any-of
-type PersonFilterState = "re" | "ex" | "ig";
+// Serialised (URL-persisted) states: required, excluded, ignored. Absent from the map means
+// "included" (the default) — see buildTimelineWhere's inclusion clause for what that means for
+// filtering. Shared with TimelineFilters.tsx, which layers its own "in" (included/untouched)
+// display state on top of this for the UI's cycle order.
+export type FilterState = "re" | "ex" | "ig";
 
 export type TimelineFilters = {
-    tags: Record<number, TagFilterState>;    // tag id → state; absent = included (no filtering effect)
-    persons: Record<number, PersonFilterState>;
+    tags: Map<number, FilterState>;
+    persons: Map<number, FilterState>;
     from: bigint | null;    // earliest unix seconds bound (inclusive)
     to: bigint | null;      // latest unix seconds bound (inclusive)
     q: string | null;       // text search
@@ -15,7 +18,7 @@ export type TimelineFilters = {
  * Parses a single `id:state` entry (e.g. `"3:re"`) into a typed tuple.
  * Returns null if the entry is malformed or the state value is unrecognised.
  */
-function parseFilterEntry(entry: string): [number, "re" | "ex" | "ig"] | null {
+function parseFilterEntry(entry: string): [number, FilterState] | null {
     const colonIdx = entry.indexOf(":");
     if (colonIdx === -1) return null;
     const id = parseInt(entry.slice(0, colonIdx), 10);
@@ -26,19 +29,26 @@ function parseFilterEntry(entry: string): [number, "re" | "ex" | "ig"] | null {
 }
 
 /**
- * Parses a comma-separated `id:state` param string into a typed record.
- * Invalid entries are silently skipped.
- *
- * @param raw - The raw param value (e.g. `"3:re,7:ex,12:ig"`), or null if absent.
+ * Parses a comma-separated `id:state` param string (e.g. `"3:re,7:ex,12:ig"`) into a Map of
+ * id → state. Invalid entries are silently skipped. Shared by the API route and the
+ * TimelineFilters UI so both sides of the URL contract stay in sync.
  */
-function parseFilterParam(raw: string | null): Record<number, "re" | "ex" | "ig"> {
-    if (!raw) return {};
-    const result: Record<number, "re" | "ex" | "ig"> = {};
+export function parseFilterParam(raw: string | null): Map<number, FilterState> {
+    const map = new Map<number, FilterState>();
+    if (!raw) return map;
     for (const entry of raw.split(",")) {
         const parsed = parseFilterEntry(entry.trim());
-        if (parsed) result[parsed[0]] = parsed[1];
+        if (parsed) map.set(parsed[0], parsed[1]);
     }
-    return result;
+    return map;
+}
+
+/** Serialises a filter state Map back to the `id:state,...` URL param format, or null if empty. */
+export function serializeFilterParam(map: Map<number, FilterState>): string | null {
+    if (map.size === 0) return null;
+    return Array.from(map.entries())
+        .map(([id, state]) => `${id}:${state}`)
+        .join(",");
 }
 
 /**
@@ -79,10 +89,42 @@ export function parseTimelineFilters(params: URLSearchParams): TimelineFilters {
 }
 
 /**
- * Builds a Prisma `hd_event` WhereInput from the given timeline filters.
+ * Builds the AND clauses for one filterable axis (tags or persons), applied independently:
+ * - Inclusion: untouched/absent ids are "included" by default. Once at least one id on this axis
+ *   has been touched (`re`/`ex`/`ig` — the only states ever stored), the event must carry at
+ *   least one still-untouched id, expressed as "some id not in (touched ids)" so it doesn't need
+ *   to know the full universe of ids. `re`/`ex`/`ig` ids are all excluded from this pool — marking
+ *   a tag required or excluded removes it from "included" rather than strengthening it, so
+ *   picking a required tag doesn't make the inclusion check vacuous. If every id has been
+ *   touched, this is unsatisfiable and the axis excludes all events. With nothing touched at all,
+ *   no inclusion clause is added and the axis imposes no restriction.
+ * - Required: the event must carry every `re` id (each gets its own AND clause).
+ * - Excluded: the event must carry no `ex` id (each gets its own AND clause).
  *
- * Tag/person states: `re` (required) → `some`, `ex` (excluded) → `none`, `ig`
- * (inclusive any-of, labelled "ignored" in the UI) → all `ig` ids collapsed into a single `some { in: [...] }`.
+ * @param states - id → state map for this axis.
+ * @param makeRequired - Builds the "must be present" clause for one id.
+ * @param makeExcluded - Builds the "must not be present" clause for one id.
+ * @param makeInclusion - Builds the "at least one included id present" clause, given the touched ids to exclude from that pool.
+ */
+function buildAxisClauses(
+    states: Map<number, FilterState>,
+    makeRequired: (id: number) => Prisma.hd_eventWhereInput,
+    makeExcluded: (id: number) => Prisma.hd_eventWhereInput,
+    makeInclusion: (touchedIds: number[]) => Prisma.hd_eventWhereInput
+): Prisma.hd_eventWhereInput[] {
+    const clauses: Prisma.hd_eventWhereInput[] = [];
+    for (const [id, state] of states) {
+        if (state === "re") clauses.push(makeRequired(id));
+        else if (state === "ex") clauses.push(makeExcluded(id));
+    }
+    if (states.size > 0) {
+        clauses.push(makeInclusion(Array.from(states.keys())));
+    }
+    return clauses;
+}
+
+/**
+ * Builds a Prisma `hd_event` WhereInput from the given timeline filters.
  * Date bounds are compared against `sort_key` (a pre-computed unix-seconds column).
  * Soft-deleted events, and soft-deleted tag/person applications, are always excluded
  * regardless of which filters are active.
@@ -92,38 +134,30 @@ export function parseTimelineFilters(params: URLSearchParams): TimelineFilters {
  */
 export function buildTimelineWhere(filters: TimelineFilters): Prisma.hd_eventWhereInput {
     const andClauses: Prisma.hd_eventWhereInput[] = [{ soft_deleted: false }];
-
+    
     // Tag filters
-    const inclusiveTags: number[] = [];
-    for (const [idStr, state] of Object.entries(filters.tags)) {
-        const id = Number(idStr);
-        if (state === "re") {
-            andClauses.push({ hd_event_tag: { some: { tag_id: id, soft_deleted: false } } });
-        } else if (state === "ex") {
-            andClauses.push({ hd_event_tag: { none: { tag_id: id, soft_deleted: false } } });
-        } else {
-            inclusiveTags.push(id);
-        }
-    }
-    if (inclusiveTags.length > 0) {
-        andClauses.push({ hd_event_tag: { some: { tag_id: { in: inclusiveTags }, soft_deleted: false } } });
-    }
+    andClauses.push(...buildAxisClauses(
+        filters.tags,
+        id => ({ hd_event_tag: { some: { tag_id: id, soft_deleted: false } } }),
+        id => ({ hd_event_tag: { none: { tag_id: id, soft_deleted: false } } }),
+        notIncludedIds => ({
+            hd_event_tag: {
+                some: { tag_id: notIncludedIds.length > 0 ? { notIn: notIncludedIds } : undefined, soft_deleted: false }
+            }
+        })
+    ));
 
     // Person filters
-    const inclusivePersons: number[] = [];
-    for (const [idStr, state] of Object.entries(filters.persons)) {
-        const id = Number(idStr);
-        if (state === "re") {
-            andClauses.push({ hd_event_person: { some: { person_id: id, soft_deleted: false } } });
-        } else if (state === "ex") {
-            andClauses.push({ hd_event_person: { none: { person_id: id, soft_deleted: false } } });
-        } else {
-            inclusivePersons.push(id);
-        }
-    }
-    if (inclusivePersons.length > 0) {
-        andClauses.push({ hd_event_person: { some: { person_id: { in: inclusivePersons }, soft_deleted: false } } });
-    }
+    andClauses.push(...buildAxisClauses(
+        filters.persons,
+        id => ({ hd_event_person: { some: { person_id: id, soft_deleted: false } } }),
+        id => ({ hd_event_person: { none: { person_id: id, soft_deleted: false } } }),
+        notIncludedIds => ({
+            hd_event_person: {
+                some: { person_id: notIncludedIds.length > 0 ? { notIn: notIncludedIds } : undefined, soft_deleted: false }
+            }
+        })
+    ));
 
     // Date range — compared via the sort_key generated column (unix seconds)
     if (filters.from !== null) {

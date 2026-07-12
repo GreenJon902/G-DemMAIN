@@ -6,9 +6,8 @@ import { TagChip } from "./TagChip";
 import SmallPerson from "./SmallPerson";
 import { SimpleButton, ButtonColor, BUTTON_GRAY, BUTTON_GREEN, BUTTON_RED, BUTTON_BLUE } from "@/app/ui/Button";
 import TextInput, { VALUE_INPUT_CLASS } from "@/app/ui/TextInput";
+import { FilterState, parseFilterParam, serializeFilterParam } from "../lib/timeline-filter";
 
-// Serialised (URL-persisted) states: required, excluded, inclusive-any-of
-type FilterState = "re" | "ex" | "ig";
 // FilterState plus "in" — the default/untouched state, which is never actually written to the
 // URL (absent from the param map), but is given its own code here for symmetry and clarity
 type DisplayState = "in" | FilterState;
@@ -53,12 +52,6 @@ const DISPLAY_BUTTON_COLOR: Record<DisplayState, ButtonColor> = {
     ig: BUTTON_BLUE
 };
 
-/** Capitalises the first letter of a state's label, e.g. "ignored" -> "Ignored". */
-function capitalizedStateLabel(state: DisplayState): string {
-    const label = STATE_LABEL[state];
-    return label.charAt(0).toUpperCase() + label.slice(1);
-}
-
 const STATE_CLASS: Record<FilterState, string> = {
     re: "bg-green-700",
     ex: "bg-red-700",
@@ -74,28 +67,6 @@ const STATE_BG_COLOR: Record<FilterState, string> = {
 };
 const GRAY_BG_COLOR = "oklch(37.3% 0.034 259.733)";
 const DISPLAY_BG_COLOR: Record<DisplayState, string> = { in: GRAY_BG_COLOR, ...STATE_BG_COLOR };
-
-/** Parses a filter param string (e.g. "1:re,2:ex") into a Map of id→state. */
-function parseFilterParam(param: string | null): Map<number, FilterState> {
-    const map = new Map<number, FilterState>();
-    if (!param) return map;
-    for (const part of param.split(",")) {
-        const [idStr, state] = part.split(":");
-        const id = parseInt(idStr, 10);
-        if (!isNaN(id) && (state === "re" || state === "ex" || state === "ig")) {
-            map.set(id, state);
-        }
-    }
-    return map;
-}
-
-/** Serialises a filter state Map to the "id:state,..." URL param format, or null if empty. */
-function serializeFilterParam(map: Map<number, FilterState>): string | null {
-    if (map.size === 0) return null;
-    return Array.from(map.entries())
-        .map(([id, state]) => `${id}:${state}`)
-        .join(",");
-}
 
 /**
  * Titled card wrapper shared by every filter section: a bold underlined heading over arbitrary
@@ -199,7 +170,7 @@ function FilterGroup<T extends { id: number }>({
                 {DISPLAY_ORDER.map(state => (
                     <SimpleButton
                         key={state}
-                        title={`Set all to ${capitalizedStateLabel(state)}`}
+                        title={`Set all to ${STATE_LABEL[state]}`}
                         callback={() => onSetAll(state, visibleIds)}
                         color={DISPLAY_BUTTON_COLOR[state]}
                         className="px-2 py-0.5 text-sm text-white"
