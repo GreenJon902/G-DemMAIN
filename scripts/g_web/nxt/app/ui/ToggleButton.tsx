@@ -22,7 +22,7 @@ export default function ToggleButton({
             onClick={() => setter(!checked)}
             className={`flex cursor-pointer items-center gap-2 ${className}`}
         >
-            {label && <span>{label}</span>}
+            {label && <span className="flex-1 text-left">{label}</span>}
             <span className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${checked ? "bg-green-600" : "bg-gray-700"}`}>
                 <span className={`absolute top-0.5 left-0.5 size-5 rounded-full bg-white transition-transform ${checked ? "translate-x-5" : ""}`} />
             </span>

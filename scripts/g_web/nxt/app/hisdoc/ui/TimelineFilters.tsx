@@ -157,7 +157,7 @@ function FilterGroup<T extends { id: number }>({
     const visibleIds = visibleItems.map(item => item.id);
 
     const stats = (
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-white">
             {DISPLAY_ORDER.map((state, i) => (
                 <span key={state}>
                     {i > 0 && ", "}
@@ -169,7 +169,7 @@ function FilterGroup<T extends { id: number }>({
 
     return (
         <FilterContainer title={title} collapsible summary={stats}>
-            <div className="flex items-center gap-2 text-sm text-gray-400">
+            <div className="flex items-center gap-2 text-sm text-white">
                 <span>Set all to:</span>
                 {DISPLAY_ORDER.map(state => (
                     <SimpleButton
@@ -317,11 +317,13 @@ function TimelineFiltersInner({
                     checked={showTags}
                     setter={checked => pushParams({ showtags: checked ? null : "0" })}
                     label="Show tags"
+                    className="text-sm"
                 />
                 <ToggleButton
                     checked={showPersons}
                     setter={checked => pushParams({ showpersons: checked ? null : "0" })}
                     label="Show persons"
+                    className="text-sm"
                 />
             </FilterContainer>
 
@@ -349,8 +351,8 @@ function TimelineFiltersInner({
             </FilterContainer>
 
             <FilterContainer title="Date range">
-                <div className="flex flex-col gap-1">
-                    <label className="text-xs text-gray-400">From</label>
+                <div className="flex flex-row flex-wrap gap-1">
+                    <label className="text-sm text-white">From:</label>
                     <input
                         type="date"
                         value={searchParams.get("from") ?? ""}
@@ -358,8 +360,8 @@ function TimelineFiltersInner({
                         className={VALUE_INPUT_CLASS}
                     />
                 </div>
-                <div className="flex flex-col gap-1">
-                    <label className="text-xs text-gray-400">To</label>
+                <div className="flex flex-row flex-wrap gap-1">
+                    <label className="text-sm text-white">To:</label>
                     <input
                         type="date"
                         value={searchParams.get("to") ?? ""}
