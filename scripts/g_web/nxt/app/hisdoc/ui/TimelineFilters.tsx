@@ -125,13 +125,13 @@ function FilterContainer({
                     {title}
                 </h3>
                 {collapsible && (
-                    <button
-                        type="button"
-                        onClick={() => setOpen(o => !o)}
-                        className="cursor-pointer text-sm text-gray-400 underline hover:text-white"
+                    <SimpleButton
+                        callback={() => setOpen(o => !o)}
+                        color={BUTTON_GRAY}
+                        className="px-2 py-0.5 text-sm text-white"
                     >
                         {open ? "Collapse" : "Expand"}
-                    </button>
+                    </SimpleButton>
                 )}
             </div>
             {summary}
@@ -404,16 +404,16 @@ function TimelineFiltersInner({
             )}
 
             {hasFilters && (
-                <button
-                    type="button"
-                    onClick={() => {
+                <SimpleButton
+                    callback={() => {
                         setQueryText("");
                         router.push(pathname);
                     }}
-                    className="text-left text-sm text-gray-400 underline hover:text-white"
+                    color={BUTTON_GRAY}
+                    className="self-start px-2 py-0.5 text-sm text-white"
                 >
                     Clear filters
-                </button>
+                </SimpleButton>
             )}
         </div>
     );
