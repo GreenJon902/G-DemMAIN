@@ -330,7 +330,7 @@ function TimelineFiltersInner({
                 <RadioButtons<SearchMode>
                     className="text-sm"
                     lightBg
-                    choices={["exact", "keywords"]}
+                    choices={["keywords", "exact"]}
                     selected={qMode}
                     setter={mode => pushParams({ qmode: mode === "keywords" ? null : mode })}
                     nameConv={mode => mode === "exact" ? "Exact" : "Keywords"}
@@ -345,18 +345,20 @@ function TimelineFiltersInner({
             </FilterContainer>
 
             <FilterContainer title="Date range">
-                <div className="flex flex-row flex-wrap gap-1">
-                    <label className="text-sm text-white">From:</label>
+                <div className="flex flex-row flex-wrap items-center gap-1">
+                    <label htmlFor="date-from" className="text-sm text-white cursor-pointer">From:</label>
                     <input
+                        id="date-from"
                         type="date"
                         value={searchParams.get("from") ?? ""}
                         onChange={e => pushParams({ from: e.target.value || null })}
                         className={VALUE_INPUT_CLASS}
                     />
                 </div>
-                <div className="flex flex-row flex-wrap gap-1">
-                    <label className="text-sm text-white">To:</label>
+                <div className="flex flex-row flex-wrap items-center gap-1">
+                    <label htmlFor="date-to" className="text-sm text-white cursor-pointer">To:</label>
                     <input
+                        id="date-to"
                         type="date"
                         value={searchParams.get("to") ?? ""}
                         onChange={e => pushParams({ to: e.target.value || null })}
@@ -366,7 +368,7 @@ function TimelineFiltersInner({
                 <RadioButtons<DateRangeMode>
                     className="text-sm"
                     lightBg
-                    choices={["exclusive", "inclusive"]}
+                    choices={["inclusive", "exclusive"]}
                     selected={dateMode}
                     setter={mode => pushParams({ datemode: mode === "inclusive" ? null : mode })}
                     nameConv={mode => mode === "exclusive" ? "Exclusive" : "Inclusive"}
