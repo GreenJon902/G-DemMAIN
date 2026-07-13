@@ -15,7 +15,8 @@ export default function SmallEvent({
     return (
         <li className="flex items-center gap-4">
             <FlexiDateDisplay {...date} />
-            <Link href={"/hisdoc/event/" + id} className="text-indigo-400 hover:text-indigo-300">
+            <span className="text-white text-md">-</span>
+            <Link href={"/hisdoc/event/" + id} className="text-white underline hover:text-gray-300 text-md">
                 {name}
             </Link>
         </li>

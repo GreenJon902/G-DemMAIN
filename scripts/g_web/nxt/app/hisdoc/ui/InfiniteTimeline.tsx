@@ -3,7 +3,8 @@
 import { Suspense, useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { formatFlexiDate, FlexiDateInput } from "../lib/flexidate";
+import { FlexiDateInput } from "../lib/flexidate";
+import { FlexiDateDisplay } from "./FlexiDateDisplay";
 import { TagChip } from "./TagChip";
 import SmallPerson from "./SmallPerson";
 import { getTimelinePage } from "../actions";
@@ -35,10 +36,10 @@ function toFlexiDateInput(e: ApiTimelineEvent): FlexiDateInput {
 function EventCard({ e, showTags, showPersons }: { e: ApiTimelineEvent; showTags: boolean; showPersons: boolean }) {
     return (
         <div className="flex flex-col gap-2 rounded-lg bg-gray-800 p-4">
-            <Link href={"/hisdoc/event/" + e.id} className="font-semibold text-white">
+            <Link href={"/hisdoc/event/" + e.id} className="font-semibold text-white underline">
                 {e.name}
             </Link>
-            <span className="text-sm text-gray-300">{formatFlexiDate(toFlexiDateInput(e))}</span>
+            <FlexiDateDisplay {...toFlexiDateInput(e)} />
             <p className="line-clamp-3 text-sm text-gray-300">{e.description}</p>
             {showTags && e.tags.length > 0 && (
                 <div className="flex flex-row flex-wrap gap-2">
