@@ -21,7 +21,7 @@ export default function PageSection({
                 {icon && <span className="mr-2 inline-flex align-middle">{icon}</span>}
                 <span className="underline decoration-4"> {title} </span>
             </h1>
-            <div className="m-4">
+            <div className="m-4 mr-0">
                 {children}
             </div>
         </div>
