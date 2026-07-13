@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
+import TextLink, { TEXT_LINK_WHITE } from "@/app/ui/TextLink";
 import { FlexiDateInput } from "../lib/flexidate";
 import { FlexiDateDisplay } from "./FlexiDateDisplay";
 import { TagChip } from "./TagChip";
@@ -36,9 +36,9 @@ function toFlexiDateInput(e: ApiTimelineEvent): FlexiDateInput {
 function EventCard({ e, showTags, showPersons }: { e: ApiTimelineEvent; showTags: boolean; showPersons: boolean }) {
     return (
         <div className="flex flex-col gap-2 rounded-lg bg-gray-800 p-4">
-            <Link href={"/hisdoc/event/" + e.id} className="font-semibold text-white underline">
+            <TextLink href={"/hisdoc/event/" + e.id} color={TEXT_LINK_WHITE} solid className="font-semibold">
                 {e.name}
-            </Link>
+            </TextLink>
             <FlexiDateDisplay {...toFlexiDateInput(e)} />
             <p className="line-clamp-3 text-sm text-gray-300">{e.description}</p>
             {showTags && e.tags.length > 0 && (

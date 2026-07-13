@@ -1,7 +1,7 @@
 "use client";
 
 import AbstractErrorPage from "./ui/AbstractErrorPage";
-import TextLink from "./ui/TextLink";
+import TextLink, { TEXT_LINK_WHITE } from "./ui/TextLink";
 import { loginUrl } from "./login/util";
 import { logoutAction } from "./account/actions";
 import { usePathname, useSearchParams } from "next/navigation";
@@ -21,7 +21,7 @@ export default function Forbidden() {
                 You don&apos;t have permission to access this page.
             </span>
             <br />
-            <TextLink href={loginUrl(next)} onNavigate={async (e) => { e.preventDefault(); await logoutAction(next); }}>
+            <TextLink href={loginUrl(next)} color={TEXT_LINK_WHITE} onNavigate={async (e) => { e.preventDefault(); await logoutAction(next); }}>
                 <span>
                     Switch account?
                 </span>

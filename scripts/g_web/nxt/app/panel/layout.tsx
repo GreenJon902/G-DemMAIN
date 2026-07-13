@@ -1,6 +1,7 @@
 import "@/app/globals.css";
 
 import { BUTTON_CYAN, BUTTON_GREEN, BUTTON_INDIGO, BUTTON_RED, BUTTON_YELLOW, LinkButton } from "../ui/Button";
+import AreaIndicator from "../ui/AreaIndicator";
 import Link from "next/link";
 import { requirePermission, NS } from "@/lib/session";
 
@@ -18,7 +19,9 @@ export default async function Layout({
             <header className="flex w-full flex-wrap items-center gap-2 border-t border-t-gray-500 bg-gray-700 p-2">
                 {/* We give the text a very large flex so only it scales, however we still give the buttons flex so that they fill the entire width if they go on the newline */}
                 <div className="flex w-full flex-nowrap items-center gap-3 sm:flex-100">
-                    <Link href="/panel" className="flex-100 text-3xl font-extrabold text-nowrap underline hover:text-gray-400">G-DemMAIN Panel</Link>
+                    <Link href="/panel" className="">
+                        <AreaIndicator className="underline text-3xl font-extrabold text-nowrap">G-DemMAIN Panel</AreaIndicator>
+                    </Link>
                 </div>
                 <div className="flex flex-1 flex-wrap items-center gap-2 sm:flex-nowrap">
                     <LinkButton href="/panel" className="h-min flex-1" color={BUTTON_INDIGO}>Panel Home</LinkButton>  

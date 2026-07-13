@@ -5,6 +5,7 @@ import { hd_person_type } from "@g/com/prisma/enums";
 import PageSection from "../../../ui/PageSection";
 import SplitPage from "../../ui/SplitPage";
 import StatsPill from "../../ui/StatsPill";
+import TextLink, { TEXT_LINK_GRAY } from "../../../ui/TextLink";
 import PersonRenderer from "../../ui/PersonRenderer";
 import SmallEvent from "../../ui/SmallEvent";
 import { BarGraph } from "../../ui/BarGraph";
@@ -125,13 +126,14 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
                     {person.type === hd_person_type.MINECRAFT && (
                         <div className="flex flex-col rounded bg-gray-700 p-2 items-center">
                             <PersonRenderer playerdata={person.data} interactive={true} />
-                            <a
+                            <TextLink
                                 href={`https://namemc.com/profile/${person.data}`}
                                 target="_blank"
-                                className="text-nowrap text-indigo-400 hover:text-indigo-300"
+                                color={TEXT_LINK_GRAY}
+                                className="text-nowrap"
                             >
                                 See on NameMC
-                            </a>
+                            </TextLink>
                         </div>
                     )}
                     <StatsPill>

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import TextLink, { TEXT_LINK_WHITE } from "@/app/ui/TextLink";
 import { FlexiDateDisplay } from "./FlexiDateDisplay";
 import { FlexiDateInput } from "../lib/flexidate";
 
@@ -16,9 +16,9 @@ export default function SmallEvent({
         <li className="flex items-center gap-4">
             <FlexiDateDisplay {...date} />
             <span className="text-white text-md">-</span>
-            <Link href={"/hisdoc/event/" + id} className="text-white underline hover:text-gray-300 text-md">
+            <TextLink href={"/hisdoc/event/" + id} color={TEXT_LINK_WHITE} className="text-md">
                 {name}
-            </Link>
+            </TextLink>
         </li>
     );
 }

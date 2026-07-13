@@ -4,6 +4,7 @@ import { hd_changelog_what } from "@g/com/prisma/client";
 import { NS } from "@/lib/session";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import TextLink, { TEXT_LINK_WHITE } from "@/app/ui/TextLink";
 import { FlexiDateDisplay } from "../../ui/FlexiDateDisplay";
 import { TagChip } from "../../ui/TagChip";
 import { PersonAvatar } from "../../ui/PersonAvatar";
@@ -133,12 +134,12 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                     <ul className="flex flex-col gap-1">
                         {relatedEvents.map(e => (
                             <li key={e.id}>
-                                <Link
+                                <TextLink
                                     href={"/hisdoc/event/" + e.id}
-                                    className="text-indigo-400 hover:text-indigo-300"
+                                    color={TEXT_LINK_WHITE}
                                 >
                                     {e.name}
-                                </Link>
+                                </TextLink>
                             </li>
                         ))}
                     </ul>

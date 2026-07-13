@@ -2,7 +2,7 @@
 
 import AbstractErrorPage from "./ui/AbstractErrorPage";
 import { loginUrl } from "./login/util";
-import TextLink from "./ui/TextLink";
+import TextLink, { TEXT_LINK_WHITE } from "./ui/TextLink";
 import { usePathname, useSearchParams } from "next/navigation";
 
 export default function Unauthorized() {
@@ -17,7 +17,7 @@ export default function Unauthorized() {
             head="/ollieblitzz.png"
         >
             <span>
-                You must be <TextLink href={loginUrl(next)}>logged in</TextLink> to view this page.
+                You must be <TextLink href={loginUrl(next)} color={TEXT_LINK_WHITE}>logged in</TextLink> to view this page.
             </span>
         </AbstractErrorPage>
     );

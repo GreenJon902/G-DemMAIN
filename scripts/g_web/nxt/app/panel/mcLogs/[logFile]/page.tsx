@@ -1,7 +1,7 @@
 import { loadLogContent } from "@/lib/panelUtils";
 import { notFound } from "next/navigation";
 import PageSection from "../../../ui/PageSection";
-import Link from "next/link";
+import TextLink, { TEXT_LINK_GRAY } from "../../../ui/TextLink";
 import { AutoLabelSinceLastRefresh } from "@/app/ui/LabelSinceLastRefresh";
 import LogView from "../../ui/LogView";
 
@@ -18,12 +18,13 @@ export default async function Page({
 
     return (
         <>
-            <Link 
-                href="/panel/mcLogs" 
-                className="mb-2 block text-gray-300 underline decoration-gray-500 decoration-dotted"
+            <TextLink
+                href="/panel/mcLogs"
+                color={TEXT_LINK_GRAY}
+                className="mb-2 block"
             >
                 Return to log list...
-            </Link>
+            </TextLink>
             <PageSection title={logFile}>
                 <LogView 
                     lines={logContents.split("\n")} 

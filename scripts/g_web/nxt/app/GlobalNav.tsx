@@ -3,6 +3,7 @@
 import { UserCircleIcon as UserCircleIconOutline } from "@heroicons/react/24/outline";
 import { UserCircleIcon as UserCircleIconSolid } from "@heroicons/react/24/solid";
 import Link from "next/link";
+import TextLink, { TEXT_LINK_WHITE } from "./ui/TextLink";
 import { useEffect, useState } from "react";
 import { useAuthContext } from "./AuthContext";
 import { SUDO_WINDOW_MS } from "@g/com/lib/authConstants";
@@ -63,18 +64,18 @@ export default function GlobalNav() {
                         alt={"Logo"}
                     />
                 </Link>
-                <Link href="/rules" className="ml-1 border-x border-gray-500 px-1 hover:bg-gray-600">
+                <TextLink href="/rules" color={TEXT_LINK_WHITE} constantColor className="ml-1 border-x border-gray-500 px-1 hover:bg-gray-600">
                     Rules
-                </Link>
-                <Link href="/hisdoc" className="border-r border-gray-500 px-1 hover:bg-gray-600">
+                </TextLink>
+                <TextLink href="/hisdoc" color={TEXT_LINK_WHITE} constantColor className="border-r border-gray-500 px-1 hover:bg-gray-600">
                     HisDoc
-                </Link>
-                <Link href="/map" className="border-r border-gray-500 px-1 hover:bg-gray-600">
+                </TextLink>
+                <TextLink href="/map" color={TEXT_LINK_WHITE} constantColor className="border-r border-gray-500 px-1 hover:bg-gray-600">
                     Dynmap
-                </Link>
-                <Link href="/panel" className="border-r border-gray-500 px-1 hover:bg-gray-600">
+                </TextLink>
+                <TextLink href="/panel" color={TEXT_LINK_WHITE} constantColor className="border-r border-gray-500 px-1 hover:bg-gray-600">
                     Panel
-                </Link>
+                </TextLink>
                 <div className="flex-1">
                     <AccountButton />
                 </div>
