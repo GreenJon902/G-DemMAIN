@@ -26,19 +26,19 @@ export default function LargePerson({
     name: string,
     isLink?: boolean
 }) {
-    const containerClassName = "flex flex-col items-center gap-1 rounded bg-gray-700 px-2 py-1";
+    const containerClassName = "group flex flex-col items-center gap-1 rounded bg-gray-700 px-2 py-1";
     const containerStyle = { height: LARGE_PERSON_HEIGHT };
 
     const contents = (
         <>
             <PersonRenderer playerdata={playerdata} interactive={!isLink} />
-            <span className="text-sm text-white">{name}</span>
+            <span className={`text-sm text-white ${isLink ? "underline decoration-dotted group-hover:decoration-solid" : ""}`}>{name}</span>
         </>
     );
 
     return (
         isLink ?
-            <Link className={containerClassName} style={containerStyle} href={`/hisdoc/person/${id}`}>{contents}</Link> :
+            <Link className={`${containerClassName} hover:brightness-75`} style={containerStyle} href={`/hisdoc/person/${id}`}>{contents}</Link> :
             <div className={containerClassName} style={containerStyle}>{contents}</div>
     );
 }

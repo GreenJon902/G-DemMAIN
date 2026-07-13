@@ -25,12 +25,12 @@ export function TagChip({ id, name, description, bgColor, holeColor, onClick }: 
     holeColor: string;
     onClick?: () => void;
 }) {
-    const className = "group relative inline-flex h-6 flex-row flex-nowrap items-center gap-2 rounded-full pl-1.5 pr-3 text-sm text-white whitespace-nowrap cursor-pointer";
+    const className = "group relative inline-flex h-6 flex-row flex-nowrap items-center gap-2 rounded-full pl-1.5 pr-3 text-sm text-white whitespace-nowrap cursor-pointer hover:brightness-75";
 
     const content = (
         <>
             <div className="size-4 shrink-0 rounded-full" style={{ backgroundColor: holeColor }} />
-            {name}
+            <span className={onClick ? "" : "underline decoration-dotted group-hover:decoration-solid"}>{name}</span>
             {description && (
                 <span className="pointer-events-none absolute top-full right-0 left-0 z-10 mt-1 rounded-md bg-gray-950 px-2 py-1 text-xs text-wrap text-white opacity-0 transition-opacity group-hover:opacity-100">
                     {description}

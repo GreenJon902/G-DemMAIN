@@ -31,10 +31,10 @@ export default function SmallPerson({
     isLink?: boolean,
     bgColor?: string
 }) {
-    const containerClassName = "flex items-center space-x-1 rounded bg-gray-700 px-2 py-1";
-    const containerStyle = { 
-        height: SMALL_PERSON_HEIGHT, 
-        ...(bgColor ? { backgroundColor: bgColor } : {}) 
+    const containerClassName = "group flex items-center space-x-1 rounded bg-gray-700 px-2 py-1";
+    const containerStyle = {
+        height: SMALL_PERSON_HEIGHT,
+        ...(bgColor ? { backgroundColor: bgColor } : {})
     };
 
     const contents = (
@@ -44,13 +44,13 @@ export default function SmallPerson({
                     <PlayerHead name={playerdata} isLink={false} />
                 </div>
             )}
-            <span className="text-sm text-white">{name}</span>
+            <span className={`text-sm text-white ${isLink ? "underline decoration-dotted group-hover:decoration-solid" : ""}`}>{name}</span>
         </>
     );
 
     return (
-        isLink ? 
-            <Link className={containerClassName} style={containerStyle} href={`/hisdoc/person/${id}`}>{contents}</Link> : 
+        isLink ?
+            <Link className={`${containerClassName} hover:brightness-75`} style={containerStyle} href={`/hisdoc/person/${id}`}>{contents}</Link> :
             <div className={containerClassName} style={containerStyle}>{contents}</div>
     );
 }
