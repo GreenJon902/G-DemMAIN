@@ -33,7 +33,7 @@ export default function RadioButtons<T>({
                     .map((({c, cname}) => (
                         <button
                             // Compare cnames as we can't compare objects
-                            className={`flex-1 first:rounded-l-md last:rounded-r-md cursor-pointer p-1 ${(cname === selectedCName) ? selectedClass : unselectedClass}`}
+                            className={`flex-1 cursor-pointer p-1 first:rounded-l-md last:rounded-r-md ${(cname === selectedCName) ? selectedClass : unselectedClass}`}
                             key={cname}
                             title={titleConv?.(c)}
                             onClick={() => setter(c)}

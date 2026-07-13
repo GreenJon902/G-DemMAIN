@@ -36,7 +36,9 @@ export default function RefreshingPageClient<T extends TimeStamped, U>({
     const [data, setData] = useState(initialData);
     // Tracks the effective refresh rate; updated each render so pullData always reads the latest value without being a dep
     const refreshRateRef = useRef<number>(refreshRate);
-    refreshRateRef.current = data.refreshRate ?? refreshRate;
+    useEffect(() => {
+        refreshRateRef.current = data.refreshRate ?? refreshRate;
+    }, [data.refreshRate, refreshRate]);
     useEffect(() => {
         // Use a timeout for this so we don't get behind if the internet is bad
         let timeout: ReturnType<typeof setTimeout>;
