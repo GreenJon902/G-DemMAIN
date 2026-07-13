@@ -13,7 +13,7 @@ import { SMALL_PERSON_HEIGHT } from "./personSizing";
  * @param playerdata - The person's raw `hd_person.data` value (a minecraft uuid for {@link hd_person_type.MINECRAFT}
  *                      persons). Used to look up the playerhead image — not shown as text.
  * @param name - The resolved display name shown as text.
- * @param isLink - Whether the name and playerhead should link out. Defaults to true.
+ * @param isLink - Whether the name should link out. Defaults to true.
  * @param bgColor - CSS color for the pill's background, e.g. "#3366ff". Defaults to gray-700.
  */
 export default function SmallPerson({
@@ -31,19 +31,26 @@ export default function SmallPerson({
     isLink?: boolean,
     bgColor?: string
 }) {
-    const nameEl = <span className="text-sm text-white">{name}</span>;
+    const containerClassName = "flex items-center space-x-1 rounded bg-gray-700 px-2 py-1";
+    const containerStyle = { 
+        height: SMALL_PERSON_HEIGHT, 
+        ...(bgColor ? { backgroundColor: bgColor } : {}) 
+    };
 
-    return (
-        <div
-            className="flex items-center space-x-1 rounded bg-gray-700 px-2 py-1"
-            style={{ height: SMALL_PERSON_HEIGHT, ...(bgColor ? { backgroundColor: bgColor } : {}) }}
-        >
+    const contents = (
+        <>
             {type === hd_person_type.MINECRAFT && (
                 <div className="relative size-6 shrink-0 overflow-hidden rounded-md">
-                    <PlayerHead name={playerdata} isLink={isLink} />
+                    <PlayerHead name={playerdata} isLink={false} />
                 </div>
             )}
-            {isLink ? <Link href={`/hisdoc/person/${id}`}>{nameEl}</Link> : nameEl}
-        </div>
+            <span className="text-sm text-white">{name}</span>
+        </>
+    );
+
+    return (
+        isLink ? 
+            <Link className={containerClassName} style={containerStyle} href={`/hisdoc/person/${id}`}>{contents}</Link> : 
+            <div className={containerClassName} style={containerStyle}>{contents}</div>
     );
 }

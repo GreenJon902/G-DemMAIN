@@ -19,7 +19,7 @@ const SUPERSAMPLE = 2;
  * @param id - The person's hisdoc id, used to build the `/hisdoc/person/[id]` link.
  * @param playerdata - The person's raw `hd_person.data` value (a minecraft uuid), used to look up the skin texture.
  * @param name - The resolved display name shown underneath the model.
- * @param isLink - Whether the name should link out to the person's hisdoc page. Defaults to true.
+ * @param isLink - Whether the whole tile should link out to the person's hisdoc page. Defaults to true.
  */
 export default function LargePerson({
     id,
@@ -54,14 +54,21 @@ export default function LargePerson({
         return () => viewer.dispose();
     }, [playerdata, isLink]);
 
-    const nameEl = <span className="text-sm text-white">{name}</span>;
+    const containerClassName = "flex flex-col items-center gap-1 rounded bg-gray-700 px-2 py-1";
+    const containerStyle = { height: LARGE_PERSON_HEIGHT };
 
-    return (
-        <div className="flex flex-col items-center gap-1 rounded bg-gray-700 px-2 py-1" style={{ height: LARGE_PERSON_HEIGHT }}>
+    const contents = (
+        <>
             {/* Width/height set directly (rather than left to skin3d's own effect) so the canvas
                 is already the right size on first paint, before skin3d attaches to it */}
             <canvas ref={canvasRef} width={SKIN_WIDTH} height={SKIN_HEIGHT} style={{ width: SKIN_WIDTH, height: SKIN_HEIGHT }} />
-            {isLink ? <Link href={`/hisdoc/person/${id}`}>{nameEl}</Link> : nameEl}
-        </div>
+            <span className="text-sm text-white">{name}</span>
+        </>
+    );
+
+    return (
+        isLink ?
+            <Link className={containerClassName} style={containerStyle} href={`/hisdoc/person/${id}`}>{contents}</Link> :
+            <div className={containerClassName} style={containerStyle}>{contents}</div>
     );
 }
