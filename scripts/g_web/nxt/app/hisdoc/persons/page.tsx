@@ -2,6 +2,7 @@ import "server-only";
 import prisma from "@g/com/lib/prisma/client";
 import Link from "next/link";
 import { getMinecraftUsername } from "../lib/minecraft";
+import PageSection from "../../ui/PageSection";
 
 /** Lists all persons ordered by their data field, with display names resolved in parallel. */
 export default async function PersonsPage() {
@@ -15,8 +16,7 @@ export default async function PersonsPage() {
     );
 
     return (
-        <>
-            <h1 className="mb-4 text-2xl font-bold text-white">Persons</h1>
+        <PageSection title="Persons">
             <ul className="space-y-2">
                 {persons.map((person, i) => (
                     <li key={person.id}>
@@ -32,6 +32,6 @@ export default async function PersonsPage() {
                     </li>
                 ))}
             </ul>
-        </>
+        </PageSection>
     );
 }

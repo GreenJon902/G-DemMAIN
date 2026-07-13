@@ -1,5 +1,5 @@
 import { listLogs } from "@/lib/panelUtils";
-import PanelPageSection from "../ui/PanelPageSection";
+import PageSection from "../../ui/PageSection";
 import { AutoLabelSinceLastRefresh } from "../../ui/LabelSinceLastRefresh";
 import TextLink from "@/app/ui/TextLink";
 
@@ -8,7 +8,7 @@ export default async function Page() {
 
     return (
         <>
-            <PanelPageSection title="Minecraft Logs">
+            <PageSection title="Minecraft Logs">
                 {
                     logNames.sort().reverse().map(name => (  // Latest.log should always be first after this
                         <TextLink 
@@ -22,7 +22,7 @@ export default async function Page() {
                         </TextLink>
                     ))
                 }
-            </PanelPageSection>
+            </PageSection>
             <AutoLabelSinceLastRefresh />
         </>
     );

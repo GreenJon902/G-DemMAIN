@@ -1,7 +1,7 @@
 "use client";
 
 import { ActionButton, BUTTON_GREEN, BUTTON_RED, BUTTON_YELLOW } from "./../ui/Button";
-import PanelPageSection from "./ui/PanelPageSection";
+import PageSection from "../ui/PageSection";
 import { loadPanelDataAction, Unit, unitAction } from "./actions";
 import { CpuRamGraph } from "./ui/Graphs";
 import { UnitStatus } from "@/lib/panelUtils";
@@ -16,7 +16,7 @@ export default function PanelPageContent(
     return (
         <>
             { /* Resource monitors -------------------------------------------------- */ }
-            <PanelPageSection title="Important Graphs">
+            <PageSection title="Important Graphs">
                 <div className="flex w-full flex-wrap gap-4">
                     <CpuRamGraph
                         data={gd.map(d => ({ time: d.time, cpu: d.sys_cpu?.agg, mem: d.sys_mem?.used }))}
@@ -26,9 +26,9 @@ export default function PanelPageContent(
                     />
                     { /*  TODO: MC TPS and heap mem usage*/ }
                 </div>
-            </PanelPageSection>
+            </PageSection>
             { /* Service status -------------------------------------------------- */ }
-            <PanelPageSection title="Units">
+            <PageSection title="Units">
                 <table className="w-full overflow-hidden rounded-md"><tbody>
                     {
                         data.unitsStatuses.map(({ unit, status }) => (
@@ -49,7 +49,7 @@ export default function PanelPageContent(
                         ))
                     }
                 </tbody></table>
-            </PanelPageSection>
+            </PageSection>
         </>
     );
 

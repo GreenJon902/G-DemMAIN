@@ -1,7 +1,7 @@
 import "server-only";
 import { C } from "@g/com/lib/environ";
 import Console from "./Console";
-import PanelPageSection from "../ui/PanelPageSection";
+import PageSection from "../../ui/PageSection";
 import RefreshingPage from "../../ui/RefreshingPage";
 import LogDisplay from "./LogDisplay";
 import { tailLatestAction } from "../actions";
@@ -11,16 +11,16 @@ import { tailLatestAction } from "../actions";
 export default function Page() {
     return (
         <>
-            <PanelPageSection title="Console">
+            <PageSection title="Console">
                 <Console mccwss_port={C().MCCWSS_PORT} />
-            </PanelPageSection>
-            <PanelPageSection title="Log">
+            </PageSection>
+            <PageSection title="Log">
                 <RefreshingPage
                     Component={LogDisplay}
                     refreshRate={3000}
                     loadNewDataAction={tailLatestAction}
                 />
-            </PanelPageSection>
+            </PageSection>
         </>
     );
 }

@@ -1,5 +1,5 @@
 "use client";
-import PanelPageSection from "../ui/PanelPageSection";
+import PageSection from "../../ui/PageSection";
 import { CpuRamGraph, MultiCPUGraph, TransferGraph } from "../ui/Graphs";
 import { loadGraphDataAction } from "./actions";
 import RadioButtons from "@/app/ui/RadioButtons";
@@ -41,7 +41,7 @@ export default function GraphPageContent({
             </div>
             
             {/* Actual graphs: */}
-            <PanelPageSection title="System">
+            <PageSection title="System">
                 <div className="flex w-full flex-col gap-4">
                     <div className="grid w-full gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4">  
                         <CpuRamGraph
@@ -109,12 +109,12 @@ export default function GraphPageContent({
                         </tbody>
                     </table>
                 </div>
-            </PanelPageSection>
+            </PageSection>
             { /*  TODO: MC TPS, and java heap memory usage */ }
-            <PanelPageSection title="CGroups">
+            <PageSection title="CGroups">
                 {
                     Array.from(gd[0]?.cgroups.keys().map(cgname => (
-                        <PanelPageSection pretitle={"• "} title={`${cgname}`} key={cgname}>
+                        <PageSection pretitle={"• "} title={`${cgname}`} key={cgname}>
                             <div className="flex flex-col gap-4">
                                 <div className="grid w-full gap-4 sm:grid-cols-1 md:grid-cols-2">  
                                     <CpuRamGraph
@@ -158,10 +158,10 @@ export default function GraphPageContent({
                                         <span className="italic">Data for processes is unavailable!</span>
                                 }
                             </div>
-                        </PanelPageSection>
+                        </PageSection>
                     )) ?? [])
                 }
-            </PanelPageSection>
+            </PageSection>
         </>
     );
 }

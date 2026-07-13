@@ -1,6 +1,6 @@
 import { loadLogContent } from "@/lib/panelUtils";
 import { notFound } from "next/navigation";
-import PanelPageSection from "../../ui/PanelPageSection";
+import PageSection from "../../../ui/PageSection";
 import Link from "next/link";
 import { AutoLabelSinceLastRefresh } from "@/app/ui/LabelSinceLastRefresh";
 import LogView from "../../ui/LogView";
@@ -24,12 +24,12 @@ export default async function Page({
             >
                 Return to log list...
             </Link>
-            <PanelPageSection title={logFile}>
+            <PageSection title={logFile}>
                 <LogView 
                     lines={logContents.split("\n")} 
                     className="min-w-150"
                 />
-            </PanelPageSection>
+            </PageSection>
             <AutoLabelSinceLastRefresh />
         </>
     );

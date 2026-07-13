@@ -3,7 +3,7 @@
  */
 
 import ItemRow from "./ItemRow";
-import PanelPageSection from "../ui/PanelPageSection";
+import PageSection from "../../ui/PageSection";
 import { BANNEDIP_LIST, BANNEDPLAYER_LIST, loadListItems, OPERATOR_LIST, List as PUList, WHITELIST_LIST } from "@/lib/panelUtils";
 import { AutoLabelSinceLastRefresh } from "../../ui/LabelSinceLastRefresh";
 
@@ -27,7 +27,7 @@ export default function Page() {
         <>
             {
                 LISTS.map(async (list, i) => (
-                    <PanelPageSection title={list.rendername} key={i} >
+                    <PageSection title={list.rendername} key={i} >
                         <div className="space-y-1">
                             <div> 
                                 {(await loadListItems(list.list))?.map(item => (
@@ -35,7 +35,7 @@ export default function Page() {
                                 )) ?? <span className="italic">Data missing!</span>}
                             </div>
                         </div>
-                    </PanelPageSection>
+                    </PageSection>
                 ))
             }
             <AutoLabelSinceLastRefresh />
