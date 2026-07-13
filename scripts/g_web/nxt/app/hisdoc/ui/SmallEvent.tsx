@@ -18,7 +18,7 @@ export default function SmallEvent({
 }: FlexiDateInput & { id: number, name: string }) {
     // TODO: The spacing+wrapping gets a bit messed up on iOS here
     return (
-        <li className="flex flex-wrap items-center gap-x-4 leading-none mb-1">
+        <li className="mb-1 flex flex-wrap items-center gap-x-4 leading-none">
             <div className="flex flex-nowrap items-center gap-4">
                 <FlexiDateDisplay {...date} />
                 <span className="text-gray-400">-</span>
