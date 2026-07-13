@@ -1,17 +1,29 @@
 import "server-only";
 import prisma from "@g/com/lib/prisma/client";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { PersonAvatar } from "../../ui/PersonAvatar";
-import { FlexiDateDisplay } from "../../ui/FlexiDateDisplay";
+import { hd_person_type } from "@g/com/prisma/enums";
+import PageSection from "../../../ui/PageSection";
+import PersonRenderer from "../../ui/PersonRenderer";
+import SmallEvent from "../../ui/SmallEvent";
 import { BarGraph } from "../../ui/BarGraph";
 import { getMinecraftUsername } from "../../lib/minecraft";
 
+const EVENT_SELECT = {
+    id: true,
+    name: true,
+    event_date_type: true,
+    event_date1: true,
+    event_date_time_offset: true,
+    event_date_units: true,
+    event_date_diff: true,
+    event_date2: true
+} as const;
 
 /**
  * Profile page for a single HisDoc person (Minecraft player or NPC). Shows the person's
- * avatar, display name, type badge, linked account if present, the timeline of events they
- * were involved in, and a bar chart of tag frequency across those events.
+ * skin render (Minecraft only), display name, PID, the events they were involved in, the
+ * events they posted (if their hisdoc account is linked to a user), and a bar chart of tag
+ * frequency across those events.
  *
  * @param params - Next.js 15 route params Promise; contains `id` as a decimal string.
  */
@@ -28,14 +40,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
                 include: {
                     hd_event: {
                         select: {
-                            id: true,
-                            name: true,
-                            event_date_type: true,
-                            event_date1: true,
-                            event_date_time_offset: true,
-                            event_date_units: true,
-                            event_date_diff: true,
-                            event_date2: true,
+                            ...EVENT_SELECT,
                             hd_event_tag: {
                                 where: { soft_deleted: false },
                                 select: {
@@ -47,13 +52,22 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
                 },
                 orderBy: { hd_event: { sort_key: "desc" } }
             },
-            user: { select: { username: true } }
+            user: {
+                select: {
+                    username: true,
+                    hd_event: {
+                        where: { soft_deleted: false },
+                        select: EVENT_SELECT,
+                        orderBy: { sort_key: "desc" }
+                    }
+                }
+            }
         }
     });
 
     if (!person) notFound();
 
-    const displayName = person.type === "MINECRAFT"
+    const displayName = person.type === hd_person_type.MINECRAFT
         ? await getMinecraftUsername(person.data)
         : person.data;
 
@@ -78,48 +92,64 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
         color: "#" + (color >>> 0).toString(16).padStart(6, "0")
     }));
 
+    const recentEvents = person.hd_event_person.map(({ hd_event }) => hd_event).slice(0, 10);
+    const posts = person.user?.hd_event ?? [];
+    const recentPosts = posts.slice(0, 10);
+
     return (
-        <main className="mx-auto flex max-w-3xl flex-col gap-8 p-6">
-            <div className="flex flex-col gap-3">
-                <div className="flex items-start gap-4">
-                    <PersonAvatar />
-                    <div className="flex flex-col gap-1">
-                        <h1 className="text-3xl font-bold text-white">{displayName}</h1>
-                        <span className="self-start rounded bg-gray-700 px-2 py-0.5 text-xs text-gray-300">
-                            {person.type}
-                        </span>
+        <>
+            <PageSection title={displayName}>
+                <div className="flex flex-col-reverse gap-8 lg:flex-row">
+                    <div className="flex flex-1 flex-col">
+                        <PageSection pretitle={"• "} title="Recent Events">
+                            {recentEvents.length > 0 ? (
+                                <ul>
+                                    {recentEvents.map(event => <SmallEvent key={event.id} {...event} />)}
+                                </ul>
+                            ) : (
+                                <p className="text-gray-400">No events</p>
+                            )}
+                        </PageSection>
+
+                        {person.user && (
+                            <PageSection pretitle={"• "} title="Recent Posts">
+                                {recentPosts.length > 0 ? (
+                                    <ul>
+                                        {recentPosts.map(event => <SmallEvent key={event.id} {...event} />)}
+                                    </ul>
+                                ) : (
+                                    <p className="text-gray-400">No posts</p>
+                                )}
+                            </PageSection>
+                        )}
+
+                        <PageSection pretitle={"• "} title="Tag Distribution">
+                            <BarGraph bars={bars} graphClassName="h-48" />
+                        </PageSection>
+                    </div>
+
+                    <div className="flex h-fit w-fit shrink-0 flex-row gap-2 lg:w-fit lg:flex-col">
+                        {person.type === hd_person_type.MINECRAFT && (
+                            <div className="flex flex-col rounded bg-gray-700 p-2 items-center">
+                                <PersonRenderer playerdata={person.data} interactive={true} />
+                                <a
+                                    href={`https://namemc.com/profile/${person.data}`}
+                                    target="_blank"
+                                    className="text-nowrap text-indigo-400 hover:text-indigo-300"
+                                >
+                                    See on NameMC
+                                </a>
+                            </div>
+                        )}
+                        <div className="flex w-full flex-col text-nowrap rounded bg-gray-700 p-2 text-sm text-gray-400">
+                            <span>PID: {person.id}</span>
+                            {person.type === hd_person_type.MINECRAFT && <span>UUID: {person.data}</span>}
+                            <span>Event Count: {person.hd_event_person.length}</span>
+                            {person.user && <span>Post Count: {posts.length}</span>}
+                        </div>
                     </div>
                 </div>
-                {person.user && (
-                    <p className="text-gray-400">Linked account: {person.user.username}</p>
-                )}
-            </div>
-
-            <section className="flex flex-col gap-3">
-                <h2 className="text-xl font-semibold text-white">Events</h2>
-                {person.hd_event_person.length > 0 ? (
-                    <ul className="space-y-2">
-                        {person.hd_event_person.map(({ hd_event }) => (
-                            <li key={hd_event.id} className="flex items-center gap-4">
-                                <FlexiDateDisplay {...hd_event} />
-                                <Link
-                                    href={"/hisdoc/event/" + hd_event.id}
-                                    className="text-indigo-400 hover:text-indigo-300"
-                                >
-                                    {hd_event.name}
-                                </Link>
-                            </li>
-                        ))}
-                    </ul>
-                ) : (
-                    <p className="text-gray-400">No events</p>
-                )}
-            </section>
-
-            <section className="flex flex-col gap-3">
-                <h2 className="text-xl font-semibold text-white">Tag Distribution</h2>
-                <BarGraph bars={bars} graphClassName="h-48" />
-            </section>
-        </main>
+            </PageSection>
+        </>
     );
 }

@@ -1,14 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef } from "react";
-import { Render, IdleAnimation } from "skin3d";
-import { LARGE_PERSON_HEIGHT, SKIN_WIDTH, SKIN_HEIGHT } from "./personSizing";
-
-// skin3d doesn't expose WebGL's native antialias flag, so render at a multiple of the device's
-// actual pixel ratio and let the browser downscale it back to the canvas's CSS size — cheap
-// supersampling that smooths the model's edges
-const SUPERSAMPLE = 2;
+import PersonRenderer from "./PersonRenderer";
+import { LARGE_PERSON_HEIGHT } from "./personSizing";
 
 /**
  * A large rendering of a hisdoc person: an interactive 3D minecraft skin viewer with their name
@@ -32,36 +26,12 @@ export default function LargePerson({
     name: string,
     isLink?: boolean
 }) {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-
-    useEffect(() => {
-        if (!canvasRef.current) return;
-
-        const viewer = new Render({
-            canvas: canvasRef.current,
-            width: SKIN_WIDTH,
-            height: SKIN_HEIGHT,
-            pixelRatio: window.devicePixelRatio * SUPERSAMPLE,
-            skin: `https://api.mcheads.org/skin/${playerdata}`
-        });
-        viewer.autoRotate = true;
-        viewer.autoRotateSpeed = 0.25;
-        viewer.controls.enableRotate = !isLink;
-        viewer.controls.enableZoom = false;
-        viewer.controls.enablePan = false;
-        viewer.animation = new IdleAnimation();
-
-        return () => viewer.dispose();
-    }, [playerdata, isLink]);
-
     const containerClassName = "flex flex-col items-center gap-1 rounded bg-gray-700 px-2 py-1";
     const containerStyle = { height: LARGE_PERSON_HEIGHT };
 
     const contents = (
         <>
-            {/* Width/height set directly (rather than left to skin3d's own effect) so the canvas
-                is already the right size on first paint, before skin3d attaches to it */}
-            <canvas ref={canvasRef} width={SKIN_WIDTH} height={SKIN_HEIGHT} style={{ width: SKIN_WIDTH, height: SKIN_HEIGHT }} />
+            <PersonRenderer playerdata={playerdata} interactive={!isLink} />
             <span className="text-sm text-white">{name}</span>
         </>
     );

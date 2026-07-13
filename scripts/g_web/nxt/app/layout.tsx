@@ -4,8 +4,16 @@ import { AuthContextProvider } from "./AuthContext";
 import { ConfirmContextProvider } from "./ConfirmContext";
 import { ErrorContextProvider } from "./ErrorContext";
 import { NS } from "@/lib/session";
+import type { Viewport } from "next";
 
 export const dynamic = "force-dynamic";  // TODO: Find a better fix this
+
+// Without this, iOS Safari lays the page out at a fixed ~980px width and never matches
+// Tailwind's mobile breakpoints, so responsive (e.g. md:) classes never trigger there
+export const viewport: Viewport = {
+    width: "device-width",
+    initialScale: 1
+};
 
 export default async function Layout({
     children
