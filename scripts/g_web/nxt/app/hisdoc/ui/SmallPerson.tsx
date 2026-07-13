@@ -1,6 +1,7 @@
 import Link from "next/link";
 import PlayerHead from "@/app/ui/PlayerHead";
 import { hd_person_type } from "@g/com/prisma/enums";
+import { SMALL_PERSON_HEIGHT } from "./personSizing";
 
 /**
  * A small inline rendering of a hisdoc person: a playerhead (only for {@link hd_person_type.MINECRAFT}
@@ -13,24 +14,30 @@ import { hd_person_type } from "@g/com/prisma/enums";
  *                      persons). Used to look up the playerhead image — not shown as text.
  * @param name - The resolved display name shown as text.
  * @param isLink - Whether the name and playerhead should link out. Defaults to true.
+ * @param bgColor - CSS color for the pill's background, e.g. "#3366ff". Defaults to gray-700.
  */
 export default function SmallPerson({
     id,
     type,
     playerdata,
     name,
-    isLink = true
+    isLink = true,
+    bgColor
 }: {
     id: number,
     type: hd_person_type,
     playerdata: string,
     name: string,
-    isLink?: boolean
+    isLink?: boolean,
+    bgColor?: string
 }) {
     const nameEl = <span className="text-sm text-white">{name}</span>;
 
     return (
-        <div className="flex items-center space-x-1">
+        <div
+            className="flex items-center space-x-1 rounded bg-gray-700 px-2 py-1"
+            style={{ height: SMALL_PERSON_HEIGHT, ...(bgColor ? { backgroundColor: bgColor } : {}) }}
+        >
             {type === hd_person_type.MINECRAFT && (
                 <div className="relative size-6 shrink-0 overflow-hidden rounded-md">
                     <PlayerHead name={playerdata} isLink={isLink} />

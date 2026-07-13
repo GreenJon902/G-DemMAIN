@@ -54,14 +54,8 @@ const DISPLAY_BUTTON_COLOR: Record<DisplayState, ButtonColor> = {
     ig: BUTTON_BLUE
 };
 
-const STATE_CLASS: Record<FilterState, string> = {
-    re: "bg-green-700",
-    ex: "bg-red-700",
-    ig: "bg-blue-700"
-};
-
-// Same colours as STATE_CLASS (green-700/red-700/blue-700) and bg-gray-700, but as CSS strings
-// for style props that can't use Tailwind classes (TagChip's bgColor, the inline legend text)
+// Same colours as bg-green-700/red-700/blue-700/gray-700, but as CSS strings for style props
+// that can't use Tailwind classes (TagChip's bgColor, SmallPerson's bgColor, the inline legend text)
 const STATE_BG_COLOR: Record<FilterState, string> = {
     re: "oklch(52.7% 0.154 150.069)",
     ex: "oklch(50.5% 0.213 27.518)",
@@ -414,16 +408,15 @@ function TimelineFiltersInner({
                     onCycle={cyclePerson}
                     onSetAll={setAllPersons}
                     renderItem={(person, state, onClick) => (
-                        <button
-                            type="button"
-                            onClick={onClick}
-                            className={
-                                state === "in"
-                                    ? "cursor-pointer rounded bg-gray-700 px-3 py-1 text-sm"
-                                    : `cursor-pointer rounded px-3 py-1 text-sm ${STATE_CLASS[state]}`
-                            }
-                        >
-                            <SmallPerson id={person.id} type={person.type} playerdata={person.data} name={person.name} isLink={false} />
+                        <button type="button" onClick={onClick} className="cursor-pointer">
+                            <SmallPerson
+                                id={person.id}
+                                type={person.type}
+                                playerdata={person.data}
+                                name={person.name}
+                                isLink={false}
+                                bgColor={state === "in" ? undefined : STATE_BG_COLOR[state]}
+                            />
                         </button>
                     )}
                 />

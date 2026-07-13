@@ -61,9 +61,7 @@ function EventCard({ e, showTags, showPersons }: { e: ApiTimelineEvent; showTags
             {showPersons && e.persons.length > 0 && (
                 <div className="flex flex-row flex-wrap gap-2">
                     {e.persons.map(person => (
-                        <div key={person.id} className="rounded bg-gray-700 px-2 py-1">
-                            <SmallPerson id={person.id} type={person.type} playerdata={person.data} name={person.name} />
-                        </div>
+                        <SmallPerson key={person.id} id={person.id} type={person.type} playerdata={person.data} name={person.name} />
                     ))}
                 </div>
             )}
