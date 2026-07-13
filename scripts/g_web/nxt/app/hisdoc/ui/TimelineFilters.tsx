@@ -4,7 +4,7 @@ import { cloneElement, ReactElement, ReactNode, Suspense, useState, useEffect, u
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { TagChip } from "./TagChip";
 import SmallPerson from "./SmallPerson";
-import { SimpleButton, ButtonColor, BUTTON_GRAY, BUTTON_LIGHTER_GRAY, BUTTON_GREEN, BUTTON_RED, BUTTON_BLUE } from "@/app/ui/Button";
+import { SimpleButton, ButtonColor, BUTTON_GRAY, BUTTON_GREEN, BUTTON_RED, BUTTON_BLUE } from "@/app/ui/Button";
 import TextInput, { VALUE_INPUT_CLASS } from "@/app/ui/TextInput";
 import RadioButtons from "@/app/ui/RadioButtons";
 import ToggleButton from "@/app/ui/ToggleButton";
