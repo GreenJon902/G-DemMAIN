@@ -52,8 +52,8 @@ function EventCard({ e, showTags, showPersons }: { e: ApiTimelineEvent; showTags
                                 id={tag.id}
                                 name={tag.name}
                                 description={tag.description}
-                                bgColor={hexColor}
-                                holeColor="#1f2937"
+                                bgColorCSS={hexColor}
+                                holeColor="bg-gray-800"
                             />
                         );
                     })}

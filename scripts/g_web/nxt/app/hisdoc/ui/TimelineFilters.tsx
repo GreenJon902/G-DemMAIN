@@ -48,21 +48,19 @@ const STATE_SHORT_LABEL: Record<DisplayState, string> = {
 // SimpleButton colors for the "Set all to" buttons, matching the semantic hues used elsewhere
 // (green = required, red = excluded, blue = ignored, gray = included/default)
 const DISPLAY_BUTTON_COLOR: Record<DisplayState, ButtonColor> = {
-    in: BUTTON_LIGHTER_GRAY,
+    in: BUTTON_GRAY,
     re: BUTTON_GREEN,
     ex: BUTTON_RED,
     ig: BUTTON_BLUE
 };
 
-// Same colours as bg-green-700/red-700/blue-700/gray-700, but as CSS strings for style props
-// that can't use Tailwind classes (TagChip's bgColor, SmallPerson's bgColor, the inline legend text)
-const STATE_BG_COLOR: Record<FilterState, string> = {
-    re: "oklch(52.7% 0.154 150.069)",
-    ex: "oklch(50.5% 0.213 27.518)",
-    ig: "oklch(48.8% 0.243 264.376)"
+// Text-color equivalents of DISPLAY_BUTTON_COLOR's `normal` classes, for the inline legend text.
+const DISPLAY_TEXT_COLOR: Record<DisplayState, string> = {
+    in: "text-gray-500",
+    re: "text-green-600",
+    ex: "text-red-600",
+    ig: "text-blue-600"
 };
-const GRAY_BG_COLOR = "oklch(37.3% 0.034 259.733)";
-const DISPLAY_BG_COLOR: Record<DisplayState, string> = { in: GRAY_BG_COLOR, ...STATE_BG_COLOR };
 
 const SEARCH_BOX_DEBOUNCE = 300;
 
@@ -96,7 +94,7 @@ function FilterContainer({
                 {collapsible && (
                     <SimpleButton
                         callback={() => setOpen(o => !o)}
-                        color={BUTTON_LIGHTER_GRAY}
+                        color={BUTTON_GRAY}
                         className="px-2 py-0.5 text-sm text-white"
                     >
                         {open ? "Collapse" : "Expand"}
@@ -155,7 +153,7 @@ function FilterGroup<T extends { id: number }>({
             {DISPLAY_ORDER.map((state, i) => (
                 <span key={state}>
                     {i > 0 && ", "}
-                    <span style={{ color: DISPLAY_BG_COLOR[state] }}>{globalCounts[state]} {STATE_LABEL[state]}</span>
+                    <span className={DISPLAY_TEXT_COLOR[state]}>{globalCounts[state]} {STATE_LABEL[state]}</span>
                 </span>
             ))}.
         </p>
@@ -346,7 +344,7 @@ function TimelineFiltersInner({
 
             <FilterContainer title="Date range">
                 <div className="flex flex-row flex-wrap items-center gap-1">
-                    <label htmlFor="date-from" className="text-sm text-white cursor-pointer">From:</label>
+                    <label htmlFor="date-from" className="cursor-pointer text-sm text-white">From:</label>
                     <input
                         id="date-from"
                         type="date"
@@ -356,7 +354,7 @@ function TimelineFiltersInner({
                     />
                 </div>
                 <div className="flex flex-row flex-wrap items-center gap-1">
-                    <label htmlFor="date-to" className="text-sm text-white cursor-pointer">To:</label>
+                    <label htmlFor="date-to" className="cursor-pointer text-sm text-white">To:</label>
                     <input
                         id="date-to"
                         type="date"
@@ -392,8 +390,8 @@ function TimelineFiltersInner({
                                 id={tag.id}
                                 name={tag.name}
                                 description={tag.description}
-                                bgColor={state === "in" ? GRAY_BG_COLOR : STATE_BG_COLOR[state]}
-                                holeColor={hexColor}
+                                bgColor={DISPLAY_BUTTON_COLOR[state].normal}
+                                holeColorCSS={hexColor}
                                 onClick={onClick}
                             />
                         );
@@ -417,7 +415,7 @@ function TimelineFiltersInner({
                                 playerdata={person.data}
                                 name={person.name}
                                 isLink={false}
-                                bgColor={state === "in" ? undefined : STATE_BG_COLOR[state]}
+                                bgColor={DISPLAY_BUTTON_COLOR[state].normal}
                             />
                         </button>
                     )}

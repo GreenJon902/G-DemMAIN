@@ -20,8 +20,7 @@ export const BUTTON_YELLOW: ButtonColor = ButtonColor("bg-yellow-600", "focus-vi
 export const BUTTON_RED:    ButtonColor = ButtonColor("bg-red-600",    "focus-visible:bg-red-800",    "hover:bg-red-800");
 export const BUTTON_CYAN:    ButtonColor = ButtonColor("bg-cyan-600",    "focus-visible:bg-cyan-800",    "hover:bg-cyan-800");
 export const BUTTON_INDIGO:    ButtonColor = ButtonColor("bg-indigo-600",    "focus-visible:bg-indigo-800",    "hover:bg-indigo-800");
-export const BUTTON_GRAY:    ButtonColor = ButtonColor("bg-gray-600",    "focus-visible:bg-gray-800",    "hover:bg-gray-800");
-export const BUTTON_LIGHTER_GRAY:    ButtonColor = ButtonColor("bg-gray-500",    "focus-visible:bg-gray-700",    "hover:bg-gray-700");
+export const BUTTON_GRAY:    ButtonColor = ButtonColor("bg-gray-600",    "focus-visible:bg-gray-700",    "hover:bg-gray-700");
 export const BUTTON_BLUE:    ButtonColor = ButtonColor("bg-blue-600",    "focus-visible:bg-blue-800",    "hover:bg-blue-800");
 
 /**

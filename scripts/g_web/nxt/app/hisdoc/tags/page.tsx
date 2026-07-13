@@ -19,8 +19,8 @@ export default async function TagsPage() {
                             id={tag.id}
                             name={tag.name}
                             description={tag.description}
-                            bgColor={hexColor}
-                            holeColor="#111827"
+                            bgColorCSS={hexColor}
+                            holeColor="bg-gray-900"
                         />
                     );
                 })}

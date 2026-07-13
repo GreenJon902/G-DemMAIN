@@ -14,7 +14,10 @@ import { SMALL_PERSON_HEIGHT } from "./personSizing";
  *                      persons). Used to look up the playerhead image — not shown as text.
  * @param name - The resolved display name shown as text.
  * @param isLink - Whether the name should link out. Defaults to true.
- * @param bgColor - CSS color for the pill's background, e.g. "#3366ff". Defaults to gray-700.
+ * @param bgColor - Tailwind background class for the pill, e.g. "bg-green-600". At most one of
+ *                  `bgColor`/`bgColorCSS` may be given; if neither is given, defaults to gray-700.
+ * @param bgColorCSS - CSS color for the pill's background, e.g. "#3366ff". Use this for colors
+ *                      that come from the database rather than a fixed Tailwind palette.
  */
 export default function SmallPerson({
     id,
@@ -22,19 +25,25 @@ export default function SmallPerson({
     playerdata,
     name,
     isLink = true,
-    bgColor
+    bgColor,
+    bgColorCSS
 }: {
     id: number,
     type: hd_person_type,
     playerdata: string,
     name: string,
     isLink?: boolean,
-    bgColor?: string
+    bgColor?: string,
+    bgColorCSS?: string
 }) {
-    const containerClassName = "group flex items-center space-x-1 rounded bg-gray-700 px-2 py-1";
+    if (bgColor !== undefined && bgColorCSS !== undefined) {
+        throw new Error("SmallPerson: at most one of bgColor or bgColorCSS may be given");
+    }
+
+    const containerClassName = `group flex items-center space-x-1 rounded px-2 py-1 ${bgColor ?? (bgColorCSS ? "" : "bg-gray-700")}`;
     const containerStyle = {
         height: SMALL_PERSON_HEIGHT,
-        ...(bgColor ? { backgroundColor: bgColor } : {})
+        ...(bgColorCSS ? { backgroundColor: bgColorCSS } : {})
     };
 
     const contents = (

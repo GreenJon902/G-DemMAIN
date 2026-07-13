@@ -157,8 +157,8 @@ export default function EventForm(props: EventFormProps) {
                                     id={tag.id}
                                     name={tag.name}
                                     description={tag.description}
-                                    bgColor={isSelected ? hexColor : "#374151"}
-                                    holeColor={isSelected ? "#111827" : hexColor}
+                                    bgColorCSS={isSelected ? hexColor : "#374151"}
+                                    holeColorCSS={isSelected ? "#111827" : hexColor}
                                     onClick={() => toggleTag(tag.id)}
                                 />
                             );

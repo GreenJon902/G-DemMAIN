@@ -101,8 +101,8 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                                     id={tag.id}
                                     name={tag.name}
                                     description={tag.description}
-                                    bgColor={hexColor}
-                                    holeColor="#111827"
+                                    bgColorCSS={hexColor}
+                                    holeColor="bg-gray-900"
                                 />
                             );
                         })}
