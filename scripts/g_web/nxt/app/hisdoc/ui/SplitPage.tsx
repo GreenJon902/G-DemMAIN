@@ -16,7 +16,7 @@ export default function SplitPage({
 }) {
     return (
         <PageSection title={title} icon={icon}>
-            <div className="flex flex-col-reverse gap-2 lg:gap-8 lg:flex-row">
+            <div className="flex flex-col-reverse gap-2 lg:flex-row lg:gap-8">
                 <div className="flex flex-1 flex-col">
                     {main}
                 </div>

@@ -20,7 +20,7 @@ export default async function Layout({
                 {/* We give the text a very large flex so only it scales, however we still give the buttons flex so that they fill the entire width if they go on the newline */}
                 <div className="flex w-full flex-nowrap items-center gap-3 sm:flex-100">
                     <Link href="/panel" className="">
-                        <AreaIndicator className="underline text-3xl font-extrabold text-nowrap">G-DemMAIN Panel</AreaIndicator>
+                        <AreaIndicator className="text-3xl font-extrabold text-nowrap underline">G-DemMAIN Panel</AreaIndicator>
                     </Link>
                 </div>
                 <div className="flex flex-1 flex-wrap items-center gap-2 sm:flex-nowrap">

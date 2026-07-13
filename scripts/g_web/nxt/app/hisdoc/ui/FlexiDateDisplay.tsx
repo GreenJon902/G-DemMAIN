@@ -8,5 +8,5 @@ import { FlexiDateInput, formatFlexiDate } from "../lib/flexidate";
  * a database row: `<FlexiDateDisplay {...event} />`.
  */
 export function FlexiDateDisplay(date: FlexiDateInput) {
-    return <span className="text-gray-400 text-sm">{formatFlexiDate(date)}</span>;
+    return <span className="text-sm text-gray-400">{formatFlexiDate(date)}</span>;
 }

@@ -124,7 +124,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
             sidebar={
                 <>
                     {person.type === hd_person_type.MINECRAFT && (
-                        <div className="flex flex-col rounded bg-gray-700 p-2 items-center">
+                        <div className="flex flex-col items-center rounded bg-gray-700 p-2">
                             <PersonRenderer playerdata={person.data} interactive={true} />
                             <TextLink
                                 href={`https://namemc.com/profile/${person.data}`}
