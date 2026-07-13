@@ -32,7 +32,7 @@ export function TagChip({ id, name, description, bgColor, holeColor, onClick }: 
             <div className="size-4 shrink-0 rounded-full" style={{ backgroundColor: holeColor }} />
             {name}
             {description && (
-                <span className="pointer-events-none absolute top-full left-1/2 z-10 mt-1 -translate-x-1/2 rounded-md bg-gray-950 px-2 py-1 text-xs whitespace-nowrap text-white opacity-0 transition-opacity group-hover:opacity-100">
+                <span className="pointer-events-none absolute top-full right-0 left-0 z-10 mt-1 rounded-md bg-gray-950 px-2 py-1 text-xs text-wrap text-white opacity-0 transition-opacity group-hover:opacity-100">
                     {description}
                 </span>
             )}
