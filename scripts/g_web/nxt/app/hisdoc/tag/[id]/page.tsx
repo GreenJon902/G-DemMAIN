@@ -1,14 +1,22 @@
 import "server-only";
 import prisma from "@g/com/lib/prisma/client";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { FlexiDateDisplay } from "../../ui/FlexiDateDisplay";
+import { hd_person_type } from "@g/com/prisma/enums";
+import PageSection from "../../../ui/PageSection";
+import SplitPage from "../../ui/SplitPage";
+import StatsPill from "../../ui/StatsPill";
+import SmallEvent from "../../ui/SmallEvent";
+import { BarGraph } from "../../ui/BarGraph";
+import { EVENT_SELECT } from "../../lib/eventSelect";
+import { getMinecraftUsername } from "../../lib/minecraft";
 
-/** Shows a single tag's details and its 20 most recent events. */
+const PLAYER_BAR_COLOR = "#818cf8"; // indigo-400, matching the app's link colour
+
+/** Detail page for a single HisDoc tag: description, its recent events, and a bar chart of the players involved in those events. */
 export default async function TagPage({ params }: { params: Promise<{ id: string }> }) {
-    // Next.js 15: params is a Promise
     const { id: idStr } = await params;
     const id = parseInt(idStr, 10);
+    if (isNaN(id)) notFound();
 
     const tag = await prisma().hd_tag.findUnique({
         where: { id, soft_deleted: false },
@@ -18,50 +26,78 @@ export default async function TagPage({ params }: { params: Promise<{ id: string
                 include: {
                     hd_event: {
                         select: {
-                            id: true, name: true,
-                            event_date_type: true, event_date1: true,
-                            event_date_time_offset: true, event_date_units: true,
-                            event_date_diff: true, event_date2: true
+                            ...EVENT_SELECT,
+                            hd_event_person: {
+                                where: { soft_deleted: false, hd_person: { soft_deleted: false } },
+                                select: {
+                                    hd_person: { select: { id: true, type: true, data: true } }
+                                }
+                            }
                         }
                     }
                 },
-                orderBy: { hd_event: { sort_key: "desc" } },
-                take: 20
+                orderBy: { hd_event: { sort_key: "desc" } }
             }
         }
     });
 
     if (!tag) notFound();
 
-    // >>> 0 coerces to unsigned 32-bit so negative signed integers produce a valid hex string
+    // >>> 0 coerces color to unsigned 32-bit so negative signed integers produce a valid hex string
     const hexColor = "#" + (tag.color >>> 0).toString(16).padStart(6, "0");
 
+    // Tally how many of this tag's events each (non-soft-deleted) person appears in
+    const personCounts = new Map<number, { type: hd_person_type; data: string; count: number }>();
+    for (const { hd_event } of tag.hd_event_tag) {
+        for (const { hd_person } of hd_event.hd_event_person) {
+            const existing = personCounts.get(hd_person.id);
+            if (existing) {
+                existing.count++;
+            } else {
+                personCounts.set(hd_person.id, { type: hd_person.type, data: hd_person.data, count: 1 });
+            }
+        }
+    }
+
+    const bars = await Promise.all(
+        Array.from(personCounts.values()).map(async ({ type, data, count }) => ({
+            label: type === hd_person_type.MINECRAFT ? await getMinecraftUsername(data) : data,
+            value: count,
+            color: PLAYER_BAR_COLOR
+        }))
+    );
+
+    const recentEvents = tag.hd_event_tag.map(({ hd_event }) => hd_event).slice(0, 10);
+
     return (
-        <>
-            <h1 className="mb-2 flex items-center gap-3 text-2xl font-bold text-white">
-                <span
-                    className="inline-block size-5 rounded-sm"
-                    style={{ backgroundColor: hexColor }}
-                />
-                {tag.name}
-            </h1>
-            {tag.description && (
-                <p className="mb-6 text-gray-400">{tag.description}</p>
-            )}
-            <h2 className="mb-3 text-xl font-semibold text-white">Recent Events</h2>
-            <ul className="space-y-2">
-                {tag.hd_event_tag.map(({ hd_event }) => (
-                    <li key={hd_event.id} className="flex items-center gap-4">
-                        <FlexiDateDisplay {...hd_event} />
-                        <Link
-                            href={"/hisdoc/event/" + hd_event.id}
-                            className="text-indigo-400 hover:text-indigo-300"
-                        >
-                            {hd_event.name}
-                        </Link>
-                    </li>
-                ))}
-            </ul>
-        </>
+        <SplitPage
+            title={tag.name}
+            icon={<span className="inline-block size-5 rounded-sm" style={{ backgroundColor: hexColor }} />}
+            main={
+                <>
+                    {tag.description && <p className="text-gray-400">{tag.description}</p>}
+
+                    <PageSection pretitle={"• "} title="Recent Events">
+                        {recentEvents.length > 0 ? (
+                            <ul>
+                                {recentEvents.map(event => <SmallEvent key={event.id} {...event} />)}
+                            </ul>
+                        ) : (
+                            <p className="text-gray-400">No events</p>
+                        )}
+                    </PageSection>
+
+                    <PageSection pretitle={"• "} title="Player Distribution">
+                        <BarGraph bars={bars} graphClassName="h-48" />
+                    </PageSection>
+                </>
+            }
+            sidebar={
+                <StatsPill>
+                    <span>TID: {tag.id}</span>
+                    <span>Event Count: {tag.hd_event_tag.length}</span>
+                </StatsPill>
+            }
+        />
     );
 }

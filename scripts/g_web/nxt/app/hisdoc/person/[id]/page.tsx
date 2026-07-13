@@ -3,21 +3,13 @@ import prisma from "@g/com/lib/prisma/client";
 import { notFound } from "next/navigation";
 import { hd_person_type } from "@g/com/prisma/enums";
 import PageSection from "../../../ui/PageSection";
+import SplitPage from "../../ui/SplitPage";
+import StatsPill from "../../ui/StatsPill";
 import PersonRenderer from "../../ui/PersonRenderer";
 import SmallEvent from "../../ui/SmallEvent";
 import { BarGraph } from "../../ui/BarGraph";
+import { EVENT_SELECT } from "../../lib/eventSelect";
 import { getMinecraftUsername } from "../../lib/minecraft";
-
-const EVENT_SELECT = {
-    id: true,
-    name: true,
-    event_date_type: true,
-    event_date1: true,
-    event_date_time_offset: true,
-    event_date_units: true,
-    event_date_diff: true,
-    event_date2: true
-} as const;
 
 /**
  * Profile page for a single HisDoc person (Minecraft player or NPC). Shows the person's
@@ -97,59 +89,59 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
     const recentPosts = posts.slice(0, 10);
 
     return (
-        <>
-            <PageSection title={displayName}>
-                <div className="flex flex-col-reverse gap-8 lg:flex-row">
-                    <div className="flex flex-1 flex-col">
-                        <PageSection pretitle={"• "} title="Recent Events">
-                            {recentEvents.length > 0 ? (
+        <SplitPage
+            title={displayName}
+            main={
+                <>
+                    <PageSection pretitle={"• "} title="Recent Events">
+                        {recentEvents.length > 0 ? (
+                            <ul>
+                                {recentEvents.map(event => <SmallEvent key={event.id} {...event} />)}
+                            </ul>
+                        ) : (
+                            <p className="text-gray-400">No events</p>
+                        )}
+                    </PageSection>
+
+                    {person.user && (
+                        <PageSection pretitle={"• "} title="Recent Posts">
+                            {recentPosts.length > 0 ? (
                                 <ul>
-                                    {recentEvents.map(event => <SmallEvent key={event.id} {...event} />)}
+                                    {recentPosts.map(event => <SmallEvent key={event.id} {...event} />)}
                                 </ul>
                             ) : (
-                                <p className="text-gray-400">No events</p>
+                                <p className="text-gray-400">No posts</p>
                             )}
                         </PageSection>
+                    )}
 
-                        {person.user && (
-                            <PageSection pretitle={"• "} title="Recent Posts">
-                                {recentPosts.length > 0 ? (
-                                    <ul>
-                                        {recentPosts.map(event => <SmallEvent key={event.id} {...event} />)}
-                                    </ul>
-                                ) : (
-                                    <p className="text-gray-400">No posts</p>
-                                )}
-                            </PageSection>
-                        )}
-
-                        <PageSection pretitle={"• "} title="Tag Distribution">
-                            <BarGraph bars={bars} graphClassName="h-48" />
-                        </PageSection>
-                    </div>
-
-                    <div className="flex h-fit w-fit shrink-0 flex-row gap-2 lg:w-fit lg:flex-col">
-                        {person.type === hd_person_type.MINECRAFT && (
-                            <div className="flex flex-col rounded bg-gray-700 p-2 items-center">
-                                <PersonRenderer playerdata={person.data} interactive={true} />
-                                <a
-                                    href={`https://namemc.com/profile/${person.data}`}
-                                    target="_blank"
-                                    className="text-nowrap text-indigo-400 hover:text-indigo-300"
-                                >
-                                    See on NameMC
-                                </a>
-                            </div>
-                        )}
-                        <div className="flex w-full flex-col text-nowrap rounded bg-gray-700 p-2 text-sm text-gray-400">
-                            <span>PID: {person.id}</span>
-                            {person.type === hd_person_type.MINECRAFT && <span>UUID: {person.data}</span>}
-                            <span>Event Count: {person.hd_event_person.length}</span>
-                            {person.user && <span>Post Count: {posts.length}</span>}
+                    <PageSection pretitle={"• "} title="Tag Distribution">
+                        <BarGraph bars={bars} graphClassName="h-48" />
+                    </PageSection>
+                </>
+            }
+            sidebar={
+                <>
+                    {person.type === hd_person_type.MINECRAFT && (
+                        <div className="flex flex-col rounded bg-gray-700 p-2 items-center">
+                            <PersonRenderer playerdata={person.data} interactive={true} />
+                            <a
+                                href={`https://namemc.com/profile/${person.data}`}
+                                target="_blank"
+                                className="text-nowrap text-indigo-400 hover:text-indigo-300"
+                            >
+                                See on NameMC
+                            </a>
                         </div>
-                    </div>
-                </div>
-            </PageSection>
-        </>
+                    )}
+                    <StatsPill>
+                        <span>PID: {person.id}</span>
+                        {person.type === hd_person_type.MINECRAFT && <span>UUID: {person.data}</span>}
+                        <span>Event Count: {person.hd_event_person.length}</span>
+                        {person.user && <span>Post Count: {posts.length}</span>}
+                    </StatsPill>
+                </>
+            }
+        />
     );
 }
