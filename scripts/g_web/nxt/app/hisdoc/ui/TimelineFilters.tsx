@@ -1,6 +1,6 @@
 "use client";
 
-import { cloneElement, ReactElement, ReactNode, Suspense, useState, useEffect, useRef } from "react";
+import { cloneElement, ReactElement, ReactNode, RefObject, Suspense, useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { TagChip } from "./TagChip";
 import SmallPerson from "./SmallPerson";
@@ -194,6 +194,35 @@ function FilterGroup<T extends { id: number }>({
 }
 
 /**
+ * Pins the top of the given element to the lower of the top of the page or the bottom of the nav.
+ * Pins the bottom of the given element to the bottom of the page.
+ */
+function useStickyFillHeight(ref: RefObject<HTMLElement | null>) {
+    useEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+
+        let rafId = 0;
+        const update = () => {
+            rafId = 0;
+            el.style.height = `calc(100dvh - ${el.getBoundingClientRect().top}px)`;
+        };
+        const scheduleUpdate = () => {
+            if (rafId === 0) rafId = requestAnimationFrame(update);
+        };
+
+        update();
+        window.addEventListener("scroll", scheduleUpdate, { passive: true });
+        window.addEventListener("resize", scheduleUpdate);
+        return () => {
+            window.removeEventListener("scroll", scheduleUpdate);
+            window.removeEventListener("resize", scheduleUpdate);
+            if (rafId !== 0) cancelAnimationFrame(rafId);
+        };
+    }, [ref]);
+}
+
+/**
  * Inner implementation of TimelineFilters. Calls useSearchParams, so it must
  * be wrapped in <Suspense> by the exported default (Next.js 15 requirement).
  *
@@ -210,6 +239,9 @@ function TimelineFiltersInner({
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
+
+    const asideRef = useRef<HTMLElement>(null);
+    useStickyFillHeight(asideRef);
 
     // Ref kept current every render so the debounce closure always sees the latest params
     const searchParamsRef = useRef(searchParams);
@@ -236,7 +268,7 @@ function TimelineFiltersInner({
                 params.delete("q");
             }
             const qs = params.toString();
-            router.push(pathname + (qs ? "?" + qs : ""));
+            router.push(pathname + (qs ? "?" + qs : ""), { scroll: false });  // Don't reset scroll
         }, SEARCH_BOX_DEBOUNCE);
         return () => clearTimeout(timer);
     }, [queryText, router, pathname]);
@@ -252,7 +284,7 @@ function TimelineFiltersInner({
             }
         }
         const qs = params.toString();
-        router.push(pathname + (qs ? "?" + qs : ""));
+        router.push(pathname + (qs ? "?" + qs : ""), { scroll: false });  // Don't reset scroll
     }
 
     /** Cycles a single item's filter state within the given URL param and pushes the result. */
@@ -303,7 +335,10 @@ function TimelineFiltersInner({
     );
 
     return (
-        <div className="flex flex-col gap-4">
+        <aside
+            ref={asideRef}
+            className="sticky top-0 flex w-64 flex-shrink-0 flex-col gap-4 overflow-y-auto overscroll-contain"
+        >
             <FilterContainer title="Show">
                 <ToggleButton
                     checked={showTags}
@@ -426,7 +461,7 @@ function TimelineFiltersInner({
                 <SimpleButton
                     callback={() => {
                         setQueryText("");
-                        router.push(pathname);
+                        router.push(pathname, { scroll: false });  // Don't reset scroll
                     }}
                     color={BUTTON_GRAY}
                     className="self-start px-2 py-0.5 text-sm text-white"
@@ -434,7 +469,7 @@ function TimelineFiltersInner({
                     Clear filters
                 </SimpleButton>
             )}
-        </div>
+        </aside>
     );
 }
 
