@@ -6,6 +6,7 @@ import { hd_person_type } from "@g/com/prisma/enums";
 import PageSection from "../../../ui/PageSection";
 import SplitPage from "../../ui/SplitPage";
 import StatsPill from "../../ui/StatsPill";
+import WarningBanner from "../../ui/WarningBanner";
 import TextLink, { TEXT_LINK_GRAY } from "../../../ui/TextLink";
 import PersonRenderer from "../../ui/PersonRenderer";
 import SmallEvent from "../../ui/SmallEvent";
@@ -13,6 +14,7 @@ import SmallChangelog from "../../ui/SmallChangelog";
 import { BarGraph } from "../../ui/BarGraph";
 import { EVENT_SELECT } from "../../lib/eventSelect";
 import { getMinecraftUsername } from "../../lib/minecraft";
+import { colorToHex } from "../../lib/color";
 
 /**
  * Profile page for a single HisDoc person (Minecraft player or NPC). Shows the person's
@@ -29,7 +31,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
 
     const [person, changelog] = await Promise.all([
         prisma().hd_person.findUnique({
-            where: { id, soft_deleted: false },
+            where: { id },
             include: {
                 hd_event_person: {
                     where: { soft_deleted: false, hd_event: { soft_deleted: false } },
@@ -89,11 +91,10 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
         }
     }
 
-    // >>> 0 coerces color to unsigned 32-bit so negative signed integers produce a valid hex string
     const bars = Array.from(tagCounts.values()).map(({ name, color, count }) => ({
         label: name,
         value: count,
-        color: "#" + (color >>> 0).toString(16).padStart(6, "0")
+        color: colorToHex(color)
     }));
 
     const recentEvents = person.hd_event_person.map(({ hd_event }) => hd_event).slice(0, 10);
@@ -105,6 +106,8 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
             title={displayName}
             main={
                 <>
+                    {person.soft_deleted && <WarningBanner>This person has been deleted.</WarningBanner>}
+
                     <PageSection pretitle={"• "} title="Recent Events">
                         {recentEvents.length > 0 ? (
                             <ul>

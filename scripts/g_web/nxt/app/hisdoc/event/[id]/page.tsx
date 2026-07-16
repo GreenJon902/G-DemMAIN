@@ -4,10 +4,10 @@ import { hd_changelog_what } from "@g/com/prisma/client";
 import { hd_person_type } from "@g/com/prisma/enums";
 import { NS } from "@/lib/session";
 import { notFound } from "next/navigation";
-import { ExclamationTriangleIcon } from "@heroicons/react/20/solid";
 import PageSection from "../../../ui/PageSection";
 import SplitPage from "../../ui/SplitPage";
 import StatsPill from "../../ui/StatsPill";
+import WarningBanner from "../../ui/WarningBanner";
 import { TagChip } from "../../ui/TagChip";
 import LargePerson from "../../ui/LargePerson";
 import SmallPerson from "../../ui/SmallPerson";
@@ -17,6 +17,7 @@ import { FlexiDateDisplay } from "../../ui/FlexiDateDisplay";
 import { LinkButton, BUTTON_INDIGO } from "@/app/ui/Button";
 import { EVENT_SELECT } from "../../lib/eventSelect";
 import { getMinecraftUsername } from "../../lib/minecraft";
+import { colorToHex } from "../../lib/color";
 
 
 /**
@@ -33,7 +34,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
 
     const [event, canEdit, relatedRows, changelog] = await Promise.all([
         prisma().hd_event.findUnique({
-            where: { id, soft_deleted: false },
+            where: { id },
             include: {
                 hd_event_tag: { where: { soft_deleted: false }, include: { hd_tag: true } },
                 hd_event_person: { where: { soft_deleted: false }, include: { hd_person: true } },
@@ -56,6 +57,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
     if (!event) notFound();
 
     // Drop tag/person applications whose tag or person has itself been soft-deleted
+    console.log(id, event.hd_event_person);
     const tags = event.hd_event_tag.filter(({ hd_tag }) => !hd_tag.soft_deleted).map(({ hd_tag }) => hd_tag);
     const persons = event.hd_event_person.filter(({ hd_person }) => !hd_person.soft_deleted).map(({ hd_person }) => hd_person);
 
@@ -78,12 +80,8 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
             title={event.name}
             main={
                 <>
-                    {event.details && (
-                        <p className="my-2 flex items-center gap-2 border border-amber-600 bg-amber-100 pl-1 whitespace-pre-wrap text-amber-900">
-                            <ExclamationTriangleIcon className="size-5 shrink-0 text-amber-700" />
-                            {event.details}
-                        </p>
-                    )}
+                    {event.soft_deleted && <WarningBanner>This event has been deleted.</WarningBanner>}
+                    {event.details && <WarningBanner>{event.details}</WarningBanner>}
 
                     <p className="whitespace-pre-wrap text-gray-200">{event.description}</p>
 
@@ -91,8 +89,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                         <PageSection pretitle={"• "} title="Tags">
                             <div className="flex flex-wrap gap-2">
                                 {tags.map(tag => {
-                                    // >>> 0 coerces to unsigned 32-bit so negative signed integers produce a valid hex string
-                                    const hexColor = "#" + (tag.color >>> 0).toString(16).padStart(6, "0");
+                                    const hexColor = colorToHex(tag.color);
                                     return (
                                         <TagChip
                                             key={tag.id}

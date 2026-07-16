@@ -8,14 +8,16 @@ import PageSection from "../../ui/PageSection";
  *
  * @param main - The left column's content (typically nested PageSections).
  * @param sidebar - The right column's content (typically one or more pills, e.g. StatsPill).
+ * @param title - The plain-text title. Exactly one of `title`/`titleNode` must be given.
+ * @param titleNode - Richer title content (e.g. containing a link), rendered instead of plain text. Exactly one of `title`/`titleNode` must be given.
  */
 export default function SplitPage({
-    title, icon, main, sidebar
+    title, icon, main, sidebar, titleNode
 }: {
-    title: string, icon?: ReactNode, main: ReactNode, sidebar: ReactNode
+    title?: string, icon?: ReactNode, main: ReactNode, sidebar: ReactNode, titleNode?: ReactNode
 }) {
     return (
-        <PageSection title={title} icon={icon}>
+        <PageSection title={title} titleNode={titleNode} icon={icon}>
             <div className="flex flex-col-reverse gap-2 lg:flex-row lg:gap-8">
                 <div className="flex flex-1 flex-col">
                     {main}

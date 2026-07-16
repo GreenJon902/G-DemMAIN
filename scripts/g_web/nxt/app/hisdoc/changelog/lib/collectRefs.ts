@@ -1,5 +1,5 @@
 import { hd_changelog_what } from "@g/com/prisma/enums";
-import { TagSnapshotV1, PersonSnapshotV1, EventSnapshotV1 } from "./snapshot";
+import { TagSnapshotV1, PersonSnapshotV1, EventSnapshotV1 } from "./fieldDiffs";
 
 export type ReferencedIds = {
     userIds: Set<number>;

@@ -9,6 +9,7 @@ import TextInput, { VALUE_INPUT_CLASS } from "@/app/ui/TextInput";
 import RadioButtons from "@/app/ui/RadioButtons";
 import ToggleButton from "@/app/ui/ToggleButton";
 import { FilterState, SearchMode, DateRangeMode, parseFilterParam, serializeFilterParam } from "../lib/timeline-filter";
+import { colorToHex } from "../lib/color";
 
 // FilterState plus "in" — the default/untouched state, which is never actually written to the
 // URL (absent from the param map), but is given its own code here for symmetry and clarity
@@ -418,8 +419,7 @@ function TimelineFiltersInner({
                     onCycle={cycleTag}
                     onSetAll={setAllTags}
                     renderItem={(tag, state, onClick) => {
-                        // >>> 0 coerces to unsigned 32-bit so negative signed integers produce a valid hex string
-                        const hexColor = "#" + (tag.color >>> 0).toString(16).padStart(6, "0");
+                        const hexColor = colorToHex(tag.color);
                         return (
                             <TagChip
                                 id={tag.id}

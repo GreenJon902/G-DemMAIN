@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { ResolvedRefs } from "../lib/resolveRefs";
-import { FieldRow, Unchanged, BeforeAfter, NotRecorded, NullValue } from "./common";
+import { FieldRow, BeforeAfter, NotRecorded, NullValue } from "./common";
 
 /** Resolves a g_web user id to its current username, falling back to "user #N" if the row is gone. */
 function resolveUsername(id: number | null, users: Map<number, string>): ReactNode {
@@ -21,7 +21,7 @@ export default function UserRefDiff({ label, before, after, refs }: {
     if (before === undefined && after === undefined) return null;
 
     if (before !== undefined && after !== undefined && before === after) {
-        return <FieldRow label={label}><Unchanged>{resolveUsername(after, refs.users)}</Unchanged></FieldRow>;
+        return <FieldRow label={label} unchanged>{resolveUsername(after, refs.users)}</FieldRow>;
     }
 
     return (

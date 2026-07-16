@@ -43,8 +43,15 @@ export async function resolveRefs(ids: ReferencedIds): Promise<ResolvedRefs> {
     };
 }
 
-/** True if `id` has no live row in `map`, or its live row is soft-deleted — both render as "gone". */
-export function isEntityGone<T extends { soft_deleted: boolean }>(id: number, map: Map<number, T>): boolean {
-    const entry = map.get(id);
-    return entry === undefined || entry.soft_deleted;
+/**
+ * True if `id` has no live row in `map` at all. A soft-deleted row still counts as existing here —
+ * its page still renders (with its own warning) — see {@link isEntitySoftDeleted} for that case.
+ */
+export function isEntityGone<T>(id: number, map: Map<number, T>): boolean {
+    return !map.has(id);
+}
+
+/** True if `id` has a live row in `map` that is soft-deleted. */
+export function isEntitySoftDeleted<T extends { soft_deleted: boolean }>(id: number, map: Map<number, T>): boolean {
+    return map.get(id)?.soft_deleted === true;
 }

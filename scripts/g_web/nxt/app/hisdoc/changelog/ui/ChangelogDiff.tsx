@@ -1,18 +1,13 @@
-import { FieldDescriptor } from "../lib/fields";
+import { FieldDiff } from "../lib/fieldDiffs";
 import { ResolvedRefs } from "../lib/resolveRefs";
 import FieldDiffRow from "./FieldDiffRow";
 
-/** Renders one diff row per field descriptor, in table order. */
-export default function ChangelogDiff<T extends object>({ fields, before, after, refs }: {
-    fields: Array<FieldDescriptor<T>>;
-    before: T | null;
-    after: T | null;
-    refs: ResolvedRefs;
-}) {
+/** Renders one diff row per field, in table order. */
+export default function ChangelogDiff({ fields, refs }: { fields: FieldDiff[]; refs: ResolvedRefs }) {
     return (
         <div className="flex flex-col gap-4">
-            {fields.map((descriptor) => (
-                <FieldDiffRow key={descriptor.label} descriptor={descriptor} before={before} after={after} refs={refs} />
+            {fields.map((field) => (
+                <FieldDiffRow key={field.label} field={field} refs={refs} />
             ))}
         </div>
     );

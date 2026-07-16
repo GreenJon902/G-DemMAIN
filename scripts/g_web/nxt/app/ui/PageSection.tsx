@@ -6,20 +6,25 @@ import { ReactNode } from "react";
  *
  * @param pretitle - Optional text to add before the title, of the same size but without an underline.
  * @param icon - Optional element (e.g. a colour swatch) rendered directly before the title text.
- * @param title - The title of the component. This will be set as the ID and key (so should be unique), and will be rendered as a title.
+ * @param title - The plain-text title. Exactly one of `title`/`titleNode` must be given.
+ * @param titleNode - Richer title content (e.g. containing a link), rendered instead of plain text. Exactly one of `title`/`titleNode` must be given.
  * @param children - The children to render inside the component.
  */
 export default function PageSection({
-    title, children, pretitle, icon
+    title, children, pretitle, icon, titleNode
 }: {
-    title: string, children: ReactNode, pretitle?: string, icon?: ReactNode
+    title?: string, children: ReactNode, pretitle?: string, icon?: ReactNode, titleNode?: ReactNode
 }) {
+    if ((title === undefined) === (titleNode === undefined)) {
+        throw new Error("PageSection: exactly one of title or titleNode must be given");
+    }
+
     return (
-        <div id={title}>
+        <div>
             <h1 className="text-3xl font-bold">
                 {pretitle && <span> {pretitle} </span>}
                 {icon && <span className="mr-2 inline-flex align-middle">{icon}</span>}
-                <span className="underline decoration-4"> {title} </span>
+                <span className="underline decoration-4"> {titleNode ?? title} </span>
             </h1>
             <div className="m-4 mr-0">
                 {children}

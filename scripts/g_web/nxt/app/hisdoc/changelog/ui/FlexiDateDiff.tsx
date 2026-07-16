@@ -1,9 +1,9 @@
 import { FlexiDateDisplay } from "../../ui/FlexiDateDisplay";
-import { EventSnapshotV1, toFlexiDateInput } from "../lib/snapshot";
-import { FieldRow, Unchanged, BeforeAfter, NotRecorded } from "./common";
+import { FlexiDateFields, toFlexiDateInput } from "../lib/fieldDiffs";
+import { FieldRow, BeforeAfter, NotRecorded } from "./common";
 
-/** True if all 6 FlexiDate columns match between two EVENT snapshots. */
-function dateFieldsEqual(a: EventSnapshotV1, b: EventSnapshotV1): boolean {
+/** True if all 6 FlexiDate columns match between two snapshots. */
+function dateFieldsEqual(a: FlexiDateFields, b: FlexiDateFields): boolean {
     return a.event_date_type === b.event_date_type
         && a.event_date1 === b.event_date1
         && a.event_date_time_offset === b.event_date_time_offset
@@ -19,13 +19,13 @@ function dateFieldsEqual(a: EventSnapshotV1, b: EventSnapshotV1): boolean {
  */
 export default function FlexiDateDiff({ label, before, after }: {
     label: string;
-    before: EventSnapshotV1 | undefined;
-    after: EventSnapshotV1 | undefined;
+    before: FlexiDateFields | undefined;
+    after: FlexiDateFields | undefined;
 }) {
     if (before === undefined && after === undefined) return null;
 
     if (before !== undefined && after !== undefined && dateFieldsEqual(before, after)) {
-        return <FieldRow label={label}><Unchanged><FlexiDateDisplay {...toFlexiDateInput(after)} /></Unchanged></FieldRow>;
+        return <FieldRow label={label} unchanged><FlexiDateDisplay {...toFlexiDateInput(after)} /></FieldRow>;
     }
 
     return (

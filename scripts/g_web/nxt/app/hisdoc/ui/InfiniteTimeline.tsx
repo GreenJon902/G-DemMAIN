@@ -9,6 +9,7 @@ import { TagChip } from "./TagChip";
 import SmallPerson from "./SmallPerson";
 import { getTimelinePage } from "../actions";
 import { TimelineEvent as ApiTimelineEvent } from "../lib/timeline-data";
+import { colorToHex } from "../lib/color";
 
 // How long a re-fetch (filter change or "load more") can run before the loading indicator is
 // shown — keeps quick re-fetches from flashing a spinner, while slow ones still give feedback
@@ -44,8 +45,7 @@ function EventCard({ e, showTags, showPersons }: { e: ApiTimelineEvent; showTags
             {showTags && e.tags.length > 0 && (
                 <div className="flex flex-row flex-wrap gap-2">
                     {e.tags.map(({ tag }) => {
-                        // >>> 0 coerces to unsigned 32-bit so negative signed integers produce a valid hex string
-                        const hexColor = "#" + (tag.color >>> 0).toString(16).padStart(6, "0");
+                        const hexColor = colorToHex(tag.color);
                         return (
                             <TagChip
                                 key={tag.id}

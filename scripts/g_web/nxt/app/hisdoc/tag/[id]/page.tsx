@@ -6,11 +6,13 @@ import { hd_person_type } from "@g/com/prisma/enums";
 import PageSection from "../../../ui/PageSection";
 import SplitPage from "../../ui/SplitPage";
 import StatsPill from "../../ui/StatsPill";
+import WarningBanner from "../../ui/WarningBanner";
 import SmallEvent from "../../ui/SmallEvent";
 import SmallChangelog from "../../ui/SmallChangelog";
 import { BarGraph } from "../../ui/BarGraph";
 import { EVENT_SELECT } from "../../lib/eventSelect";
 import { getMinecraftUsername } from "../../lib/minecraft";
+import { colorToHex } from "../../lib/color";
 
 const PLAYER_BAR_COLOR = "#818cf8"; // indigo-400, matching the app's link colour
 
@@ -22,7 +24,7 @@ export default async function TagPage({ params }: { params: Promise<{ id: string
 
     const [tag, changelog] = await Promise.all([
         prisma().hd_tag.findUnique({
-            where: { id, soft_deleted: false },
+            where: { id },
             include: {
                 hd_event_tag: {
                     where: { soft_deleted: false, hd_event: { soft_deleted: false } },
@@ -54,8 +56,7 @@ export default async function TagPage({ params }: { params: Promise<{ id: string
 
     if (!tag) notFound();
 
-    // >>> 0 coerces color to unsigned 32-bit so negative signed integers produce a valid hex string
-    const hexColor = "#" + (tag.color >>> 0).toString(16).padStart(6, "0");
+    const hexColor = colorToHex(tag.color);
 
     // Tally how many of this tag's events each (non-soft-deleted) person appears in
     const personCounts = new Map<number, { type: hd_person_type; data: string; count: number }>();
@@ -86,6 +87,7 @@ export default async function TagPage({ params }: { params: Promise<{ id: string
             icon={<span className="inline-block size-5 rounded-sm" style={{ backgroundColor: hexColor }} />}
             main={
                 <>
+                    {tag.soft_deleted && <WarningBanner>This tag has been deleted.</WarningBanner>}
                     {tag.description && <p className="text-gray-400">{tag.description}</p>}
 
                     <PageSection pretitle={"• "} title="Recent Events">

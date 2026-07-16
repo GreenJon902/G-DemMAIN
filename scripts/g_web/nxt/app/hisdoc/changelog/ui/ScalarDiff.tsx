@@ -1,11 +1,11 @@
 import { ReactNode } from "react";
 import { hd_person_type } from "@g/com/prisma/enums";
-import { FieldRow, Unchanged, BeforeAfter, NotRecorded } from "./common";
+import { FieldRow, BeforeAfter, NotRecorded, personTypeLabel } from "./common";
+import { colorToHex } from "../../lib/color";
 
-/** Formats a raw hd_tag.color int as a swatch + hex string, matching the event/tag page convention. */
+/** A color swatch + hex string, matching the event/tag page convention. */
 function ColorValue({ color }: { color: number }) {
-    // >>> 0 coerces to unsigned 32-bit so negative signed integers produce a valid hex string
-    const hex = "#" + (color >>> 0).toString(16).padStart(6, "0");
+    const hex = colorToHex(color);
     return (
         <span className="inline-flex items-center gap-2">
             <span className="inline-block size-4 rounded-sm" style={{ backgroundColor: hex }} />
@@ -18,7 +18,7 @@ function formatValue(kind: "boolean" | "color" | "personType", value: boolean | 
     switch (kind) {
     case "boolean": return value ? "true" : "false";
     case "color": return <ColorValue color={value as number} />;
-    case "personType": return value === hd_person_type.MINECRAFT ? "Minecraft" : "NPC";
+    case "personType": return personTypeLabel(value as hd_person_type);
     }
 }
 
@@ -35,7 +35,7 @@ export default function ScalarDiff({ label, kind, before, after }: {
     if (before === undefined && after === undefined) return null;
 
     if (before !== undefined && after !== undefined && before === after) {
-        return <FieldRow label={label}><Unchanged>{formatValue(kind, after)}</Unchanged></FieldRow>;
+        return <FieldRow label={label} unchanged>{formatValue(kind, after)}</FieldRow>;
     }
 
     return (

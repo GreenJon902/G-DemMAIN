@@ -5,6 +5,7 @@ import { useAuthContext, makeAreaSudoGuard } from "@/app/AuthContext";
 import { ActionButton, BUTTON_GREEN } from "@/app/ui/Button";
 import FlexiDateInput from "./FlexiDateInput";
 import { TagChip } from "./TagChip";
+import { colorToHex } from "../lib/color";
 
 interface EventFormProps {
     /** The server action to call on submit. For add: addEvent directly. For edit: a bound wrapper like (fd) => editEvent(id, fd). */
@@ -148,8 +149,7 @@ export default function EventForm(props: EventFormProps) {
                     <h3 className="text-sm font-semibold tracking-wide text-gray-400 uppercase">Tags</h3>
                     <div className="flex flex-wrap gap-2">
                         {props.tags.map(tag => {
-                            // >>> 0 coerces to unsigned 32-bit so negative signed integers produce a valid hex string
-                            const hexColor = "#" + (tag.color >>> 0).toString(16).padStart(6, "0");
+                            const hexColor = colorToHex(tag.color);
                             const isSelected = selectedTagIds.has(tag.id);
                             return (
                                 <TagChip
