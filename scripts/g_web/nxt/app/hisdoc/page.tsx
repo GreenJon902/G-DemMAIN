@@ -51,9 +51,7 @@ export default async function HisDocPage({
 
     return (
         <div className="flex gap-6">
-            <aside className="w-64 flex-shrink-0">
-                <TimelineFilters tags={allTags} persons={personsForFilters} />
-            </aside>
+            <TimelineFilters tags={allTags} persons={personsForFilters} />
             <main className="flex flex-1 flex-col gap-4">
                 <InfiniteTimeline initialEvents={serialisedPage} initialHasMore={hasMore} />
             </main>
