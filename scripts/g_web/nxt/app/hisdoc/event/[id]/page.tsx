@@ -1,14 +1,20 @@
 import "server-only";
 import prisma from "@g/com/lib/prisma/client";
 import { hd_changelog_what } from "@g/com/prisma/client";
+import { hd_person_type } from "@g/com/prisma/enums";
 import { NS } from "@/lib/session";
 import { notFound } from "next/navigation";
-import Link from "next/link";
-import TextLink, { TEXT_LINK_WHITE } from "@/app/ui/TextLink";
-import { FlexiDateDisplay } from "../../ui/FlexiDateDisplay";
+import { ExclamationTriangleIcon } from "@heroicons/react/20/solid";
+import PageSection from "../../../ui/PageSection";
+import SplitPage from "../../ui/SplitPage";
+import StatsPill from "../../ui/StatsPill";
 import { TagChip } from "../../ui/TagChip";
-import { PersonAvatar } from "../../ui/PersonAvatar";
+import LargePerson from "../../ui/LargePerson";
+import SmallPerson from "../../ui/SmallPerson";
+import SmallEvent from "../../ui/SmallEvent";
+import { FlexiDateDisplay } from "../../ui/FlexiDateDisplay";
 import { LinkButton, BUTTON_INDIGO } from "@/app/ui/Button";
+import { EVENT_SELECT } from "../../lib/eventSelect";
 import { getMinecraftUsername } from "../../lib/minecraft";
 
 
@@ -55,7 +61,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
     // Resolve all person display names concurrently; MINECRAFT type uses UUID→username lookup
     const personNames = await Promise.all(
         persons.map(person =>
-            person.type === "MINECRAFT"
+            person.type === hd_person_type.MINECRAFT
                 ? getMinecraftUsername(person.data)
                 : Promise.resolve(person.data)
         )
@@ -63,104 +69,94 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
 
     const relatedEvents = await prisma().hd_event.findMany({
         where: { id: { in: relatedRows.map(r => r.related_event_id) }, soft_deleted: false },
-        select: { id: true, name: true }
+        select: EVENT_SELECT
     });
 
     return (
-        <article className="mx-auto flex max-w-3xl flex-col gap-8 p-6">
-            <div className="flex flex-col gap-2">
-                <div className="flex items-start justify-between gap-4">
-                    <h1 className="text-3xl font-bold text-white">{event.name}</h1>
+        <SplitPage
+            title={event.name}
+            main={
+                <>
+                    {event.details && (
+                        <p className="flex items-center gap-2 pl-1 border border-amber-600 bg-amber-100 whitespace-pre-wrap text-amber-900 my-2">
+                            <ExclamationTriangleIcon className="size-5 shrink-0 text-amber-700" />
+                            {event.details}
+                        </p>
+                    )}
+
+                    <p className="whitespace-pre-wrap text-gray-200">{event.description}</p>
+
+                    {tags.length > 0 && (
+                        <PageSection pretitle={"• "} title="Tags">
+                            <div className="flex flex-wrap gap-2">
+                                {tags.map(tag => {
+                                    // >>> 0 coerces to unsigned 32-bit so negative signed integers produce a valid hex string
+                                    const hexColor = "#" + (tag.color >>> 0).toString(16).padStart(6, "0");
+                                    return (
+                                        <TagChip
+                                            key={tag.id}
+                                            id={tag.id}
+                                            name={tag.name}
+                                            description={tag.description}
+                                            bgColorCSS={hexColor}
+                                            holeColor="bg-gray-900"
+                                        />
+                                    );
+                                })}
+                            </div>
+                        </PageSection>
+                    )}
+
+                    {persons.length > 0 && (
+                        <PageSection pretitle={"• "} title="Persons">
+                            <div className="flex flex-wrap gap-4">
+                                {persons.map((person, i) =>
+                                    person.type === hd_person_type.MINECRAFT ? (
+                                        <LargePerson key={person.id} id={person.id} playerdata={person.data} name={personNames[i]} />
+                                    ) : (
+                                        <SmallPerson key={person.id} id={person.id} type={person.type} playerdata={person.data} name={personNames[i]} />
+                                    )
+                                )}
+                            </div>
+                        </PageSection>
+                    )}
+
+                    {relatedEvents.length > 0 && (
+                        <PageSection pretitle={"• "} title="Related Events">
+                            <ul>
+                                {relatedEvents.map(e => <SmallEvent key={e.id} {...e} />)}
+                            </ul>
+                        </PageSection>
+                    )}
+
+                    {changelog.length > 0 && (
+                        <PageSection pretitle={"• "} title="Changelog">
+                            <ul className="flex flex-col gap-4">
+                                {changelog.map(entry => (
+                                    <li key={entry.id} className="flex flex-col gap-1">
+                                        <p className="text-sm text-gray-400">
+                                            {entry.user?.username ?? "System"} · {entry.created_at.toLocaleDateString()}
+                                        </p>
+                                        <p className="whitespace-pre-wrap text-gray-200">{entry.message}</p>
+                                    </li>
+                                ))}
+                            </ul>
+                        </PageSection>
+                    )}
+                </>
+            }
+            sidebar={
+                <>
                     {canEdit && (
                         <LinkButton href={"/hisdoc/event/" + id + "/edit"} color={BUTTON_INDIGO}>Edit</LinkButton>
                     )}
-                </div>
-                <FlexiDateDisplay {...event} />
-                <p className="text-sm text-gray-400">Posted by {event.user.username}</p>
-            </div>
-
-            <p className="whitespace-pre-wrap text-gray-200">{event.description}</p>
-
-            {event.details && (
-                <section className="flex flex-col gap-2">
-                    <h2 className="text-xl font-semibold text-white">Details</h2>
-                    <p className="whitespace-pre-wrap text-gray-200">{event.details}</p>
-                </section>
-            )}
-
-            {tags.length > 0 && (
-                <section className="flex flex-col gap-2">
-                    <h2 className="text-xl font-semibold text-white">Tags</h2>
-                    <div className="flex flex-wrap gap-2">
-                        {tags.map(tag => {
-                            // >>> 0 coerces to unsigned 32-bit so negative signed integers produce a valid hex string
-                            const hexColor = "#" + (tag.color >>> 0).toString(16).padStart(6, "0");
-                            return (
-                                <TagChip
-                                    key={tag.id}
-                                    id={tag.id}
-                                    name={tag.name}
-                                    description={tag.description}
-                                    bgColorCSS={hexColor}
-                                    holeColor="bg-gray-900"
-                                />
-                            );
-                        })}
-                    </div>
-                </section>
-            )}
-
-            {persons.length > 0 && (
-                <section className="flex flex-col gap-2">
-                    <h2 className="text-xl font-semibold text-white">Persons</h2>
-                    <div className="flex flex-wrap gap-4">
-                        {persons.map((person, i) => (
-                            <Link
-                                key={person.id}
-                                href={"/hisdoc/person/" + person.id}
-                                className="flex flex-col items-center gap-2"
-                            >
-                                <PersonAvatar />
-                                <span className="text-sm text-gray-300">{personNames[i]}</span>
-                            </Link>
-                        ))}
-                    </div>
-                </section>
-            )}
-
-            {relatedEvents.length > 0 && (
-                <section className="flex flex-col gap-2">
-                    <h2 className="text-xl font-semibold text-white">Related Events</h2>
-                    <ul className="flex flex-col gap-1">
-                        {relatedEvents.map(e => (
-                            <li key={e.id}>
-                                <TextLink
-                                    href={"/hisdoc/event/" + e.id}
-                                    color={TEXT_LINK_WHITE}
-                                >
-                                    {e.name}
-                                </TextLink>
-                            </li>
-                        ))}
-                    </ul>
-                </section>
-            )}
-
-            {changelog.length > 0 && (
-                <section className="flex flex-col gap-3">
-                    <h2 className="text-xl font-semibold text-white">Changelog</h2>
-                    <ul className="flex flex-col gap-4">
-                        {changelog.map(entry => (
-                            <li key={entry.id} className="flex flex-col gap-1">
-                                <p className="text-sm text-gray-400">
-                                    {entry.user?.username ?? "System"} · {entry.created_at.toLocaleDateString()}
-                                </p>
-                                <p className="whitespace-pre-wrap text-gray-200">{entry.message}</p>
-                            </li>
-                        ))}
-                    </ul>
-                </section>
-            )}
-        </article>
+                    <StatsPill>
+                        <span>EID: {event.id}</span>
+                        <span>Posted by {event.user.username}</span>
+                        <FlexiDateDisplay {...event} />
+                    </StatsPill>
+                </>
+            }
+        />
     );
 }
