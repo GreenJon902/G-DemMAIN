@@ -78,7 +78,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
             main={
                 <>
                     {event.details && (
-                        <p className="flex items-center gap-2 pl-1 border border-amber-600 bg-amber-100 whitespace-pre-wrap text-amber-900 my-2">
+                        <p className="my-2 flex items-center gap-2 border border-amber-600 bg-amber-100 pl-1 whitespace-pre-wrap text-amber-900">
                             <ExclamationTriangleIcon className="size-5 shrink-0 text-amber-700" />
                             {event.details}
                         </p>
