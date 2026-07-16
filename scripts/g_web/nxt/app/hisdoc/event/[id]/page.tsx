@@ -12,6 +12,7 @@ import { TagChip } from "../../ui/TagChip";
 import LargePerson from "../../ui/LargePerson";
 import SmallPerson from "../../ui/SmallPerson";
 import SmallEvent from "../../ui/SmallEvent";
+import SmallChangelog from "../../ui/SmallChangelog";
 import { FlexiDateDisplay } from "../../ui/FlexiDateDisplay";
 import { LinkButton, BUTTON_INDIGO } from "@/app/ui/Button";
 import { EVENT_SELECT } from "../../lib/eventSelect";
@@ -133,12 +134,13 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                         <PageSection pretitle={"• "} title="Changelog">
                             <ul className="flex flex-col gap-4">
                                 {changelog.map(entry => (
-                                    <li key={entry.id} className="flex flex-col gap-1">
-                                        <p className="text-sm text-gray-400">
-                                            {entry.user?.username ?? "System"} · {entry.created_at.toLocaleDateString()}
-                                        </p>
-                                        <p className="whitespace-pre-wrap text-gray-200">{entry.message}</p>
-                                    </li>
+                                    <SmallChangelog
+                                        key={entry.id}
+                                        id={entry.id}
+                                        username={entry.user?.username ?? null}
+                                        created_at={entry.created_at}
+                                        message={entry.message}
+                                    />
                                 ))}
                             </ul>
                         </PageSection>

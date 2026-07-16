@@ -1,5 +1,6 @@
 import "server-only";
 import prisma from "@g/com/lib/prisma/client";
+import { hd_changelog_what } from "@g/com/prisma/client";
 import { notFound } from "next/navigation";
 import { hd_person_type } from "@g/com/prisma/enums";
 import PageSection from "../../../ui/PageSection";
@@ -8,6 +9,7 @@ import StatsPill from "../../ui/StatsPill";
 import TextLink, { TEXT_LINK_GRAY } from "../../../ui/TextLink";
 import PersonRenderer from "../../ui/PersonRenderer";
 import SmallEvent from "../../ui/SmallEvent";
+import SmallChangelog from "../../ui/SmallChangelog";
 import { BarGraph } from "../../ui/BarGraph";
 import { EVENT_SELECT } from "../../lib/eventSelect";
 import { getMinecraftUsername } from "../../lib/minecraft";
@@ -25,38 +27,47 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
     const id = parseInt(idStr, 10);
     if (isNaN(id)) notFound();
 
-    const person = await prisma().hd_person.findUnique({
-        where: { id, soft_deleted: false },
-        include: {
-            hd_event_person: {
-                where: { soft_deleted: false, hd_event: { soft_deleted: false } },
-                include: {
-                    hd_event: {
-                        select: {
-                            ...EVENT_SELECT,
-                            hd_event_tag: {
-                                where: { soft_deleted: false },
-                                select: {
-                                    hd_tag: { select: { id: true, name: true, color: true, soft_deleted: true } }
+    const [person, changelog] = await Promise.all([
+        prisma().hd_person.findUnique({
+            where: { id, soft_deleted: false },
+            include: {
+                hd_event_person: {
+                    where: { soft_deleted: false, hd_event: { soft_deleted: false } },
+                    include: {
+                        hd_event: {
+                            select: {
+                                ...EVENT_SELECT,
+                                hd_event_tag: {
+                                    where: { soft_deleted: false },
+                                    select: {
+                                        hd_tag: { select: { id: true, name: true, color: true, soft_deleted: true } }
+                                    }
                                 }
                             }
                         }
-                    }
+                    },
+                    orderBy: { hd_event: { sort_key: "desc" } }
                 },
-                orderBy: { hd_event: { sort_key: "desc" } }
-            },
-            user: {
-                select: {
-                    username: true,
-                    hd_event: {
-                        where: { soft_deleted: false },
-                        select: EVENT_SELECT,
-                        orderBy: { sort_key: "desc" }
+                user: {
+                    select: {
+                        username: true,
+                        hd_event: {
+                            where: { soft_deleted: false },
+                            select: EVENT_SELECT,
+                            orderBy: { sort_key: "desc" }
+                        }
                     }
                 }
             }
-        }
-    });
+        }),
+        // hd_changelog is polymorphic (keyed by what/entity_id, no FK), so it can't be included
+        // as a direct Prisma relation on hd_person and must be queried separately
+        prisma().hd_changelog.findMany({
+            where: { what: hd_changelog_what.PERSON, entity_id: id, soft_deleted: false },
+            orderBy: { created_at: "desc" },
+            include: { user: { select: { username: true } } }
+        })
+    ]);
 
     if (!person) notFound();
 
@@ -119,6 +130,22 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
                     <PageSection pretitle={"• "} title="Tag Distribution">
                         <BarGraph bars={bars} graphClassName="h-48" />
                     </PageSection>
+
+                    {changelog.length > 0 && (
+                        <PageSection pretitle={"• "} title="Changelog">
+                            <ul className="flex flex-col gap-4">
+                                {changelog.map(entry => (
+                                    <SmallChangelog
+                                        key={entry.id}
+                                        id={entry.id}
+                                        username={entry.user?.username ?? null}
+                                        created_at={entry.created_at}
+                                        message={entry.message}
+                                    />
+                                ))}
+                            </ul>
+                        </PageSection>
+                    )}
                 </>
             }
             sidebar={
