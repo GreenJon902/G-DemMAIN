@@ -17,15 +17,33 @@ export const TEXT_LINK_GRAY: TextLinkColor = TextLinkColor("text-gray-300", "dec
  * @param solid - When true, the underline is always solid instead of dotted.
  * @param constantColor - When true, `color` doesn't change on hover — for places that already have
  *                         their own hover effect (e.g. a background highlight) and don't need a second one.
+ * @param disabled - When true, renders as a non-navigable span with reduced opacity and no hover effects.
  */
-export default function TextLink({ className = "", color, solid = false, constantColor = false, ...props }: Omit<ComponentProps<typeof Link>, "color"> & { color: TextLinkColor, solid?: boolean, constantColor?: boolean }) {
-    const colorClassName = constantColor
+export default function TextLink({
+    className = "",
+    color,
+    solid = false,
+    constantColor = false,
+    disabled = false,
+    children,
+    ...props
+}: Omit<ComponentProps<typeof Link>, "color"> & { color: TextLinkColor, solid?: boolean, constantColor?: boolean, disabled?: boolean }) {
+    const colorClassName = constantColor || disabled
         ? `${color.text} ${color.decoration}`
         : `${color.text} ${color.decoration} ${color.hoverText} ${color.hoverDecoration}`;
+    const sharedClassName = `${className} underline ${solid ? "decoration-solid" : "decoration-dotted hover:decoration-solid"} ${colorClassName}`;
+
+    if (disabled) {
+        return (
+            <span className={`${sharedClassName} cursor-not-allowed opacity-50`}>
+                {children}
+            </span>
+        );
+    }
+
     return (
-        <Link
-            className={`${className} underline ${solid ? "decoration-solid" : "decoration-dotted hover:decoration-solid"} ${colorClassName}`}
-            {...props}
-        />
+        <Link className={sharedClassName} {...props}>
+            {children}
+        </Link>
     );
 }
