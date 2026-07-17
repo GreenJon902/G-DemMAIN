@@ -1,6 +1,7 @@
 import { NS } from "@/lib/session";
-import { LinkButton, BUTTON_GREEN, BUTTON_INDIGO } from "@/app/ui/Button";
+import { LinkButton, BUTTON_GREEN } from "@/app/ui/Button";
 import AreaIndicator from "@/app/ui/AreaIndicator";
+import SubNav, { SubNavLink } from "@/app/ui/SubNav";
 import Link from "next/link";
 import { ReactNode } from "react";
 import { Great_Vibes } from "next/font/google";
@@ -15,30 +16,30 @@ const LOGO_FLOURISH =
 /** Layout wrapping all /hisdoc routes with a dark header navbar and main content area. */
 export default async function HisDocLayout({ children }: { children: ReactNode }) {
     const canEdit = await NS.optimisticCheckPermission("hisdoc", "editor");
-
+    
+    const links: SubNavLink[] = [
+        { href: "/hisdoc", children: "Timeline" },
+        { href: "/hisdoc/tags", children: "Tags" },
+        { href: "/hisdoc/persons", children: "Persons" },
+        { href: "/hisdoc/event/add", children: "Add Event", disabled: !canEdit }
+    ];
+    
     return (
         <>
-            <header className="flex w-full items-center justify-between bg-gray-800 p-2">
-                <Link
-                    href="/hisdoc"
-                    className={`${greatVibes.className} relative inline-block cursor-pointer text-3xl font-bold`}
-                >
-                    <AreaIndicator>
-                        HisDoc
-                        <div aria-hidden className={LOGO_FLOURISH} />
-                    </AreaIndicator>
-                </Link>
-                <nav className="flex gap-2">
-                    <LinkButton href="/hisdoc" color={BUTTON_INDIGO}>Timeline</LinkButton>
-                    <LinkButton href="/hisdoc/tags" color={BUTTON_INDIGO}>Tags</LinkButton>
-                    <LinkButton href="/hisdoc/persons" color={BUTTON_INDIGO}>Persons</LinkButton>
-                </nav>
-                <div>
-                    {canEdit && (
-                        <LinkButton href="/hisdoc/event/add" color={BUTTON_GREEN}>Add Event</LinkButton>
-                    )}
-                </div>
-            </header>
+            <SubNav
+                logo={
+                    <Link
+                        href="/hisdoc"
+                        className={`${greatVibes.className} relative inline-block cursor-pointer text-3xl font-bold`}
+                    >
+                        <AreaIndicator>
+                            HisDoc
+                            <div aria-hidden className={LOGO_FLOURISH} />
+                        </AreaIndicator>
+                    </Link>
+                }
+                links={links}
+            />
             <main className="min-h-screen bg-gray-900 p-4">{children}</main>
         </>
     );
