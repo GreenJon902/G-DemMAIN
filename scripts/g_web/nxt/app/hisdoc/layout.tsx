@@ -1,4 +1,3 @@
-import { NS } from "@/lib/session";
 import AreaIndicator from "@/app/ui/AreaIndicator";
 import SubNav, { SubNavLink } from "@/app/ui/SubNav";
 import Link from "next/link";
@@ -12,17 +11,15 @@ const LOGO_FLOURISH =
     "absolute left-[0.8em] -bottom-[1em] h-[1.5em] w-[3em] bg-[currentColor] " +
     "[clip-path:polygon(0em_0.2em,calc(100%-0.15em)_0.2em,calc(100%-0.15em)_0em,100%_0.25em,calc(100%-0.15em)_0.5em,calc(100%-0.15em)_0.3em,0em_0.3em)]";
 
+const links: SubNavLink[] = [
+    { href: "/hisdoc", children: "Timeline" },
+    { href: "/hisdoc/tags", children: "Tags" },
+    { href: "/hisdoc/persons", children: "Persons" },
+    { href: "/hisdoc/event/add", children: "Add Event", disabled: { area: "hisdoc", minLevel: "editor" } }
+];
+
 /** Layout wrapping all /hisdoc routes with a dark header navbar and main content area. */
-export default async function HisDocLayout({ children }: { children: ReactNode }) {
-    const canEdit = await NS.optimisticCheckPermission("hisdoc", "editor");
-    
-    const links: SubNavLink[] = [
-        { href: "/hisdoc", children: "Timeline" },
-        { href: "/hisdoc/tags", children: "Tags" },
-        { href: "/hisdoc/persons", children: "Persons" },
-        { href: "/hisdoc/event/add", children: "Add Event", disabled: !canEdit }
-    ];
-    
+export default function HisDocLayout({ children }: { children: ReactNode }) {
     return (
         <>
             <SubNav

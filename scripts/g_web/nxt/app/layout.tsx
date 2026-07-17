@@ -20,7 +20,7 @@ export default async function Layout({
 }: {
     children: React.ReactNode,
 }) {
-    const isLoggedIn = await NS.hasSession();
+    const [isLoggedIn, initialPermissions] = await Promise.all([NS.hasSession(), NS.getOptimisticPermissions()]);
     const { sudoVerifiedAt, tfaEnabled } = isLoggedIn
         ? await NS.getSudoActiveStatus()
         : { sudoVerifiedAt: null, tfaEnabled: false };
@@ -34,6 +34,7 @@ export default async function Layout({
                     initialIsLoggedIn={isLoggedIn}
                     initialSudoVerifiedAt={sudoVerifiedAt}
                     initialTfaEnabled={tfaEnabled}
+                    initialPermissions={initialPermissions}
                 >
                     <ErrorContextProvider>
                         <ConfirmContextProvider>

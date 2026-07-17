@@ -15,7 +15,8 @@ export default function Forbidden() {
     return (
         <AbstractErrorPage
             code="403"
-            head="/b8nji.png"       
+            head="/b8nji.png"
+            reloadOnPermission
         >
             <span>
                 You don&apos;t have permission to access this page.

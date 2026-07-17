@@ -12,44 +12,11 @@ import { z } from "zod";
 import type { ReadonlyDeep } from "type-fest";
 
 const COOKIE_NAME = "auth";  // Name of the cookie that auth data is stored in
-import { SUDO_WINDOW_MS } from "./authConstants";
+import { AREAS, checkMinPermission, SUDO_WINDOW_MS, type Area, type AreaPermission } from "./authConstants";
 export { SUDO_WINDOW_MS };
+export type { Area, AreaPermission };
 const SUDO_WARN_MS = 5 * 1000;                 // Warn if sudo mode expires within this time-window
 const TFA_EPOCH_TOLERANCE: number | [number, number] = [5, 0];  // Five seconds into past, none into future
-
-type AreaConfig = {
-    readonly levels: readonly string[],
-    readonly default: string | null,  // Null means no access by default
-    readonly sudoFrom: string | null  // This level and above require sudo; null means none required. This only applies to write operations; read never requires sudo
-}
-
-// Definition for the different restricted areas.
-//  * sudoFrom - The minimum level that requires sudo. null means no sudo is ever required by this area. If a user has 2FA enabled, sudo is always required regardless of this setting.
-// Note, the permission specification must be manually mirrored in the database schema - `doc/Databases.md`.
-const AREAS = {
-    panel: {
-        levels: ["viewer", "admin"] as const,
-        default: null,      // null = no panel access by default
-        sudoFrom: "admin"   // admin-level panel actions require sudo
-    },
-    hisdoc: {
-        levels: ["viewer", "editor", "admin"] as const,
-        default: "viewer",  // all users can view hisdoc by default
-        sudoFrom: null      // no sudo required for hisdoc operations
-    }
-} satisfies Record<string, AreaConfig>;
-
-export type Area = keyof typeof AREAS;
-/** The valid permission level strings for a given area. */
-export type AreaPermission<A extends Area> = typeof AREAS[A]["levels"][number];
-
-type StoredPermissions = { [A in Area]: AreaPermission<A> | null };
-
-/** Returns true if userLevel meets or exceeds minLevel in the given ordered levels array. */
-function checkMinPermission(levels: readonly string[], userLevel: string | null, minLevel: string): boolean {
-    if (userLevel === null) return false;
-    return levels.indexOf(userLevel) >= levels.indexOf(minLevel);
-}
 
 // Extract stored permissions for each area from a database user
 function userToPermissions(user: {
@@ -80,6 +47,7 @@ const SessionDataSchema = z.object({
     sudoVerifiedAt: z.number().nullable()   // Timestamp when sudo mode was last entered, null if not active
 });
 type SessionData = z.infer<typeof SessionDataSchema>;
+export type StoredPermissions = SessionData["optimistic"]["permissions"];
 
 const WrappedSessionDataSchema = z.object({
     hasSession: z.literal(true),            // Constant flag
@@ -156,8 +124,7 @@ export class SessionAccessor {
     async optimisticCheckPermission<A extends Area>(area: A, minLevel: AreaPermission<A>): Promise<boolean> {
         const [session] = await this.#getIronSession();
         if (session === null) return false;
-        const permissions = session.optimistic.permissions as unknown as StoredPermissions;
-        return checkMinPermission(AREAS[area].levels, permissions[area], minLevel);
+        return checkMinPermission(AREAS[area].levels, session.optimistic.permissions[area], minLevel);
     }
 
     /**
@@ -166,6 +133,15 @@ export class SessionAccessor {
     async optimisticRequirePermission<A extends Area>(area: A, minLevel: AreaPermission<A>): Promise<void> {
         if (!await this.optimisticCheckPermission(area, minLevel))
             throw new Error(`User does not have optimistic permission '${minLevel}' for area '${area}'`);
+    }
+
+    /**
+     * Returns the user's cached permission level for every area, or all-null if there is no session.
+     */
+    async getOptimisticPermissions(): Promise<StoredPermissions> {
+        const [session] = await this.#getIronSession();
+        if (session === null) return { panel: null, hisdoc: null };
+        return session.optimistic.permissions;
     }
 
     /**

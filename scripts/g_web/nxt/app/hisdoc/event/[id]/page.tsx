@@ -2,7 +2,6 @@ import "server-only";
 import prisma from "@g/com/lib/prisma/client";
 import { hd_changelog_what } from "@g/com/prisma/client";
 import { hd_person_type } from "@g/com/prisma/enums";
-import { NS } from "@/lib/session";
 import { notFound } from "next/navigation";
 import PageSection from "../../../ui/PageSection";
 import SplitPage from "../../ui/SplitPage";
@@ -14,7 +13,7 @@ import SmallPerson from "../../ui/SmallPerson";
 import SmallEvent from "../../ui/SmallEvent";
 import SmallChangelog from "../../ui/SmallChangelog";
 import { FlexiDateDisplay } from "../../ui/FlexiDateDisplay";
-import { LinkButton, BUTTON_INDIGO } from "@/app/ui/Button";
+import EditEventButton from "../../ui/EditEventButton";
 import { EVENT_SELECT } from "../../lib/eventSelect";
 import { getMinecraftUsername } from "../../lib/minecraft";
 import { colorToHex } from "../../lib/color";
@@ -32,7 +31,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
     const id = parseInt(idStr, 10);
     if (isNaN(id)) notFound();
 
-    const [event, canEdit, relatedRows, changelog] = await Promise.all([
+    const [event, relatedRows, changelog] = await Promise.all([
         prisma().hd_event.findUnique({
             where: { id },
             include: {
@@ -41,7 +40,6 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                 user: { select: { username: true } }
             }
         }),
-        NS.optimisticCheckPermission("hisdoc", "editor"),
         // hd_event_event_rea is a view exposing both directions of the relation; the write table
         // (hd_event_event_wri) must never be read directly outside the gateway
         prisma().hd_event_event_rea.findMany({ where: { event_id: id, soft_deleted: 0 } }),
@@ -146,9 +144,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
             }
             sidebar={
                 <>
-                    {canEdit && (
-                        <LinkButton href={"/hisdoc/event/" + id + "/edit"} color={BUTTON_INDIGO}>Edit</LinkButton>
-                    )}
+                    <EditEventButton id={id} />
                     <StatsPill>
                         <span>EID: {event.id}</span>
                         <span>Posted by {event.user.username}</span>

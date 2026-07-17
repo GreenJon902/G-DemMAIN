@@ -43,7 +43,7 @@ export default function PanelPageContent(
                                     </span>
                                 </td>
                                 <td className="flex gap-1 p-1"> {/* All changing controls go into the same <td> as the frequent changing causes firefox to get confused and not render backgrounds correctly */}
-                                    <UnitControls unit={unit} status={status} className="flex-1" isAdmin={data.isAdmin} />
+                                    <UnitControls unit={unit} status={status} className="flex-1" />
                                 </td>
                             </tr>
                         ))
@@ -89,10 +89,10 @@ function StatusIndicator({ unit, status }: { unit: Unit, status: UnitStatus | un
 /**
  * Create the controls for the given unit.
  * @param className - This will be given to each child.
- * @param isAdmin - Whether the current user has panel admin permission. Controls are disabled when false.
  */
-function UnitControls({ unit, status, className="", isAdmin }: { unit: Unit, status: UnitStatus | undefined, className?: string, isAdmin: boolean }) {
+function UnitControls({ unit, status, className="" }: { unit: Unit, status: UnitStatus | undefined, className?: string }) {
     const authCtx = useAuthContext();
+    const isAdmin = authCtx.checkPermission("panel", "admin");
     const guard = makeAreaSudoGuard("panel", "admin", authCtx);
     const { requestConfirm } = useConfirmContext();
     const { showError } = useErrorContext();
