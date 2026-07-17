@@ -1,9 +1,6 @@
-"use client";
-
 import { ReactNode } from "react";
 import { Url } from "next/dist/shared/lib/router/router";
 import { LinkButton, ButtonColor, BUTTON_INDIGO, BUTTON_CYAN, BUTTON_GREEN, BUTTON_YELLOW, BUTTON_RED } from "./Button";
-import { useAuthContext } from "@/app/AuthContext";
 import type { AreaPermissionRequirement } from "@g/com/lib/authConstants";
 
 // Cycled through for each link in this order
@@ -26,8 +23,6 @@ export type SubNavLink = {
  *                likely means two links end up sharing a colour unintentionally.
  */
 export default function SubNav({ logo, links }: { logo: ReactNode, links: SubNavLink[] }) {
-    const { checkPermission } = useAuthContext();
-
     if (links.length > AUTO_LINK_COLORS.length) {
         console.error(`SubNav: ${links.length} links but only ${AUTO_LINK_COLORS.length} auto colors, colors will repeat`);
     }
@@ -39,22 +34,17 @@ export default function SubNav({ logo, links }: { logo: ReactNode, links: SubNav
                 {logo}
             </div>
             <div className="flex flex-1 flex-wrap items-center gap-2 sm:flex-nowrap">
-                {links.map((link, i) => {
-                    const disabled = typeof link.disabled === "object"
-                        ? !checkPermission(link.disabled.area, link.disabled.minLevel)
-                        : link.disabled;
-                    return (
-                        <LinkButton
-                            key={link.href.toString()}
-                            href={link.href}
-                            className="h-min flex-1"
-                            color={AUTO_LINK_COLORS[i % AUTO_LINK_COLORS.length]}
-                            disabled={disabled}
-                        >
-                            {link.children}
-                        </LinkButton>
-                    );
-                })}
+                {links.map((link, i) => (
+                    <LinkButton
+                        key={link.href.toString()}
+                        href={link.href}
+                        className="h-min flex-1"
+                        color={AUTO_LINK_COLORS[i % AUTO_LINK_COLORS.length]}
+                        disabled={link.disabled}
+                    >
+                        {link.children}
+                    </LinkButton>
+                ))}
             </div>
         </header>
     );

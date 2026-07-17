@@ -13,7 +13,7 @@ import SmallPerson from "../../ui/SmallPerson";
 import SmallEvent from "../../ui/SmallEvent";
 import SmallChangelog from "../../ui/SmallChangelog";
 import { FlexiDateDisplay } from "../../ui/FlexiDateDisplay";
-import EditEventButton from "../../ui/EditEventButton";
+import { LinkButton, BUTTON_INDIGO } from "@/app/ui/Button";
 import { EVENT_SELECT } from "../../lib/eventSelect";
 import { getMinecraftUsername } from "../../lib/minecraft";
 import { colorToHex } from "../../lib/color";
@@ -22,7 +22,7 @@ import { colorToHex } from "../../lib/color";
 /**
  * Detail page for a single HisDoc event. Displays the event's date, description, optional
  * details section, associated tags and persons, related events, and the full audit changelog.
- * The Edit button is shown only when the viewer has hisdoc access.
+ * The Edit button is disabled unless the viewer has hisdoc editor access.
  *
  * @param params - Next.js 15 route params Promise; contains `id` as a decimal string.
  */
@@ -144,7 +144,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
             }
             sidebar={
                 <>
-                    <EditEventButton id={id} />
+                    <LinkButton href={"/hisdoc/event/" + id + "/edit"} color={BUTTON_INDIGO} disabled={{ area: "hisdoc", minLevel: "editor" }}>Edit</LinkButton>
                     <StatsPill>
                         <span>EID: {event.id}</span>
                         <span>Posted by {event.user.username}</span>

@@ -1,6 +1,5 @@
 import Link from "next/link";
 import TextLink, { TEXT_LINK_WHITE } from "./ui/TextLink";
-import GuardedNavLink from "./ui/GuardedNavLink";
 import AccountButton from "./AccountButton";
 
 /**
@@ -27,9 +26,9 @@ export default function GlobalNav() {
                 <TextLink href="/map" color={TEXT_LINK_WHITE} constantColor className="border-r border-gray-500 px-1 hover:bg-gray-600">
                     Dynmap
                 </TextLink>
-                <GuardedNavLink area="panel" href="/panel" className="border-r border-gray-500 px-1 hover:bg-gray-600">
+                <TextLink href="/panel" color={TEXT_LINK_WHITE} constantColor className="border-r border-gray-500 px-1 hover:bg-gray-600" disabled={{ area: "panel", minLevel: "viewer" }}>
                     Panel
-                </GuardedNavLink>
+                </TextLink>
                 <div className="flex-1">
                     <AccountButton />
                 </div>

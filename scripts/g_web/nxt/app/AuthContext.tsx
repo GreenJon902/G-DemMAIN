@@ -81,9 +81,9 @@ export function AuthContextProvider({
         // Reads initialPermissions directly (not permissions state) since it's guaranteed fresh for
         // this render; it's deliberately not a dep here since it should only piggyback on an actual
         // login transition, not re-fire this effect on every permissions change (synced separately below)
-        // eslint-disable-next-line react-hooks/exhaustive-deps
         if (initialIsLoggedIn && !prev)  channelRef.current?.postMessage({ type: "logged-in", permissions: initialPermissions } satisfies AuthBroadcast);
         if (!initialIsLoggedIn && prev)  channelRef.current?.postMessage({ type: "logged-out" } satisfies AuthBroadcast);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [initialIsLoggedIn]);
     useEffect(() => { setSudoVerifiedAt(initialSudoVerifiedAt); }, [initialSudoVerifiedAt]);
     useEffect(() => { setTfaEnabled(initialTfaEnabled); }, [initialTfaEnabled]);
