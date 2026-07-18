@@ -1,4 +1,4 @@
-package net.gdemmain.gmcmonitor.console;
+package net.gdemmain.gmcmonitor;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.Layout;

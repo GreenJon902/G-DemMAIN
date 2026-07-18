@@ -1,4 +1,4 @@
-package net.gdemmain.gmcmonitor.stats;
+package net.gdemmain.gmcmonitor;
 
 /** Reads JVM heap usage directly from {@link Runtime} - cheap enough to call on every read, no caching needed. */
 public final class HeapStats {

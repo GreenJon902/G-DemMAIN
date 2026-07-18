@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.gdemmain.gmcmonitor.ServerHolder;
-import net.gdemmain.gmcmonitor.config.MonitorConfig;
+import net.gdemmain.gmcmonitor.MonitorConfig;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 

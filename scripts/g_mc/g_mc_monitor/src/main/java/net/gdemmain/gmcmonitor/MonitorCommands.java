@@ -1,11 +1,8 @@
-package net.gdemmain.gmcmonitor.command;
+package net.gdemmain.gmcmonitor;
 
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.permission.v1.PermissionNode;
 import net.fabricmc.fabric.api.permission.v1.PermissionPredicates;
-import net.gdemmain.gmcmonitor.GMcMonitor;
-import net.gdemmain.gmcmonitor.stats.HeapStats;
-import net.gdemmain.gmcmonitor.stats.TickStats;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;

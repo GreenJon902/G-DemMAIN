@@ -1,11 +1,9 @@
-package net.gdemmain.gmcmonitor.event;
+package net.gdemmain.gmcmonitor;
 
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.gdemmain.gmcmonitor.ServerHolder;
-import net.gdemmain.gmcmonitor.config.MonitorConfig;
 import net.gdemmain.gmcmonitor.socket.ChatSocketServer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;

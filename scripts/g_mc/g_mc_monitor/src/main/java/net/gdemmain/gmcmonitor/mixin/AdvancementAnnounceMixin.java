@@ -1,6 +1,6 @@
 package net.gdemmain.gmcmonitor.mixin;
 
-import net.gdemmain.gmcmonitor.event.EventHooks;
+import net.gdemmain.gmcmonitor.EventHooks;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.server.PlayerAdvancements;
 import net.minecraft.server.level.ServerPlayer;

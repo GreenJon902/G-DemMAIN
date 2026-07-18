@@ -3,15 +3,8 @@ package net.gdemmain.gmcmonitor;
 import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.loader.api.FabricLoader;
-import net.gdemmain.gmcmonitor.command.MonitorCommands;
-import net.gdemmain.gmcmonitor.config.ConfigManager;
-import net.gdemmain.gmcmonitor.config.MonitorConfig;
-import net.gdemmain.gmcmonitor.console.ConsoleCapture;
-import net.gdemmain.gmcmonitor.event.EventHooks;
-import net.gdemmain.gmcmonitor.fs.MonitorFuseFS;
 import net.gdemmain.gmcmonitor.socket.ChatSocketServer;
 import net.gdemmain.gmcmonitor.socket.ConsoleSocketServer;
-import net.gdemmain.gmcmonitor.stats.TickStats;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

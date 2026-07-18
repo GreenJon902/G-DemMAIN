@@ -1,4 +1,4 @@
-package net.gdemmain.gmcmonitor.stats;
+package net.gdemmain.gmcmonitor;
 
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 

@@ -6,7 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.gdemmain.gmcmonitor.GMcMonitor;
 import net.gdemmain.gmcmonitor.ServerHolder;
-import net.gdemmain.gmcmonitor.console.ConsoleCapture;
+import net.gdemmain.gmcmonitor.ConsoleCapture;
 import net.minecraft.server.MinecraftServer;
 
 /**

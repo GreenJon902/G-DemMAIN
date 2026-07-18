@@ -1,4 +1,4 @@
-package net.gdemmain.gmcmonitor.config;
+package net.gdemmain.gmcmonitor;
 
 /**
  * Persisted mod configuration, serialized as JSON to config/g_mc_monitor.json.

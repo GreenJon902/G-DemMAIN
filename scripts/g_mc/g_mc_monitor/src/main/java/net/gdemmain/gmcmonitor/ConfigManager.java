@@ -1,4 +1,4 @@
-package net.gdemmain.gmcmonitor.config;
+package net.gdemmain.gmcmonitor;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;

@@ -1,10 +1,6 @@
-package net.gdemmain.gmcmonitor.fs;
+package net.gdemmain.gmcmonitor;
 
 import jnr.ffi.Pointer;
-import net.gdemmain.gmcmonitor.GMcMonitor;
-import net.gdemmain.gmcmonitor.ServerHolder;
-import net.gdemmain.gmcmonitor.stats.HeapStats;
-import net.gdemmain.gmcmonitor.stats.TickStats;
 import net.minecraft.server.MinecraftServer;
 import ru.serce.jnrfuse.ErrorCodes;
 import ru.serce.jnrfuse.FuseFillDir;
