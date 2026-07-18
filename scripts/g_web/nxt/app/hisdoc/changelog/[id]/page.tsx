@@ -131,8 +131,8 @@ export default async function ChangelogEntryPage({ params }: { params: Promise<{
                     {entry.soft_deleted && <WarningBanner>This changelog entry has been soft-deleted.</WarningBanner>}
                     {entityStatus.missing && <WarningBanner>This {entry.what.toLowerCase()} (#{entry.entity_id}) no longer exists.</WarningBanner>}
                     {!entityStatus.missing && entityStatus.softDeleted && <WarningBanner>This {entry.what.toLowerCase()} (#{entry.entity_id}) has been deleted.</WarningBanner>}
-                    {before !== null && before.soft_deleted && <WarningBanner>The &quot;before&quot; state of this change has soft-deleted.</WarningBanner>}
-                    {after !== null && after.soft_deleted && <WarningBanner>The &quot;after&quot; state of this change has soft-deleted.</WarningBanner>}
+                    {before !== null && before.soft_deleted && <WarningBanner>The &quot;before&quot; state of this change has soft-deleted true.</WarningBanner>}
+                    {after !== null && after.soft_deleted && <WarningBanner>The &quot;after&quot; state of this change has soft-deleted true.</WarningBanner>}
                     {unsupportedReason !== null && <WarningBanner>Could not render a diff for this entry ({unsupportedReason}). Showing the raw stored data instead.</WarningBanner>}
 
                     <p className="whitespace-pre-wrap text-gray-200">{entry.message}</p>
