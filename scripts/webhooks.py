@@ -60,6 +60,33 @@ def generate_webcommand(name, command):
                 }]
     }
 
+def generate_hisdoc(entity_type, action, entity_id, entity_name, actor_id, actor_name, note):
+    # Generate the json for a message about a hisdoc entity being added, edited or deleted.
+    # entity_type should be one of "event", "person", "tag"; action one of "add", "edit", "delete".
+    # entity_name should be human-readable (event/tag name, person display name).
+    # note is the changelog message for the change.
+    emoji = {
+        "add": "heavy_plus_sign",
+        "edit": "pencil2",
+        "delete": "wastebasket"
+    }[action]
+    verb = {
+        "add": "added",
+        "edit": "edited",
+        "delete": "deleted"
+    }[action]
+    return {
+            "username": "G-DemMAIN - G-Web",
+            "embeds": [{
+                "title": f":{emoji}: {entity_type.title()} {verb} — {entity_name} (#{entity_id})",  # TODO: Escape this
+                "fields": [
+                    {"name": "By", "value": f"{actor_name} (#{actor_id})", "inline": True},
+                    {"name": "Note", "value": note, "inline": True}
+                ],
+                "color": WEBCOLOR
+                }]
+    }
+
 def generate_test(intended_recipient):
     # Content for a testing webhook.
     return {"username": "G-DemMAIN",
@@ -82,7 +109,8 @@ def _get_webhook(name):
 webhook_getters = {
     "STATUS": lambda: _get_webhook("STATUS_WEBHOOK"),
     "WEBLOGIN": lambda: _get_webhook("WEBLOGIN_WEBHOOK"),
-    "WEBCOMMAND": lambda: _get_webhook("WEBCOMMAND_WEBHOOK")
+    "WEBCOMMAND": lambda: _get_webhook("WEBCOMMAND_WEBHOOK"),
+    "HISDOC": lambda: _get_webhook("HISDOC_WEBHOOK")
 }
 
 # Parse arguments
@@ -97,6 +125,14 @@ weblogin_parser.add_argument("name", help="The username of the user that logged 
 webcommand_parser = subparsers.add_parser("webcommand", help="Send a notification that on the panel sent a command")
 webcommand_parser.add_argument("name", help="The username of the user that sent the command")
 webcommand_parser.add_argument("command", help="The command that was sent, without the prefix (/)")
+hisdoc_parser = subparsers.add_parser("hisdoc", help="Send a notification that a hisdoc entity was added, edited or deleted")
+hisdoc_parser.add_argument("entity_type", choices=["event", "person", "tag"], help="Which kind of hisdoc entity was changed")
+hisdoc_parser.add_argument("hisdoc_action", choices=["add", "edit", "delete"], help="What was done to the entity")  # Must call it 'hisdoc_action' as 'action' is used for `subparsers` object
+hisdoc_parser.add_argument("entity_id", help="The entity's database id")
+hisdoc_parser.add_argument("entity_name", help="Human-readable name for the entity (event/tag name, person display name)")
+hisdoc_parser.add_argument("actor_id", help="The database id of the user who made the change")
+hisdoc_parser.add_argument("actor_username", help="The username of the user who made the change")
+hisdoc_parser.add_argument("note", help="The changelog message for the change")
 test_parser = subparsers.add_parser("test", help="Test that the webhooks are working")
 args = parser.parse_args()
 
@@ -125,6 +161,9 @@ elif args.action == "webcommand":
     command = args.command
     # Send webhook
     send(webhook_getters["WEBCOMMAND"](), generate_webcommand(name, command))
+elif args.action == "hisdoc":
+    # Send webhook
+    send(webhook_getters["HISDOC"](), generate_hisdoc(args.entity_type, args.hisdoc_action, args.entity_id, args.entity_name, args.actor_id, args.actor_username, args.note))
 
 elif args.action == "test":
     # Just try and call all webhooks
@@ -132,7 +171,7 @@ elif args.action == "test":
         try:
             send(func(), generate_test(name))
         except NoWebhookInEnviron as e:
-            print(f"Failed, got {str(e)}")
+            print(f"Failed, got \"{str(e)}\"")
 
 else:
     raise Exception(f"Unknown action {args.action}")

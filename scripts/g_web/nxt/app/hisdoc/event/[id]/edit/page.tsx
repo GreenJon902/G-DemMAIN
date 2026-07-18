@@ -2,17 +2,17 @@ import "server-only";
 import prisma from "@g/com/lib/prisma/client";
 import { requirePermission } from "@/lib/session";
 import { notFound } from "next/navigation";
-import EventForm from "../../../ui/EventForm";
+import EntityForm from "../../../form/ui/EntityForm";
+import { buildEventFormFields } from "../../../form/lib/formFields";
+import { fetchEventFormOptions } from "../../../form/lib/options";
 import { editEvent } from "../../../actions";
-import { getMinecraftUsername } from "../../../lib/minecraft";
 
 /**
- * Page for editing an existing HisDoc event. Requires hisdoc area access.
- * Fetches the event (with its tag, person, and related-event associations),
- * plus the full tag, person, and event lists for the form selectors — all
- * in parallel. Calls notFound() if the id is not a valid integer or the
- * event does not exist. The event itself is excluded from the related-events
- * list so it cannot be linked to itself.
+ * Page for editing an existing HisDoc event. Requires hisdoc editor access.
+ * Fetches the event (with its tag, person, and related-event associations) plus the relation
+ * selector options in parallel. Calls notFound() if the id is not a valid integer or the event
+ * does not exist. The event itself is excluded from the related-events list so it cannot be
+ * linked to itself.
  *
  * @param params - Next.js 15 route params Promise; contains `id` as a decimal string.
  */
@@ -23,7 +23,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
     const id = parseInt(idStr, 10);
     if (isNaN(id)) notFound();
 
-    const [event, rawTags, rawPersons, rawEvents, relatedRows] = await Promise.all([
+    const [event, options, relatedRows] = await Promise.all([
         prisma().hd_event.findUnique({
             where: { id, soft_deleted: false },
             include: {
@@ -31,21 +31,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
                 hd_event_person: { where: { soft_deleted: false }, select: { person_id: true } }
             }
         }),
-        prisma().hd_tag.findMany({
-            where: { soft_deleted: false },
-            orderBy: { name: "asc" },
-            select: { id: true, name: true, description: true, color: true }
-        }),
-        prisma().hd_person.findMany({
-            where: { soft_deleted: false },
-            orderBy: { data: "asc" },
-            select: { id: true, type: true, data: true }
-        }),
-        prisma().hd_event.findMany({
-            where: { soft_deleted: false },
-            orderBy: { name: "asc" },
-            select: { id: true, name: true }
-        }),
+        fetchEventFormOptions(),
         // hd_event_event_rea is a view exposing both directions of the relation; the write table
         // (hd_event_event_wri) must never be read directly outside the gateway
         prisma().hd_event_event_rea.findMany({ where: { event_id: id, soft_deleted: 0 } })
@@ -53,31 +39,22 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
 
     if (!event) notFound();
 
-    // Resolve display names — MINECRAFT persons need a UUID→username lookup
-    const persons = await Promise.all(
-        rawPersons.map(async (p) => ({
-            id: p.id,
-            type: p.type,
-            displayName: p.type === "MINECRAFT"
-                ? await getMinecraftUsername(p.data)
-                : p.data
-        }))
-    );
-
     // Exclude this event from its own related-events selector
-    const allEvents = rawEvents.filter(e => e.id !== id);
-    const activeEventIds = new Set(allEvents.map(e => e.id));
+    const events = options.events.filter(e => e.id !== id);
+    const activeEventIds = new Set(events.map(e => e.id));
 
-    const defaultValues = {
+    const defaults = {
         name: event.name,
         description: event.description,
         details: event.details,
-        event_date_type: event.event_date_type,
-        event_date1: event.event_date1,
-        event_date_time_offset: event.event_date_time_offset,
-        event_date_units: event.event_date_units,
-        event_date_diff: event.event_date_diff,
-        event_date2: event.event_date2,
+        flexiDate: {
+            event_date_type: event.event_date_type,
+            event_date1: event.event_date1,
+            event_date_time_offset: event.event_date_time_offset,
+            event_date_units: event.event_date_units,
+            event_date_diff: event.event_date_diff,
+            event_date2: event.event_date2
+        },
         tag_ids: event.hd_event_tag.map(t => t.tag_id),
         person_ids: event.hd_event_person.map(p => p.person_id),
         // The view already exposes both directions, and soft-deleted related events are dropped
@@ -96,12 +73,11 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
     return (
         <main className="mx-auto flex max-w-2xl flex-col gap-6 p-6">
             <h1 className="text-3xl font-bold text-white">Edit Event</h1>
-            <EventForm
+            <EntityForm
+                fields={buildEventFormFields(defaults, { ...options, events })}
                 action={handleEdit}
-                tags={rawTags}
-                persons={persons}
-                events={allEvents}
-                defaultValues={defaultValues}
+                submitLabel="Save Changes"
+                minLevel="editor"
                 isEdit
             />
         </main>

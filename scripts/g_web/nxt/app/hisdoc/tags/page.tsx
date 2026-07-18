@@ -2,6 +2,7 @@ import "server-only";
 import prisma from "@g/com/lib/prisma/client";
 import { TagChip } from "../ui/TagChip";
 import PageSection from "../../ui/PageSection";
+import { LinkButton, BUTTON_GREEN } from "@/app/ui/Button";
 import { colorToHex } from "../lib/color";
 
 /** Lists all tags ordered alphabetically. */
@@ -10,6 +11,14 @@ export default async function TagsPage() {
 
     return (
         <PageSection title="Tags">
+            <LinkButton
+                href="/hisdoc/tag/add"
+                color={BUTTON_GREEN}
+                className="mb-4 ml-auto w-fit"
+                disabled={{ area: "hisdoc", minLevel: "admin" }}
+            >
+                Add Tag
+            </LinkButton>
             <div className="flex flex-wrap gap-2">
                 {tags.map(tag => {
                     const hexColor = colorToHex(tag.color);

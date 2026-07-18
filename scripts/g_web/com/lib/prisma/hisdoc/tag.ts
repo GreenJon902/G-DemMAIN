@@ -23,20 +23,22 @@ export async function createTag(actor: Actor, message: string, data: TagInput): 
     });
 }
 
-/** Updates a tag and records the change in the changelog. */
+/** Updates a tag and records the change in the changelog. Rejects soft-deleted tags. */
 export async function updateTag(actor: Actor, message: string, id: number, data: Partial<TagInput>): Promise<hd_tag> {
     return prisma().$transaction(async (tx) => {
         const before = await tx.hd_tag.findUniqueOrThrow({ where: { id } });
+        if (before.soft_deleted) throw new Error(`Cannot update soft-deleted hd_tag ${id}`);
         const after = await tx.hd_tag.update({ where: { id }, data });
         await writeChangelog(tx, actor, message, hd_changelog_what.TAG, id, hd_changelog_action.UPDATE, before, after);
         return after;
     });
 }
 
-/** Soft-deletes a tag and records the deletion in the changelog. */
+/** Soft-deletes a tag and records the deletion in the changelog. Rejects already soft-deleted tags. */
 export async function deleteTag(actor: Actor, message: string, id: number): Promise<void> {
     await prisma().$transaction(async (tx) => {
         const before = await tx.hd_tag.findUniqueOrThrow({ where: { id } });
+        if (before.soft_deleted) throw new Error(`Cannot delete already soft-deleted hd_tag ${id}`);
         const after = await tx.hd_tag.update({ where: { id }, data: { soft_deleted: true } });
         await writeChangelog(tx, actor, message, hd_changelog_what.TAG, id, hd_changelog_action.DELETE, before, after);
     });

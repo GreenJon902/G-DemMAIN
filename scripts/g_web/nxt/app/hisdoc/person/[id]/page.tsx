@@ -8,6 +8,7 @@ import SplitPage from "../../ui/SplitPage";
 import StatsPill from "../../ui/StatsPill";
 import WarningBanner from "../../ui/WarningBanner";
 import TextLink, { TEXT_LINK_GRAY } from "../../../ui/TextLink";
+import EntityActions from "../../ui/EntityActions";
 import PersonRenderer from "../../ui/PersonRenderer";
 import SmallEvent from "../../ui/SmallEvent";
 import SmallChangelog from "../../ui/SmallChangelog";
@@ -15,6 +16,7 @@ import { BarGraph } from "../../ui/BarGraph";
 import { EVENT_SELECT } from "../../lib/eventSelect";
 import { getMinecraftUsername } from "../../lib/minecraft";
 import { colorToHex } from "../../lib/color";
+import { deletePerson } from "../../actions";
 
 /**
  * Profile page for a single HisDoc person (Minecraft player or NPC). Shows the person's
@@ -101,6 +103,12 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
     const posts = person.user?.hd_event ?? [];
     const recentPosts = posts.slice(0, 10);
 
+    // Thin server action wrapper that binds the person id for deletePerson
+    async function handleDelete(note: string) {
+        "use server";
+        await deletePerson(id, note);
+    }
+
     return (
         <SplitPage
             title={displayName}
@@ -153,6 +161,14 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
             }
             sidebar={
                 <>
+                    {!person.soft_deleted && (
+                        <EntityActions
+                            entityLabel="person"
+                            minLevel="admin"
+                            editHref={"/hisdoc/person/" + id + "/edit"}
+                            deleteAction={handleDelete}
+                        />
+                    )}
                     {person.type === hd_person_type.MINECRAFT && (
                         <div className="flex flex-col items-center rounded bg-gray-700 p-2">
                             <PersonRenderer playerdata={person.data} interactive={true} />

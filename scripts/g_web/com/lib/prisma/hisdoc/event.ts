@@ -224,6 +224,7 @@ export async function updateEvent(actor: Actor, message: string, id: number, dat
     return prisma().$transaction(async (tx) => {
         // Get state beforehand
         const before = await tx.hd_event.findUniqueOrThrow({ where: { id } });
+        if (before.soft_deleted) throw new Error(`Cannot update soft-deleted hd_event ${id}`);
         const beforeSnapshot = await buildEventSnapshot(tx, id);
 
         // Date fields are only meaningful together, so validate the merged (existing + patched) result whenever any of them change
@@ -256,11 +257,16 @@ export async function updateEvent(actor: Actor, message: string, id: number, dat
     });
 }
 
-/** Soft-deletes an event and records the deletion in the changelog. Does not touch its relations. */
+/**
+ * Soft-deletes an event and records the deletion in the changelog. Does not touch its relations.
+ * Rejects already soft-deleted events.
+ */
 export async function deleteEvent(actor: Actor, message: string, id: number): Promise<void> {
     // TODO: Log relations?
     await prisma().$transaction(async (tx) => {
         // Get state beforehand
+        const before = await tx.hd_event.findUniqueOrThrow({ where: { id } });
+        if (before.soft_deleted) throw new Error(`Cannot delete already soft-deleted hd_event ${id}`);
         const beforeSnapshot = await buildEventSnapshot(tx, id);
 
         // (Soft) delete event row

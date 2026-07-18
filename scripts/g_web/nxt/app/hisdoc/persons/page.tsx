@@ -2,6 +2,7 @@ import "server-only";
 import prisma from "@g/com/lib/prisma/client";
 import { getMinecraftUsername } from "../lib/minecraft";
 import PageSection from "../../ui/PageSection";
+import { LinkButton, BUTTON_GREEN } from "@/app/ui/Button";
 import SmallPerson from "../ui/SmallPerson";
 import LargePerson from "../ui/LargePerson";
 import { PERSON_GAP } from "../ui/personSizing";
@@ -42,6 +43,14 @@ export default async function PersonsPage() {
 
     return (
         <PageSection title="Persons">
+            <LinkButton
+                href="/hisdoc/person/add"
+                color={BUTTON_GREEN}
+                className="mb-4 ml-auto w-fit"
+                disabled={{ area: "hisdoc", minLevel: "admin" }}
+            >
+                Add Person
+            </LinkButton>
             <div className="columns-2 sm:columns-3 lg:columns-4 xl:columns-5" style={{ columnGap: PERSON_GAP }}>
                 {resolvedPersons.map(({ person, name }) =>
                     largePersonIds.has(person.id) ? (

@@ -9,10 +9,12 @@ import StatsPill from "../../ui/StatsPill";
 import WarningBanner from "../../ui/WarningBanner";
 import SmallEvent from "../../ui/SmallEvent";
 import SmallChangelog from "../../ui/SmallChangelog";
+import EntityActions from "../../ui/EntityActions";
 import { BarGraph } from "../../ui/BarGraph";
 import { EVENT_SELECT } from "../../lib/eventSelect";
 import { getMinecraftUsername } from "../../lib/minecraft";
 import { colorToHex } from "../../lib/color";
+import { deleteTag } from "../../actions";
 
 const PLAYER_BAR_COLOR = "#818cf8"; // indigo-400, matching the app's link colour
 
@@ -81,6 +83,12 @@ export default async function TagPage({ params }: { params: Promise<{ id: string
 
     const recentEvents = tag.hd_event_tag.map(({ hd_event }) => hd_event).slice(0, 10);
 
+    // Thin server action wrapper that binds the tag id for deleteTag
+    async function handleDelete(note: string) {
+        "use server";
+        await deleteTag(id, note);
+    }
+
     return (
         <SplitPage
             title={tag.name}
@@ -122,10 +130,20 @@ export default async function TagPage({ params }: { params: Promise<{ id: string
                 </>
             }
             sidebar={
-                <StatsPill>
-                    <span>TID: {tag.id}</span>
-                    <span>Event Count: {tag.hd_event_tag.length}</span>
-                </StatsPill>
+                <>
+                    {!tag.soft_deleted && (
+                        <EntityActions
+                            entityLabel="tag"
+                            minLevel="admin"
+                            editHref={"/hisdoc/tag/" + id + "/edit"}
+                            deleteAction={handleDelete}
+                        />
+                    )}
+                    <StatsPill>
+                        <span>TID: {tag.id}</span>
+                        <span>Event Count: {tag.hd_event_tag.length}</span>
+                    </StatsPill>
+                </>
             }
         />
     );

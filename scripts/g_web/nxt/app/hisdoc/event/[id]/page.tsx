@@ -13,10 +13,11 @@ import SmallPerson from "../../ui/SmallPerson";
 import SmallEvent from "../../ui/SmallEvent";
 import SmallChangelog from "../../ui/SmallChangelog";
 import { FlexiDateDisplay } from "../../ui/FlexiDateDisplay";
-import { LinkButton, BUTTON_INDIGO } from "@/app/ui/Button";
+import EntityActions from "../../ui/EntityActions";
 import { EVENT_SELECT } from "../../lib/eventSelect";
 import { getMinecraftUsername } from "../../lib/minecraft";
 import { colorToHex } from "../../lib/color";
+import { deleteEvent } from "../../actions";
 
 
 /**
@@ -55,7 +56,6 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
     if (!event) notFound();
 
     // Drop tag/person applications whose tag or person has itself been soft-deleted
-    console.log(id, event.hd_event_person);
     const tags = event.hd_event_tag.filter(({ hd_tag }) => !hd_tag.soft_deleted).map(({ hd_tag }) => hd_tag);
     const persons = event.hd_event_person.filter(({ hd_person }) => !hd_person.soft_deleted).map(({ hd_person }) => hd_person);
 
@@ -72,6 +72,12 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
         where: { id: { in: relatedRows.map(r => r.related_event_id) }, soft_deleted: false },
         select: EVENT_SELECT
     });
+
+    // Thin server action wrapper that binds the event id for deleteEvent
+    async function handleDelete(note: string) {
+        "use server";
+        await deleteEvent(id, note);
+    }
 
     return (
         <SplitPage
@@ -144,7 +150,14 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
             }
             sidebar={
                 <>
-                    <LinkButton href={"/hisdoc/event/" + id + "/edit"} color={BUTTON_INDIGO} disabled={{ area: "hisdoc", minLevel: "editor" }}>Edit</LinkButton>
+                    {!event.soft_deleted && (
+                        <EntityActions
+                            entityLabel="event"
+                            minLevel="editor"
+                            editHref={"/hisdoc/event/" + id + "/edit"}
+                            deleteAction={handleDelete}
+                        />
+                    )}
                     <StatsPill>
                         <span>EID: {event.id}</span>
                         <span>Posted by {event.user.username}</span>

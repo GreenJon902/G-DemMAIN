@@ -26,24 +26,27 @@ export function sendWebcommandWebhook(name: string, command: string) {
 }
 
 /**
- * Send a notification that a new HisDoc event was added.
+ * Send a notification that a HisDoc entity was added, edited or deleted.
  * Note this will not wait for the webhook to finish.
- * @param eventName - The name of the newly added event.
- * @param authorUsername - The g_web username of the user who added it.
+ * @param entityType - Which kind of hisdoc entity was changed.
+ * @param action - What was done to it.
+ * @param entityId - The entity's database id.
+ * @param entityName - Human-readable name for the entity (event/tag name, person display name).
+ * @param actorId - The database id of the g_web user who made the change.
+ * @param actorUsername - The g_web username of the user who made the change.
+ * @param changelogNote - The changelog message for this change (typed note for edits/deletes, the
+ *   auto-generated message for adds).
  */
-export function sendHisDocEventAddedWebhook(eventName: string, authorUsername: string) {
-    executeCommand("hisdoc_event_added", eventName, authorUsername);
-}
-
-/**
- * Send a notification that an existing HisDoc event was edited.
- * Note this will not wait for the webhook to finish.
- * @param eventName - The name of the edited event.
- * @param authorUsername - The g_web username of the user who made the edit.
- * @param changelogNote - The human-written summary of what changed.
- */
-export function sendHisDocEventEditedWebhook(eventName: string, authorUsername: string, changelogNote: string) {
-    executeCommand("hisdoc_event_edited", eventName, authorUsername, changelogNote);
+export function sendHisDocWebhook(
+    entityType: "event" | "person" | "tag",
+    action: "add" | "edit" | "delete",
+    entityId: number,
+    entityName: string,
+    actorId: number,
+    actorUsername: string,
+    changelogNote: string
+) {
+    executeCommand("hisdoc", entityType, action, String(entityId), entityName, String(actorId), actorUsername, changelogNote);
 }
 
 /**
