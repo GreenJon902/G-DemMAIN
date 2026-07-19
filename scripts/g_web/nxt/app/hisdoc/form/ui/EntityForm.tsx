@@ -6,7 +6,7 @@ import { useErrorContext } from "@/app/ErrorContext";
 import { ActionButton, BUTTON_GREEN } from "@/app/ui/Button";
 import type { AreaPermission } from "@g/com/lib/authConstants";
 import type { ActionResult } from "../../lib/actionHelpers";
-import { FormChangedContext, FormRow, FORM_INPUT_CLASS } from "./FormInputs";
+import { FormChangedContext, FormLongTextInput } from "./FormInputs";
 
 interface EntityFormProps {
     /** The server action to call on submit. For add: the action directly. For edit: a bound wrapper like (fd) => editEvent(id, fd). */
@@ -23,14 +23,16 @@ interface EntityFormProps {
 
 /**
  * Serialises a form's current FormData into a stable string for dirty-comparison. Entries are
- * JSON-encoded and sorted so repeated keys (relation hidden inputs) compare consistently.
+ * JSON-encoded and sorted so repeated keys (relation hidden inputs) compare consistently. String
+ * values are trimmed first, so a whitespace-only edit doesn't count as a change — trimTextInputs
+ * strips it before submission anyway, and the whitespace-aware validation treats it as blank.
  * The changelog note is excluded — typing a note alone is not a change worth submitting.
  */
 function serializeFormState(form: HTMLFormElement): string {
     const entries: string[] = [];
     for (const [key, value] of new FormData(form)) {
         if (key === "changelog_note") continue;
-        entries.push(JSON.stringify([key, value]));
+        entries.push(JSON.stringify([key, typeof value === "string" ? value.trim() : value]));
     }
     return entries.sort().join("\n");
 }
@@ -88,16 +90,7 @@ export default function EntityForm(props: EntityFormProps) {
                 <div className="flex max-w-2xl flex-col gap-4">
                     {props.children}
 
-                    {props.isEdit && (
-                        <FormRow label="Changelog Note" asLabel>
-                            <textarea
-                                name="changelog_note"
-                                required
-                                rows={4}
-                                className={FORM_INPUT_CLASS}
-                            />
-                        </FormRow>
-                    )}
+                    {props.isEdit && <FormLongTextInput name="changelog_note" label="Changelog Note" required rows={4} />}
 
                     <ActionButton
                         color={BUTTON_GREEN}

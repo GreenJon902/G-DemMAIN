@@ -3,7 +3,7 @@
 import { ReactNode, useState, useEffect } from "react";
 import RadioButtons from "@/app/ui/RadioButtons";
 import { type FlexiDate, convertFlexiDateCount, formatDateInputValue, parseDateInputValue, formatSignedOffset } from "../../lib/date/flexidate";
-import { FORM_INPUT_CLASS, useFormChanged } from "./FormInputs";
+import { FORM_INPUT_CLASS, FieldError, RequiredMark, inputClass, useFieldValidation, useFormChanged } from "./FormInputs";
 
 // Zero-padded "00".."23" choices for the hour-precision hour selector
 const HOUR_OPTIONS = Array.from({ length: 24 }, (_, hour) => hour.toString().padStart(2, "0"));
@@ -23,11 +23,12 @@ const DATETIME_MAX = `${DATE_MAX}T23:59`;
 /**
  * Caption + content wrapper for one FlexiDate sub-field, matching FormRow's caption styling
  * without repeating its box — the whole widget already sits inside a single FormRow.
+ * @param required - Shows a red asterisk after the label when true.
  */
-function SubField({ label, htmlFor, children }: { label: string, htmlFor?: string, children: ReactNode }) {
+function SubField({ label, htmlFor, required = false, children }: { label: string, htmlFor?: string, required?: boolean, children: ReactNode }) {
     return (
         <div className="flex flex-col gap-1">
-            <label className="text-sm font-semibold text-gray-300" htmlFor={htmlFor}>{label}</label>
+            <label className="text-sm font-semibold text-gray-300" htmlFor={htmlFor}>{label}{required && <RequiredMark />}</label>
             {children}
         </div>
     );
@@ -72,6 +73,9 @@ export default function FlexiDateInput({ defaultValue }: { defaultValue?: FlexiD
     useEffect(() => {
         if (defaultValue) return;
         const offsetStr = formatSignedOffset(-new Date().getTimezoneOffset());
+        // Must run client-only (real browser timezone isn't available during SSR/the useState
+        // initializer, and using it there would cause a hydration mismatch anyway)
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setDateTimeOffset(offsetStr);
         const tzPart = new Intl.DateTimeFormat(undefined, { timeZoneName: "short" })
             .formatToParts(new Date())
@@ -101,6 +105,17 @@ export default function FlexiDateInput({ defaultValue }: { defaultValue?: FlexiD
             ? formatDateInputValue(defaultValue.event_date2!, "d")
             : ""
     );
+
+    // One independent validation-error tracker per required field (see useFieldValidation) — called
+    // unconditionally since hooks can't be conditional, even though only one mode's fields are ever
+    // mounted at a time
+    const offsetValidation = useFieldValidation();
+    const centerValidation = useFieldValidation();
+    const centerHourDateValidation = useFieldValidation();
+    const centerHourSelectValidation = useFieldValidation();
+    const marginValidation = useFieldValidation();
+    const startValidation = useFieldValidation();
+    const endValidation = useFieldValidation();
 
     /** Switches mode, keeping each mode's own inputs so toggling back restores them. */
     function handleTypeChange(next: "centered" | "ranged") {
@@ -159,23 +174,27 @@ export default function FlexiDateInput({ defaultValue }: { defaultValue?: FlexiD
             {/* Timezone offset — shared by both modes. Not literally "UTC": it's the offset of
                 whatever timezone the date fields below are entered in, which may not be the
                 browser's current one (e.g. backfilling a historical date from elsewhere) */}
-            <SubField label="Timezone offset of the date below" htmlFor="flexi_date_time_offset">
+            <SubField label="Timezone offset of the date below" htmlFor="flexi_date_time_offset" required>
                 <p className="text-xs text-gray-400">
                     Format: (+|-)HH:MM from UTC.
                 </p>
                 <input
                     id="flexi_date_time_offset"
                     type="text"
-                    className={FORM_INPUT_CLASS}
+                    className={inputClass(offsetValidation.error)}
                     value={dateTimeOffset}
                     onChange={e => {
                         setDateTimeOffset(e.target.value);
                         notifyChanged();
+                        offsetValidation.onChange(e);
                     }}
+                    onBlur={offsetValidation.onBlur}
+                    onInvalid={offsetValidation.onInvalid}
                     pattern="[+\-]([01][0-9]|2[0-3]):[0-5][0-9]"
                     required
                     placeholder="+00:00"
                 />
+                <FieldError error={offsetValidation.error} />
                 <p className="text-xs text-gray-400">
                     {detected?.offsetStr === dateTimeOffset && `Detected as ${detected.tzName} — check this matches. `}
                     Enter the date/time below using that same local clock.
@@ -185,14 +204,19 @@ export default function FlexiDateInput({ defaultValue }: { defaultValue?: FlexiD
             {type === "centered" ? (
                 <>
                     {dateUnits === "h" ? (
-                        <SubField label="Date & Hour" htmlFor="flexi_date1_centered_date">
+                        <SubField label="Date & Hour" htmlFor="flexi_date1_centered_date" required>
                             <div className="flex gap-2">
                                 <input
                                     id="flexi_date1_centered_date"
                                     type="date"
-                                    className={FORM_INPUT_CLASS + " flex-1"}
+                                    className={inputClass(centerHourDateValidation.error) + " flex-1"}
                                     value={centerInput.slice(0, 10)}
-                                    onChange={e => handleCenterHourDateChange(e.target.value)}
+                                    onChange={e => {
+                                        handleCenterHourDateChange(e.target.value);
+                                        centerHourDateValidation.onChange(e);
+                                    }}
+                                    onBlur={centerHourDateValidation.onBlur}
+                                    onInvalid={centerHourDateValidation.onInvalid}
                                     min={DATE_MIN}
                                     max={DATE_MAX}
                                     required
@@ -201,33 +225,43 @@ export default function FlexiDateInput({ defaultValue }: { defaultValue?: FlexiD
                                 <select
                                     id="flexi_date1_centered_hour"
                                     aria-label="Hour"
-                                    className={FORM_INPUT_CLASS}
+                                    className={inputClass(centerHourSelectValidation.error)}
                                     value={centerInput.length >= 13 ? centerInput.slice(11, 13) : "hh"}
-                                    onChange={e => handleCenterHourChange(e.target.value)}
+                                    onChange={e => {
+                                        handleCenterHourChange(e.target.value);
+                                        centerHourSelectValidation.onChange(e);
+                                    }}
+                                    onBlur={centerHourSelectValidation.onBlur}
+                                    onInvalid={centerHourSelectValidation.onInvalid}
                                     required
                                 >
                                     <option value="" disabled hidden>hh:??</option>
                                     {HOUR_OPTIONS.map(hour => <option key={hour} value={hour}>{hour}:??</option>)}
                                 </select>
                             </div>
+                            <FieldError error={centerHourDateValidation.error || centerHourSelectValidation.error} />
                         </SubField>
                     ) : (
-                        <SubField label={dateUnits === "d" ? "Date" : "Date & time"} htmlFor="flexi_date1_centered">
+                        <SubField label={dateUnits === "d" ? "Date" : "Date & time"} htmlFor="flexi_date1_centered" required>
                             {/* Entered using the timezone set by the offset field above — not UTC, and not
                                 necessarily the browser's current zone */}
                             <input
                                 id="flexi_date1_centered"
                                 type={dateUnits === "d" ? "date" : "datetime-local"}
-                                className={FORM_INPUT_CLASS}
+                                className={inputClass(centerValidation.error)}
                                 value={centerInput /* TODO: This defaults to 00+offset when switching from days to minutes, is this right? */}
                                 onChange={e => {
                                     setCenterInput(e.target.value);
                                     notifyChanged();
+                                    centerValidation.onChange(e);
                                 }}
+                                onBlur={centerValidation.onBlur}
+                                onInvalid={centerValidation.onInvalid}
                                 min={dateUnits === "d" ? DATE_MIN : DATETIME_MIN}
                                 max={dateUnits === "d" ? DATE_MAX : DATETIME_MAX}
                                 required
                             />
+                            <FieldError error={centerValidation.error} />
                         </SubField>
                     )}
 
@@ -244,57 +278,69 @@ export default function FlexiDateInput({ defaultValue }: { defaultValue?: FlexiD
                         </select>
                     </SubField>
 
-                    <SubField label={`± margin (${dateUnits})`} htmlFor="flexi_date_diff">
+                    <SubField label={`± margin (${dateUnits})`} htmlFor="flexi_date_diff" required>
                         <input
                             id="flexi_date_diff"
                             type="number"
-                            className={FORM_INPUT_CLASS}
+                            className={inputClass(marginValidation.error)}
                             value={dateDiff}
                             onChange={e => {
                                 setDateDiff(e.target.value);
                                 notifyChanged();
+                                marginValidation.onChange(e);
                             }}
+                            onBlur={marginValidation.onBlur}
+                            onInvalid={marginValidation.onInvalid}
                             step={1}
                             min={0}
                             max={MARGIN_MAX}
                             required
                             placeholder="0"
                         />
+                        <FieldError error={marginValidation.error} />
                     </SubField>
                 </>
             ) : (
                 <>
-                    <SubField label="Start date" htmlFor="flexi_date1_ranged">
+                    <SubField label="Start date" htmlFor="flexi_date1_ranged" required>
                         <input
                             id="flexi_date1_ranged"
                             type="date"
-                            className={FORM_INPUT_CLASS}
+                            className={inputClass(startValidation.error)}
                             value={startInput}
                             onChange={e => {
                                 setStartInput(e.target.value);
                                 notifyChanged();
+                                startValidation.onChange(e);
                             }}
+                            onBlur={startValidation.onBlur}
+                            onInvalid={startValidation.onInvalid}
                             min={DATE_MIN}
                             max={DATE_MAX}
                             required
                         />
+                        <FieldError error={startValidation.error} />
                     </SubField>
 
-                    <SubField label="End date" htmlFor="flexi_date2">
+                    <SubField label="End date" htmlFor="flexi_date2" required>
                         <input
                             id="flexi_date2"
                             type="date"
-                            className={FORM_INPUT_CLASS}
+                            className={inputClass(endValidation.error)}
                             value={endInput}
                             onChange={e => {
                                 setEndInput(e.target.value);
                                 notifyChanged();
+                                endValidation.onChange(e);
                             }}
+                            onBlur={endValidation.onBlur}
+                            onInvalid={endValidation.onInvalid}
                             // Native validation enforces date1 <= date2, on top of the overall MySQL-safe range
                             min={startInput || DATE_MIN}
                             max={DATE_MAX}
                             required
                         />
+                        <FieldError error={endValidation.error} />
                     </SubField>
                 </>
             )}
