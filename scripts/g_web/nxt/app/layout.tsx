@@ -5,9 +5,18 @@ import { ConfirmContextProvider } from "./ConfirmContext";
 import { ErrorContextProvider } from "./ErrorContext";
 import { NS } from "@/lib/session";
 import TextLink, { TEXT_LINK_GRAY } from "./ui/TextLink";
-import type { Viewport } from "next";
+import type { Metadata, Viewport } from "next";
 
 export const dynamic = "force-dynamic";  // TODO: Find a better fix this
+
+// Site-wide title template — pages set their own short title and get "| G-Dem SMP" appended.
+// HisDoc/Panel override this with their own template for everything under their own layout.
+export const metadata: Metadata = {
+    title: {
+        template: "%s | G-Dem SMP",
+        default: "G-Dem SMP"
+    }
+};
 
 // Without this, iOS Safari lays the page out at a fixed ~980px width and never matches
 // Tailwind's mobile breakpoints, so responsive (e.g. md:) classes never trigger there
@@ -28,8 +37,6 @@ export default async function Layout({
 
     return (
         <html>
-            <head>
-            </head>
             <body className="flex min-h-screen flex-col bg-gray-900 text-white">
                 <AuthContextProvider
                     initialIsLoggedIn={isLoggedIn}
@@ -45,7 +52,7 @@ export default async function Layout({
                                 instead of leaving a gap below it, while still flowing normally below
                                 taller content */}
                             <div className="flex-1">{children}</div>
-                            <footer className="w-full h-fit bg-gray-950 text-gray-500 p-2 bottom-0">
+                            <footer className="bottom-0 h-fit w-full bg-gray-950 p-2 text-gray-500">
                                 <ul>
                                     <li>
                                         Website built by <TextLink color={TEXT_LINK_GRAY} href="https://github.com/GreenJon902">GreenJon902</TextLink> for the G-Dem SMP.

@@ -1,4 +1,5 @@
 import "server-only";
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import prisma from "@g/com/lib/prisma/client";
 import { parseTimelineFilters } from "./lib/timeline-filter";
@@ -9,6 +10,8 @@ import ShowToggles from "./ui/ShowToggles";
 import StickyAside from "./ui/StickyAside";
 import { TimelinePreferencesProvider } from "./TimelinePreferencesContext";
 import { getMinecraftUsername } from "./lib/minecraft";
+
+export const metadata: Metadata = { title: "Timeline | HisDoc" };
 
 /**
  * Main HisDoc timeline page. Fetches the first page of events and all tags/persons

@@ -1,9 +1,12 @@
 
+import type { Metadata } from "next";
 import { NS } from "@/lib/session";
 import { ActionButton, BUTTON_RED } from "../ui/Button";
 import { logoutAction } from "./actions";
 import { redirectLogin } from "../login/util";
 import AccountSudoSection from "./AccountSudoSection";
+
+export const metadata: Metadata = { title: "Account" };
 
 export default async function Page() {
     // If user not logged in then log them in

@@ -1,4 +1,5 @@
 import "server-only";
+import type { Metadata } from "next";
 import { C } from "@g/com/lib/environ";
 import Console from "./Console";
 import PageSection from "../../ui/PageSection";
@@ -7,6 +8,8 @@ import LogDisplay from "./LogDisplay";
 import { tailLatestAction } from "../actions";
 
 // TODO: Update how permissions are managed. Viewer can see live console, admin can view and send commands
+
+export const metadata: Metadata = { title: "Console | Panel" };
 
 export default function Page() {
     return (

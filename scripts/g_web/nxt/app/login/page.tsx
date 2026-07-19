@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { NS } from "@/lib/session";
 import LoginForm from "./LoginForm";
+
+export const metadata: Metadata = { title: "Login" };
 
 export default async function Page({
     searchParams

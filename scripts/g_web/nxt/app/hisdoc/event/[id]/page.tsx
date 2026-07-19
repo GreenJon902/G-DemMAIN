@@ -1,4 +1,5 @@
 import "server-only";
+import type { Metadata } from "next";
 import prisma from "@g/com/lib/prisma/client";
 import { hd_changelog_what } from "@g/com/prisma/client";
 import { hd_person_type } from "@g/com/prisma/enums";
@@ -19,6 +20,15 @@ import { getMinecraftUsername } from "../../lib/minecraft";
 import { colorToHex } from "../../lib/color";
 import { deleteEvent } from "../../actions";
 
+
+/** Sets the page title to the event's name. */
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+    const { id: idStr } = await params;
+    const id = parseInt(idStr, 10);
+    if (isNaN(id)) return {};
+    const event = await prisma().hd_event.findUnique({ where: { id }, select: { name: true } });
+    return { title: event?.name ?? "Event" };
+}
 
 /**
  * Detail page for a single HisDoc event. Displays the event's date, description, optional

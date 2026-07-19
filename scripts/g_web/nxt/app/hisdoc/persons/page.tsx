@@ -1,4 +1,5 @@
 import "server-only";
+import type { Metadata } from "next";
 import prisma from "@g/com/lib/prisma/client";
 import { getMinecraftUsername } from "../lib/minecraft";
 import PageSection from "../../ui/PageSection";
@@ -6,6 +7,8 @@ import { LinkButton, BUTTON_GREEN } from "@/app/ui/Button";
 import SmallPerson from "../ui/SmallPerson";
 import LargePerson from "../ui/LargePerson";
 import { PERSON_GAP } from "../ui/personSizing";
+
+export const metadata: Metadata = { title: "Persons" };
 
 /** Fraction of minecraft persons, by event count, that are rendered large */
 const LARGE_PERSON_FRACTION = 0.1;

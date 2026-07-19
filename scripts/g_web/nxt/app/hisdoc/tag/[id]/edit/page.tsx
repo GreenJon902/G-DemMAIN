@@ -1,10 +1,20 @@
 import "server-only";
+import type { Metadata } from "next";
 import prisma from "@g/com/lib/prisma/client";
 import { requirePermission } from "@/lib/session";
 import { notFound } from "next/navigation";
 import TextLink, { TEXT_LINK_GRAY } from "../../../../ui/TextLink";
 import TagForm from "../../../form/ui/TagForm";
 import { editTag } from "../../../form/actions";
+
+/** Sets the page title to "Edit <tag name>". */
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+    const { id: idStr } = await params;
+    const id = parseInt(idStr, 10);
+    if (isNaN(id)) return {};
+    const tag = await prisma().hd_tag.findUnique({ where: { id }, select: { name: true } });
+    return { title: tag ? `Edit ${tag.name}` : "Edit Tag" };
+}
 
 /**
  * Page for editing an existing HisDoc tag. Requires hisdoc admin access.

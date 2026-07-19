@@ -1,4 +1,5 @@
 import "server-only";
+import type { Metadata } from "next";
 import prisma from "@g/com/lib/prisma/client";
 import { hd_changelog_what } from "@g/com/prisma/client";
 import { notFound } from "next/navigation";
@@ -17,6 +18,15 @@ import { colorToHex } from "../../lib/color";
 import { deleteTag } from "../../actions";
 
 const PLAYER_BAR_COLOR = "#818cf8"; // indigo-400, matching the app's link colour
+
+/** Sets the page title to the tag's name. */
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+    const { id: idStr } = await params;
+    const id = parseInt(idStr, 10);
+    if (isNaN(id)) return {};
+    const tag = await prisma().hd_tag.findUnique({ where: { id }, select: { name: true } });
+    return { title: tag?.name ?? "Tag" };
+}
 
 /** Detail page for a single HisDoc tag: description, its recent events, and a bar chart of the players involved in those events. */
 export default async function TagPage({ params }: { params: Promise<{ id: string }> }) {

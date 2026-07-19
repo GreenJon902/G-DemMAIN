@@ -1,8 +1,11 @@
 import "server-only";
+import type { Metadata } from "next";
 import { requirePermission } from "@/lib/session";
 import TextLink, { TEXT_LINK_GRAY } from "../../../ui/TextLink";
 import PersonForm from "../../form/ui/PersonForm";
 import { addPerson } from "../../form/actions";
+
+export const metadata: Metadata = { title: "Add Person" };
 
 /** Page for adding a new HisDoc person. Requires hisdoc admin access. */
 export default async function AddPersonPage() {

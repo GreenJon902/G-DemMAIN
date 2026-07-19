@@ -3,8 +3,18 @@ import SubNav, { SubNavLink } from "@/app/ui/SubNav";
 import Link from "next/link";
 import { ReactNode } from "react";
 import { Great_Vibes } from "next/font/google";
+import type { Metadata } from "next";
 
 const greatVibes = Great_Vibes({ weight: "400", subsets: ["latin"] });
+
+// Overrides the root template for everything under /hisdoc — pages set their own short title and
+// get "| HisDoc | G-Dem SMP" appended in one step (Next doesn't chain multiple ancestor templates).
+export const metadata: Metadata = {
+    title: {
+        template: "%s | HisDoc | G-Dem SMP",
+        default: "HisDoc"
+    }
+};
 
 // Flourish (arrow) drawn under the logo text
 const LOGO_FLOURISH =

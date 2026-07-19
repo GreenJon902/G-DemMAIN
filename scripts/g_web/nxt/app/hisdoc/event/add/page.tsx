@@ -1,9 +1,12 @@
 import "server-only";
+import type { Metadata } from "next";
 import { requirePermission } from "@/lib/session";
 import TextLink, { TEXT_LINK_GRAY } from "../../../ui/TextLink";
 import EventForm from "../../form/ui/EventForm";
 import { fetchTagOptions } from "../../form/lib/options";
 import { addEvent } from "../../form/actions";
+
+export const metadata: Metadata = { title: "Add Event" };
 
 /**
  * Page for adding a new HisDoc event. Requires hisdoc editor access.

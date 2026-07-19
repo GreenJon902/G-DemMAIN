@@ -1,8 +1,11 @@
 import "server-only";
+import type { Metadata } from "next";
 import { requirePermission } from "@/lib/session";
 import TextLink, { TEXT_LINK_GRAY } from "../../../ui/TextLink";
 import TagForm from "../../form/ui/TagForm";
 import { addTag } from "../../form/actions";
+
+export const metadata: Metadata = { title: "Add Tag" };
 
 /** Page for adding a new HisDoc tag. Requires hisdoc admin access. */
 export default async function AddTagPage() {

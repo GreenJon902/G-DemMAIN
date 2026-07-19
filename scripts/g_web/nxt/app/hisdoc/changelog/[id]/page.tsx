@@ -1,4 +1,5 @@
 import "server-only";
+import type { Metadata } from "next";
 import { ReactNode } from "react";
 import prisma from "@g/com/lib/prisma/client";
 import { hd_changelog_what } from "@g/com/prisma/client";
@@ -57,6 +58,12 @@ async function buildDiff(
     const { fields, before, after } = buildFieldDiffs(schemaVersion, what, oldValues, newValues);
     const refs = await resolveRefs(collectReferencedIds(what, before, after, entryUserId));
     return { diffSection: <ChangelogDiff fields={fields} refs={refs} />, fields, before, after };
+}
+
+/** Sets the page title to "Change #<id>", matching the page's own heading style. */
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+    const { id } = await params;
+    return { title: `Change #${id}` };
 }
 
 /**

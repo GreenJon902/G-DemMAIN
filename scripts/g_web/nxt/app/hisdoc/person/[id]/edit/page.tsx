@@ -1,10 +1,24 @@
 import "server-only";
+import type { Metadata } from "next";
 import prisma from "@g/com/lib/prisma/client";
 import { requirePermission } from "@/lib/session";
 import { notFound } from "next/navigation";
+import { hd_person_type } from "@g/com/prisma/enums";
 import TextLink, { TEXT_LINK_GRAY } from "../../../../ui/TextLink";
 import PersonForm from "../../../form/ui/PersonForm";
 import { editPerson } from "../../../form/actions";
+import { getMinecraftUsername } from "../../../lib/minecraft";
+
+/** Sets the page title to "Edit <person's resolved display name>". */
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+    const { id: idStr } = await params;
+    const id = parseInt(idStr, 10);
+    if (isNaN(id)) return {};
+    const person = await prisma().hd_person.findUnique({ where: { id }, select: { type: true, data: true } });
+    if (!person) return { title: "Edit Person" };
+    const displayName = person.type === hd_person_type.MINECRAFT ? await getMinecraftUsername(person.data) : person.data;
+    return { title: `Edit ${displayName}` };
+}
 
 /**
  * Page for editing an existing HisDoc person. Requires hisdoc admin access.

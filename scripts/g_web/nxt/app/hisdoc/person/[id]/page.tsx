@@ -1,4 +1,5 @@
 import "server-only";
+import type { Metadata } from "next";
 import prisma from "@g/com/lib/prisma/client";
 import { hd_changelog_what } from "@g/com/prisma/client";
 import { notFound } from "next/navigation";
@@ -17,6 +18,17 @@ import { EVENT_SELECT } from "../../lib/eventSelect";
 import { getMinecraftUsername } from "../../lib/minecraft";
 import { colorToHex } from "../../lib/color";
 import { deletePerson } from "../../actions";
+
+/** Sets the page title to the person's resolved display name. */
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+    const { id: idStr } = await params;
+    const id = parseInt(idStr, 10);
+    if (isNaN(id)) return {};
+    const person = await prisma().hd_person.findUnique({ where: { id }, select: { type: true, data: true } });
+    if (!person) return { title: "Person" };
+    const displayName = person.type === hd_person_type.MINECRAFT ? await getMinecraftUsername(person.data) : person.data;
+    return { title: displayName };
+}
 
 /**
  * Profile page for a single HisDoc person (Minecraft player or NPC). Shows the person's

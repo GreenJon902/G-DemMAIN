@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import { listLogs } from "@/lib/panelUtils";
 import PageSection from "../../ui/PageSection";
 import { AutoLabelSinceLastRefresh } from "../../ui/LabelSinceLastRefresh";
 import TextLink, { TEXT_LINK_WHITE } from "@/app/ui/TextLink";
+
+export const metadata: Metadata = { title: "Minecraft Logs | Panel" };
 
 export default async function Page() {
     const logNames = await listLogs();

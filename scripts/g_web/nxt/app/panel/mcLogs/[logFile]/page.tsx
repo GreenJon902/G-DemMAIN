@@ -1,9 +1,16 @@
+import type { Metadata } from "next";
 import { loadLogContent } from "@/lib/panelUtils";
 import { notFound } from "next/navigation";
 import PageSection from "../../../ui/PageSection";
 import TextLink, { TEXT_LINK_GRAY } from "../../../ui/TextLink";
 import { AutoLabelSinceLastRefresh } from "@/app/ui/LabelSinceLastRefresh";
 import LogView from "../../ui/LogView";
+
+/** Sets the page title to "<logFile> | Logs | Panel". */
+export async function generateMetadata({ params }: { params: Promise<{ logFile: string }> }): Promise<Metadata> {
+    const { logFile } = await params;
+    return { title: `${logFile} | Logs | Panel` };
+}
 
 export default async function Page({
     params

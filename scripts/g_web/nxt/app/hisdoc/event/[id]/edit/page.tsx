@@ -1,4 +1,5 @@
 import "server-only";
+import type { Metadata } from "next";
 import prisma from "@g/com/lib/prisma/client";
 import { requirePermission } from "@/lib/session";
 import { notFound } from "next/navigation";
@@ -6,6 +7,15 @@ import TextLink, { TEXT_LINK_GRAY } from "../../../../ui/TextLink";
 import EventForm from "../../../form/ui/EventForm";
 import { fetchTagOptions, fetchPersonOptions } from "../../../form/lib/options";
 import { editEvent } from "../../../form/actions";
+
+/** Sets the page title to "Edit <event name>". */
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+    const { id: idStr } = await params;
+    const id = parseInt(idStr, 10);
+    if (isNaN(id)) return {};
+    const event = await prisma().hd_event.findUnique({ where: { id }, select: { name: true } });
+    return { title: event ? `Edit ${event.name}` : "Edit Event" };
+}
 
 /**
  * Page for editing an existing HisDoc event. Requires hisdoc editor access.
