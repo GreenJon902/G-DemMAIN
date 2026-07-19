@@ -54,12 +54,25 @@ function formatDateTime(unixSeconds: bigint, offsetMinutes: number): string {
 }
 
 /**
+ * Formats a unix timestamp (in seconds) as a YYYY-MM-DD HH:?? string, adjusted for the given UTC
+ * offset. The minutes are rendered as "??" rather than "00" because hour precision only pins down
+ * the hour, not the minute.
+ * @param unixSeconds - Unix timestamp in seconds.
+ * @param offsetMinutes - UTC offset in minutes to apply before formatting.
+ */
+function formatHourDateTime(unixSeconds: bigint, offsetMinutes: number): string {
+    const ms = (unixSeconds + BigInt(offsetMinutes * 60)) * 1000n;
+    const d = new Date(Number(ms));
+    return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())} ${pad2(d.getUTCHours())}:??`;
+}
+
+/**
  * Formats a FlexiDate for human display.
  *
- * Centered dates are rendered as `"<date> ± <diff><unit> (<offset>)"`. The time
- * component is included only when the unit is hours or minutes. Ranged dates are
- * rendered as `"Between <date1> and <date2> (<offset>)"`. The UTC suffix is omitted
- * when the offset is zero.
+ * Centered dates are rendered as `"<date> ± <diff><unit> (<offset>)"`. The time component is
+ * included only when the unit is hours or minutes; hour precision renders the minutes as "??"
+ * since only the hour is known. Ranged dates are rendered as `"Between <date1> and <date2>
+ * (<offset>)"`. The UTC suffix is omitted when the offset is zero.
  *
  * @param date - The FlexiDate to format.
  */
@@ -81,6 +94,8 @@ export function formatFlexiDate(date: FlexiDateInput): string {
     let dateStr: string;
     if (units === "d") {
         dateStr = formatDate(centerUnix, offset);
+    } else if (units === "h") {
+        dateStr = formatHourDateTime(centerUnix, offset);
     } else {
         dateStr = formatDateTime(centerUnix, offset);
     }
@@ -160,6 +175,34 @@ export function parseDateInputValue(value: string, units: "d" | "h" | "m", offse
     const multiplier = Number(UNIT_MULTIPLIERS[units]);
     const count = units === "d" ? Math.ceil(unix / multiplier) : Math.round(unix / multiplier);
     return BigInt(count);
+}
+
+/**
+ * Floor-divides two bigints (rounds toward negative infinity, unlike `/` which truncates toward
+ * zero). `b` must be positive.
+ */
+function floorDivBigInt(a: bigint, b: bigint): bigint {
+    const q = a / b;
+    const r = a % b;
+    return r !== 0n && r < 0n ? q - 1n : q;
+}
+
+/**
+ * Converts a count of `fromUnits` since epoch into the equivalent count of `toUnits` since epoch,
+ * operating directly on the underlying instant rather than round-tripping through a formatted
+ * picker string. Precision increases (e.g. d → h) are exact, since the multipliers nest evenly;
+ * precision decreases (e.g. h → d) floor to the start of the coarser unit's bucket rather than
+ * rounding, so reducing precision drops the extra detail instead of shifting the date/hour
+ * forward.
+ *
+ * @param count - The stored count, measured in `fromUnits`.
+ * @param fromUnits - The unit `count` is currently measured in.
+ * @param toUnits - The unit to convert to.
+ */
+export function convertFlexiDateCount(count: bigint, fromUnits: "d" | "h" | "m", toUnits: "d" | "h" | "m"): bigint {
+    if (fromUnits === toUnits) return count;
+    const unix = count * UNIT_MULTIPLIERS[fromUnits];
+    return floorDivBigInt(unix, UNIT_MULTIPLIERS[toUnits]);
 }
 
 /**

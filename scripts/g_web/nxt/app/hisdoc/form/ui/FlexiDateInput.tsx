@@ -2,8 +2,11 @@
 
 import { ReactNode, useState } from "react";
 import RadioButtons from "@/app/ui/RadioButtons";
-import { type FlexiDateInput, formatDateInputValue, parseDateInputValue } from "../../lib/flexidate";
+import { type FlexiDateInput, convertFlexiDateCount, formatDateInputValue, parseDateInputValue } from "../../lib/flexidate";
 import { FORM_INPUT_CLASS, useFormChanged } from "./FormInputs";
+
+// Zero-padded "00".."23" choices for the hour-precision hour selector
+const HOUR_OPTIONS = Array.from({ length: 24 }, (_, hour) => hour.toString().padStart(2, "0"));
 
 /**
  * Caption + content wrapper for one FlexiDate sub-field, matching FormRow's caption styling
@@ -49,11 +52,12 @@ export default function FlexiDateInput({ defaultValue }: { defaultValue?: FlexiD
     const [dateUnits, setDateUnits] = useState<"d" | "h" | "m">(
         defaultValue?.event_date_units ?? "d"
     );
-    const [centerInput, setCenterInput] = useState(() =>
-        defaultValue?.event_date_type === "centered"
-            ? formatDateInputValue(defaultValue.event_date1, defaultValue.event_date_units!, defaultValue.event_date_time_offset)
-            : ""
-    );
+    const [centerInput, setCenterInput] = useState(() => {
+        if (defaultValue?.event_date_type !== "centered") return "";
+        const formatted = formatDateInputValue(defaultValue.event_date1, defaultValue.event_date_units!, defaultValue.event_date_time_offset);
+        // Hour precision only tracks the hour, so the minute component is always pinned to 00
+        return defaultValue.event_date_units === "h" ? formatted.slice(0, 13) + ":00" : formatted;
+    });
     const [dateDiff, setDateDiff] = useState(defaultValue?.event_date_diff?.toString() ?? "");
     // Ranged-only fields, always whole days
     const [startInput, setStartInput] = useState(() =>
@@ -75,13 +79,30 @@ export default function FlexiDateInput({ defaultValue }: { defaultValue?: FlexiD
         notifyChanged();
     }
 
-    // Re-encodes the already-picked instant in the new unit's input format (date vs datetime-local),
-    // since the picker element type changes with the unit
+    // Converts the already-picked instant to the new unit and re-encodes it in that unit's input
+    // format (date vs datetime-local). Converting the stored count directly (rather than
+    // reparsing the formatted string under the new unit) avoids compounding rounding drift from
+    // the offset across repeated precision switches
     function handleUnitsChange(next: "d" | "h" | "m") {
+        const prevCount = parseDateInputValue(centerInput, dateUnits, offsetNum);
         setDateUnits(next);
+        setCenterInput(prevCount === null ? "" : formatDateInputValue(convertFlexiDateCount(prevCount, dateUnits, next), next, offsetNum));
+        notifyChanged();
+    }
+
+    // Updates the date portion of a centered hour-precision value, keeping the picked hour if one
+    // has already been chosen — an unset hour is left unset rather than defaulting to 00
+    function handleCenterHourDateChange(dateStr: string) {
+        const hour = centerInput.length >= 13 ? centerInput.slice(11, 13) : "";
+        setCenterInput(dateStr ? (hour ? `${dateStr}T${hour}:00` : dateStr) : "");
+        notifyChanged();
+    }
+
+    /** Updates the hour portion of a centered hour-precision value, keeping the picked date. */
+    function handleCenterHourChange(hour: string) {
         setCenterInput(prev => {
-            const count = parseDateInputValue(prev, next, offsetNum);
-            return count === null ? "" : formatDateInputValue(count, next, offsetNum);
+            const datePart = prev.slice(0, 10);
+            return datePart ? `${datePart}T${hour}:00` : prev;
         });
         notifyChanged();
     }
@@ -126,23 +147,48 @@ export default function FlexiDateInput({ defaultValue }: { defaultValue?: FlexiD
 
             {type === "centered" ? (
                 <>
-                    <SubField label={dateUnits === "d" ? "Date" : "Date & time"} htmlFor="flexi_date1_centered">
-                        <input
-                            id="flexi_date1_centered"
-                            type={dateUnits === "d" ? "date" : "datetime-local"}
-                            className={FORM_INPUT_CLASS}
-                            value={centerInput}
-                            onChange={e => {
-                                setCenterInput(e.target.value);
-                                notifyChanged();
-                            }}
-                            // Hour units can only represent whole hours, so snap the time picker to them
-                            step={dateUnits === "h" ? 3600 : undefined}
-                            required
-                        />
-                    </SubField>
+                    {dateUnits === "h" ? (
+                        <SubField label="Date & Hour" htmlFor="flexi_date1_centered_date">
+                            <div className="flex gap-2">
+                                <input
+                                    id="flexi_date1_centered_date"
+                                    type="date"
+                                    className={FORM_INPUT_CLASS + " flex-1"}
+                                    value={centerInput.slice(0, 10)}
+                                    onChange={e => handleCenterHourDateChange(e.target.value)}
+                                    required
+                                />
+                                {/* Options are written "HH:??" to match formatFlexiDate — minutes are never known at hour precision */}
+                                <select
+                                    id="flexi_date1_centered_hour"
+                                    aria-label="Hour"
+                                    className={FORM_INPUT_CLASS}
+                                    value={centerInput.length >= 13 ? centerInput.slice(11, 13) : "hh"}
+                                    onChange={e => handleCenterHourChange(e.target.value)}
+                                    required
+                                >
+                                    <option value="" disabled hidden>hh:??</option>
+                                    {HOUR_OPTIONS.map(hour => <option key={hour} value={hour}>{hour}:??</option>)}
+                                </select>
+                            </div>
+                        </SubField>
+                    ) : (
+                        <SubField label={dateUnits === "d" ? "Date" : "Date & time"} htmlFor="flexi_date1_centered">
+                            <input
+                                id="flexi_date1_centered"
+                                type={dateUnits === "d" ? "date" : "datetime-local"}
+                                className={FORM_INPUT_CLASS}
+                                value={centerInput /* TODO: This defaults to 00+offset when switching from days to minutes, is this right? Also confirm this is definitely a UTC input, not a current-timezone input */ }       
+                                onChange={e => {
+                                    setCenterInput(e.target.value);
+                                    notifyChanged();
+                                }}
+                                required
+                            />
+                        </SubField>
+                    )}
 
-                    <SubField label="Units" htmlFor="flexi_date_units">
+                    <SubField label="Precision" htmlFor="flexi_date_units">
                         <select
                             id="flexi_date_units"
                             className={FORM_INPUT_CLASS}
