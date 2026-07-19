@@ -131,32 +131,32 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
             }
             sidebarA={
                 <>
-                    <div className="gap-2 flex-col flex">
-                    {tags.length > 0 && (
-                        <div className="flex flex-wrap gap-2 w-full lg:w-96">
-                            {tags.map(tag => {
-                                const hexColor = colorToHex(tag.color);
-                                return (
-                                    <TagChip
-                                        key={tag.id}
-                                        id={tag.id}
-                                        name={tag.name}
-                                        description={tag.description}
-                                        bgColorCSS={hexColor}
-                                        holeColor="bg-gray-900"
-                                    />
-                                );
-                            })}
-                        </div>
-                    )}
-                    {!event.soft_deleted && (
-                        <EntityActions
-                            entityLabel="event"
-                            minLevel="editor"
-                            editHref={"/hisdoc/event/" + id + "/edit"}
-                            deleteAction={handleDelete}
-                        />
-                    )}
+                    <div className="flex flex-col gap-2">
+                        {tags.length > 0 && (
+                            <div className="flex w-full flex-wrap gap-2 lg:w-96">
+                                {tags.map(tag => {
+                                    const hexColor = colorToHex(tag.color);
+                                    return (
+                                        <TagChip
+                                            key={tag.id}
+                                            id={tag.id}
+                                            name={tag.name}
+                                            description={tag.description}
+                                            bgColorCSS={hexColor}
+                                            holeColor="bg-gray-900"
+                                        />
+                                    );
+                                })}
+                            </div>
+                        )}
+                        {!event.soft_deleted && (
+                            <EntityActions
+                                entityLabel="event"
+                                minLevel="editor"
+                                editHref={"/hisdoc/event/" + id + "/edit"}
+                                deleteAction={handleDelete}
+                            />
+                        )}
                     </div>
                     <StatsPill>
                         <span>EID: {event.id}</span>

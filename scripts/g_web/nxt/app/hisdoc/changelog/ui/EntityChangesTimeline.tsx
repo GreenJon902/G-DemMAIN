@@ -22,7 +22,7 @@ export default function EntityChangesTimeline({ changes, selectedId }: {
     selectedId: number;
 }) {
     return (
-        <ul className="flex flex-col mt-2">
+        <ul className="mt-2 flex flex-col">
             {changes.map((change, i) => {
                 const selected = change.id === selectedId;
                 return (

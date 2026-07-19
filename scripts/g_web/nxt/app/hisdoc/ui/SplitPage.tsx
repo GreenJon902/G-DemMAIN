@@ -1,6 +1,5 @@
 import { ReactNode } from "react";
 import PageSection from "../../ui/PageSection";
-import StatsPill from "./StatsPill";
 
 /**
  * Two-column profile-style page layout: a flex-1 main column on the left and a shrink-to-fit
