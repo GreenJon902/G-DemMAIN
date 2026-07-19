@@ -9,19 +9,20 @@ import { createPerson, updatePerson } from "@g/com/lib/prisma/hisdoc/person";
 import { createTag, updateTag } from "@g/com/lib/prisma/hisdoc/tag";
 import { sendHisDocWebhook } from "@g/com/lib/webhook";
 import { hd_person_type } from "@g/com/prisma/enums";
-import { parseFlexiDateForm } from "../lib/flexidate";
+import { earliestUnix, latestUnix, parseFlexiDateForm } from "../lib/flexidate";
 import { hexToColor } from "../lib/color";
 import { resolvePersonDisplayName } from "../changelog/lib/personDisplayName";
 import { type ActionResult, changelogNoteSchema, resolveActor, runMutation } from "../lib/actionHelpers";
 import { fetchPersonOptions } from "./lib/options";
 import type { PersonOption } from "./lib/optionTypes";
 
-/** Zod schema for fields shared by both add and edit. */
+/** Zod schema for fields shared by both add and edit. Text fields are trimmed so whitespace-only
+ * input is rejected as empty rather than accepted, and leading/trailing whitespace is never stored. */
 const eventFieldSchema = z.object({
-    name: z.string().min(1).max(255),
-    description: z.string().min(1),
+    name: z.string().trim().min(1).max(255),
+    description: z.string().trim().min(1),
     // Empty string is treated the same as absent — store null in both cases
-    details: z.string().optional().transform(v => v || null)
+    details: z.string().trim().optional().transform(v => v || null)
 });
 
 // Mirrors chk_hd_person_minecraft_uuid (doc/Databases.md) — a 36-char hyphenated Minecraft UUID
@@ -30,7 +31,7 @@ const MINECRAFT_UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9
 /** Zod schema for the person form fields. */
 const personFieldSchema = z.object({
     type: z.enum(hd_person_type),
-    data: z.string().min(1).max(255)
+    data: z.string().trim().min(1).max(255)
 }).refine(
     v => v.type !== hd_person_type.MINECRAFT || MINECRAFT_UUID_REGEX.test(v.data),
     { message: "MINECRAFT persons require data to be a hyphenated Minecraft UUID" }
@@ -38,8 +39,8 @@ const personFieldSchema = z.object({
 
 /** Zod schema for the tag form fields. Converts the colour input's "#rrggbb" into the stored int. */
 const tagFieldSchema = z.object({
-    name: z.string().min(1).max(255),
-    description: z.string().min(1),
+    name: z.string().trim().min(1).max(255),
+    description: z.string().trim().min(1),
     color: z.string().regex(/^#[0-9a-fA-F]{6}$/).transform(hexToColor)
 });
 
@@ -67,9 +68,20 @@ function parseEventFormFields(formData: FormData) {
     return { name, description, details, tag_ids, person_ids, related_event_ids };
 }
 
+// Mirrors the client <input> min/max in form/ui/FlexiDateInput.tsx, so an out-of-range value is
+// rejected with a friendly message rather than failing at the database
+const eventDateTimeOffsetSchema = z.number().int().min(-32768).max(32767); // event_date_time_offset is a SMALLINT column
+const eventDateDiffSchema = z.bigint().min(0n).max(BigInt(Number.MAX_SAFE_INTEGER)); // event_date_diff is BIGINT UNSIGNED, bounded to what a JS number can represent exactly
+
+// The earliest/latest instant a FlexiDate can represent must stay inside what MySQL's DATETIME
+// type supports, matching the client's date-picker min/max
+const MIN_FLEXIDATE_UNIX = Date.UTC(1000, 0, 1) / 1000;
+const MAX_FLEXIDATE_UNIX = Date.UTC(9999, 11, 31, 23, 59, 59) / 1000;
+
 /**
- * Validates the structural invariants of a parsed FlexiDate and throws if any are violated.
- * These rules are also enforced by the database; this is a belt-and-suspenders check.
+ * Validates the structural invariants and numeric bounds of a parsed FlexiDate, throwing if any
+ * are violated. These rules are also enforced by the database (or, for the numeric bounds, by the
+ * client); this is a belt-and-suspenders check.
  *
  * @param flexiDate - The parsed FlexiDate to validate.
  */
@@ -82,6 +94,7 @@ function assertFlexiDateInvariants(flexiDate: NonNullable<ReturnType<typeof pars
         ) {
             throw new Error("Invalid centered FlexiDate: units and diff must be set, date2 must be null");
         }
+        eventDateDiffSchema.parse(flexiDate.event_date_diff);
     } else {
         if (
             flexiDate.event_date_units !== null ||
@@ -91,6 +104,12 @@ function assertFlexiDateInvariants(flexiDate: NonNullable<ReturnType<typeof pars
         ) {
             throw new Error("Invalid ranged FlexiDate: units and diff must be null, date2 must be set and >= date1");
         }
+    }
+
+    eventDateTimeOffsetSchema.parse(flexiDate.event_date_time_offset);
+
+    if (earliestUnix(flexiDate) < MIN_FLEXIDATE_UNIX || latestUnix(flexiDate) > MAX_FLEXIDATE_UNIX) {
+        throw new Error("Date must be between the years 1000 and 9999");
     }
 }
 
@@ -162,6 +181,7 @@ export async function editEvent(id: number, formData: FormData): Promise<ActionR
     const failure = await runMutation(async () => {
         const { name, description, details, tag_ids, person_ids, related_event_ids } =
             parseEventFormFields(formData);
+        console.log(related_event_ids);
 
         const changelogNote = changelogNoteSchema.parse(formData.get("changelog_note"));
 

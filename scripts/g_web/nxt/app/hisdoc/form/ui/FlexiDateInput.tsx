@@ -8,6 +8,22 @@ import { FORM_INPUT_CLASS, useFormChanged } from "./FormInputs";
 // Zero-padded "00".."23" choices for the hour-precision hour selector
 const HOUR_OPTIONS = Array.from({ length: 24 }, (_, hour) => hour.toString().padStart(2, "0"));
 
+// event_date_time_offset is a SMALLINT column (doc/Databases.md) — bound the input to what it can hold
+const OFFSET_MIN = -32768;
+const OFFSET_MAX = 32767;
+
+// event_date_diff is stored in a BIGINT UNSIGNED column, but this <input type="number"> is backed by
+// a JS double, so Number.MAX_SAFE_INTEGER is the real ceiling — beyond it the input can't represent
+// the value exactly anyway
+const MARGIN_MAX = Number.MAX_SAFE_INTEGER;
+
+// Practical min/max for the date / datetime-local pickers — MySQL's DATETIME type only supports
+// '1000-01-01 00:00:00' to '9999-12-31 23:59:59', so pickers are capped to stay within it
+const DATE_MIN = "1000-01-01";
+const DATE_MAX = "9999-12-31";
+const DATETIME_MIN = `${DATE_MIN}T00:00`;
+const DATETIME_MAX = `${DATE_MAX}T23:59`;
+
 /**
  * Caption + content wrapper for one FlexiDate sub-field, matching FormRow's caption styling
  * without repeating its box — the whole widget already sits inside a single FormRow.
@@ -140,6 +156,8 @@ export default function FlexiDateInput({ defaultValue }: { defaultValue?: FlexiD
                         notifyChanged();
                     }}
                     step={1}
+                    min={OFFSET_MIN}
+                    max={OFFSET_MAX}
                     required
                     placeholder="0"
                 />
@@ -156,6 +174,8 @@ export default function FlexiDateInput({ defaultValue }: { defaultValue?: FlexiD
                                     className={FORM_INPUT_CLASS + " flex-1"}
                                     value={centerInput.slice(0, 10)}
                                     onChange={e => handleCenterHourDateChange(e.target.value)}
+                                    min={DATE_MIN}
+                                    max={DATE_MAX}
                                     required
                                 />
                                 {/* Options are written "HH:??" to match formatFlexiDate — minutes are never known at hour precision */}
@@ -178,11 +198,13 @@ export default function FlexiDateInput({ defaultValue }: { defaultValue?: FlexiD
                                 id="flexi_date1_centered"
                                 type={dateUnits === "d" ? "date" : "datetime-local"}
                                 className={FORM_INPUT_CLASS}
-                                value={centerInput /* TODO: This defaults to 00+offset when switching from days to minutes, is this right? Also confirm this is definitely a UTC input, not a current-timezone input */ }       
+                                value={centerInput /* TODO: This defaults to 00+offset when switching from days to minutes, is this right? Also confirm this is definitely a UTC input, not a current-timezone input */ }
                                 onChange={e => {
                                     setCenterInput(e.target.value);
                                     notifyChanged();
                                 }}
+                                min={dateUnits === "d" ? DATE_MIN : DATETIME_MIN}
+                                max={dateUnits === "d" ? DATE_MAX : DATETIME_MAX}
                                 required
                             />
                         </SubField>
@@ -213,6 +235,7 @@ export default function FlexiDateInput({ defaultValue }: { defaultValue?: FlexiD
                             }}
                             step={1}
                             min={0}
+                            max={MARGIN_MAX}
                             required
                             placeholder="0"
                         />
@@ -230,6 +253,8 @@ export default function FlexiDateInput({ defaultValue }: { defaultValue?: FlexiD
                                 setStartInput(e.target.value);
                                 notifyChanged();
                             }}
+                            min={DATE_MIN}
+                            max={DATE_MAX}
                             required
                         />
                     </SubField>
@@ -244,8 +269,9 @@ export default function FlexiDateInput({ defaultValue }: { defaultValue?: FlexiD
                                 setEndInput(e.target.value);
                                 notifyChanged();
                             }}
-                            // Native validation enforces date1 <= date2
-                            min={startInput || undefined}
+                            // Native validation enforces date1 <= date2, on top of the overall MySQL-safe range
+                            min={startInput || DATE_MIN}
+                            max={DATE_MAX}
                             required
                         />
                     </SubField>

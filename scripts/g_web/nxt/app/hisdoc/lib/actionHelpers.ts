@@ -11,7 +11,7 @@ import { NS } from "@/lib/session";
 export type ActionResult = { error: string } | undefined;
 
 /** Zod schema for the changelog note required on edits and deletes. */
-export const changelogNoteSchema = z.string().min(1);
+export const changelogNoteSchema = z.string().trim().min(1);
 
 /** Extracts a human-readable message from a caught error, flattening Zod issues into one line. */
 export function errorMessage(error: unknown): string {

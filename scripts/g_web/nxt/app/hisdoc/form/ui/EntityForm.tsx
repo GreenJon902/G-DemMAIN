@@ -36,6 +36,18 @@ function serializeFormState(form: HTMLFormElement): string {
 }
 
 /**
+ * Trims every text-like input's current value in place (text inputs and textareas are the only
+ * ones that can hold arbitrary whitespace). Run right before reportValidity so a whitespace-only
+ * value fails `required` instead of passing, and so the trimmed value — not the raw one — is what
+ * ends up in the FormData sent to the server.
+ */
+function trimTextInputs(form: HTMLFormElement): void {
+    form.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input[type='text'], textarea").forEach(el => {
+        el.value = el.value.trim();
+    });
+}
+
+/**
  * The generic hisdoc add/edit form shell. Renders the entity-specific children (composed from the
  * FormInputs primitives by EventForm/PersonForm/TagForm) plus, in edit mode, a required changelog
  * note field, and owns the submission machinery:
@@ -92,7 +104,8 @@ export default function EntityForm(props: EntityFormProps) {
                         disabled={!isDirty}
                         title={isDirty ? undefined : "No changes to submit"}
                         guard={async () => {
-                            // Native validation first, so an invalid form never prompts for sudo
+                            // Strip whitespace before native validation, so an invalid form never prompts for sudo
+                            trimTextInputs(formRef.current!);
                             if (!formRef.current!.reportValidity()) return false;
                             return await makeAreaSudoGuard("hisdoc", props.minLevel, ctx)();
                         }}
