@@ -9,11 +9,12 @@ import { ReactNode } from "react";
  * @param title - The plain-text title. Exactly one of `title`/`titleNode` must be given.
  * @param titleNode - Richer title content (e.g. containing a link), rendered instead of plain text. Exactly one of `title`/`titleNode` must be given.
  * @param children - The children to render inside the component.
+ * @param sub - Is this a subtitle? If yes then it's rendered smaller and with no vertical margin.
  */
 export default function PageSection({
-    title, children, pretitle, icon, titleNode
+    title, children, pretitle, icon, titleNode, sub
 }: {
-    title?: string, children: ReactNode, pretitle?: string, icon?: ReactNode, titleNode?: ReactNode
+    title?: string, children: ReactNode, pretitle?: string, icon?: ReactNode, titleNode?: ReactNode, sub?: boolean
 }) {
     if ((title === undefined) === (titleNode === undefined)) {
         throw new Error("PageSection: exactly one of title or titleNode must be given");
@@ -21,12 +22,12 @@ export default function PageSection({
 
     return (
         <div>
-            <h1 className="text-3xl font-bold">
+            <h1 className={`${sub ? "text-xl" : "text-3xl"} font-bold`}>
                 {pretitle && <span> {pretitle} </span>}
                 {icon && <span className="mr-2 inline-flex align-middle">{icon}</span>}
-                <span className="underline decoration-4"> {titleNode ?? title} </span>
+                <span className={`underline ${sub ? "decoration-1" : "decoration-4"}`}> {titleNode ?? title} </span>
             </h1>
-            <div className="m-4 mr-0">
+            <div className={`m-4 mr-0 ${sub ? "my-0" : ""}`}>
                 {children}
             </div>
         </div>

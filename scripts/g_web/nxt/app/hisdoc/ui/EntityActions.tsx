@@ -14,15 +14,17 @@ import DeleteEntityButton from "./DeleteEntityButton";
  * @param editHref - The entity's edit page.
  * @param deleteAction - Bound server action performing the delete; receives the changelog note
  *   and redirects on success or returns a human-readable error.
+ * @param stackMode - Classname string that is meant to be used to specify how elements should stack. E.g. lg:flex-row.
  */
-export default function EntityActions(props: {
+export default function EntityActions({stackMode = "", ...props}: {
     entityLabel: string,
     minLevel: AreaPermission<"hisdoc">,
     editHref: string,
-    deleteAction: (note: string) => Promise<ActionResult>
+    deleteAction: (note: string) => Promise<ActionResult>,
+    stackMode?: string
 }) {
     return (
-        <div className="flex gap-2">
+        <div className={`flex gap-2 ${stackMode}`}>
             <LinkButton
                 href={props.editHref}
                 color={BUTTON_INDIGO}
@@ -33,6 +35,7 @@ export default function EntityActions(props: {
                 Edit
             </LinkButton>
             <DeleteEntityButton
+                className="flex-1 items-center gap-1"
                 entityLabel={props.entityLabel}
                 minLevel={props.minLevel}
                 action={props.deleteAction}

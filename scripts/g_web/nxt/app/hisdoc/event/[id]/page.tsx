@@ -82,6 +82,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
     return (
         <SplitPage
             title={event.name}
+            mainClassName="gap-4"
             main={
                 <>
                     {event.soft_deleted && <WarningBanner>This event has been deleted.</WarningBanner>}
@@ -89,42 +90,22 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
 
                     <p className="whitespace-pre-wrap text-gray-200">{event.description}</p>
 
-                    {tags.length > 0 && (
-                        <PageSection pretitle={"• "} title="Tags">
-                            <div className="flex flex-wrap gap-2">
-                                {tags.map(tag => {
-                                    const hexColor = colorToHex(tag.color);
-                                    return (
-                                        <TagChip
-                                            key={tag.id}
-                                            id={tag.id}
-                                            name={tag.name}
-                                            description={tag.description}
-                                            bgColorCSS={hexColor}
-                                            holeColor="bg-gray-900"
-                                        />
-                                    );
-                                })}
-                            </div>
-                        </PageSection>
-                    )}
+
 
                     {persons.length > 0 && (
-                        <PageSection pretitle={"• "} title="Persons">
-                            <div className="flex flex-wrap gap-4">
-                                {persons.map((person, i) =>
-                                    person.type === hd_person_type.MINECRAFT ? (
-                                        <LargePerson key={person.id} id={person.id} playerdata={person.data} name={personNames[i]} />
-                                    ) : (
-                                        <SmallPerson key={person.id} id={person.id} type={person.type} playerdata={person.data} name={personNames[i]} />
-                                    )
-                                )}
-                            </div>
-                        </PageSection>
+                        <div className="flex flex-wrap gap-4">
+                            {persons.map((person, i) =>
+                                person.type === hd_person_type.MINECRAFT ? (
+                                    <LargePerson key={person.id} id={person.id} playerdata={person.data} name={personNames[i]} />
+                                ) : (
+                                    <SmallPerson key={person.id} id={person.id} type={person.type} playerdata={person.data} name={personNames[i]} />
+                                )
+                            )}
+                        </div>
                     )}
 
                     {relatedEvents.length > 0 && (
-                        <PageSection pretitle={"• "} title="Related Events">
+                        <PageSection title="Related Events" sub>
                             <ul>
                                 {relatedEvents.map(e => <SmallEvent key={e.id} {...e} />)}
                             </ul>
@@ -132,8 +113,8 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                     )}
 
                     {changelog.length > 0 && (
-                        <PageSection pretitle={"• "} title="Changelog">
-                            <ul className="flex flex-col gap-4">
+                        <PageSection title="Changelog" sub>
+                            <ul className="flex flex-col">
                                 {changelog.map(entry => (
                                     <SmallChangelog
                                         key={entry.id}
@@ -150,6 +131,24 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
             }
             sidebar={
                 <>
+                    <div className="gap-2 flex-col flex">
+                    {tags.length > 0 && (
+                        <div className="flex flex-wrap gap-2 w-full lg:w-96">
+                            {tags.map(tag => {
+                                const hexColor = colorToHex(tag.color);
+                                return (
+                                    <TagChip
+                                        key={tag.id}
+                                        id={tag.id}
+                                        name={tag.name}
+                                        description={tag.description}
+                                        bgColorCSS={hexColor}
+                                        holeColor="bg-gray-900"
+                                    />
+                                );
+                            })}
+                        </div>
+                    )}
                     {!event.soft_deleted && (
                         <EntityActions
                             entityLabel="event"
@@ -158,6 +157,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                             deleteAction={handleDelete}
                         />
                     )}
+                    </div>
                     <StatsPill>
                         <span>EID: {event.id}</span>
                         <span>Posted by {event.user.username}</span>

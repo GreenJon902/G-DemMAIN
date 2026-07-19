@@ -16,11 +16,11 @@ export default function SmallChangelog({ id, username, created_at, message }: {
     message: string;
 }) {
     return (
-        <li className="flex flex-col gap-1">
-            <TextLink href={`/hisdoc/changelog/${id}`} color={TEXT_LINK_GRAY} className="w-fit text-sm text-nowrap">
+        <li className="flex flex-row">
+            <TextLink href={`/hisdoc/changelog/${id}`} color={TEXT_LINK_GRAY} className="w-fit text-nowrap">
                 {username ?? "System"} · {created_at.toLocaleDateString()}
-            </TextLink>
-            <p className="whitespace-pre-wrap text-gray-200">{message}</p>
+            </TextLink>: 
+            <p className="ml-1 whitespace-pre-wrap">{message}</p>
         </li>
     );
 }

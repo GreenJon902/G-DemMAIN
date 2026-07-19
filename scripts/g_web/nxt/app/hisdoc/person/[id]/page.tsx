@@ -112,11 +112,12 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
     return (
         <SplitPage
             title={displayName}
+            mainClassName="gap-4"
             main={
                 <>
                     {person.soft_deleted && <WarningBanner>This person has been deleted.</WarningBanner>}
 
-                    <PageSection pretitle={"• "} title="Recent Events">
+                    <PageSection title="Recent Events" sub>
                         {recentEvents.length > 0 ? (
                             <ul>
                                 {recentEvents.map(event => <SmallEvent key={event.id} {...event} />)}
@@ -127,7 +128,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
                     </PageSection>
 
                     {person.user && (
-                        <PageSection pretitle={"• "} title="Recent Posts">
+                        <PageSection title="Recent Posts" sub>
                             {recentPosts.length > 0 ? (
                                 <ul>
                                     {recentPosts.map(event => <SmallEvent key={event.id} {...event} />)}
@@ -138,13 +139,13 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
                         </PageSection>
                     )}
 
-                    <PageSection pretitle={"• "} title="Tag Distribution">
+                    <PageSection title="Tag Distribution" sub>
                         <BarGraph bars={bars} graphClassName="h-48" />
                     </PageSection>
 
                     {changelog.length > 0 && (
-                        <PageSection pretitle={"• "} title="Changelog">
-                            <ul className="flex flex-col gap-4">
+                        <PageSection title="Changelog" sub>
+                            <ul className="flex flex-col">
                                 {changelog.map(entry => (
                                     <SmallChangelog
                                         key={entry.id}
@@ -167,6 +168,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
                             minLevel="admin"
                             editHref={"/hisdoc/person/" + id + "/edit"}
                             deleteAction={handleDelete}
+                            stackMode="lg:flex-row flex-col"
                         />
                     )}
                     {person.type === hd_person_type.MINECRAFT && (

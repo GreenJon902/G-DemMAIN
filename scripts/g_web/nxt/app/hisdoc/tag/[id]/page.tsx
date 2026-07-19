@@ -93,12 +93,13 @@ export default async function TagPage({ params }: { params: Promise<{ id: string
         <SplitPage
             title={tag.name}
             icon={<span className="inline-block size-5 rounded-sm" style={{ backgroundColor: hexColor }} />}
+            mainClassName="gap-4"
             main={
                 <>
                     {tag.soft_deleted && <WarningBanner>This tag has been deleted.</WarningBanner>}
                     {tag.description && <p className="text-gray-400">{tag.description}</p>}
 
-                    <PageSection pretitle={"• "} title="Recent Events">
+                    <PageSection title="Recent Events" sub>
                         {recentEvents.length > 0 ? (
                             <ul>
                                 {recentEvents.map(event => <SmallEvent key={event.id} {...event} />)}
@@ -108,13 +109,13 @@ export default async function TagPage({ params }: { params: Promise<{ id: string
                         )}
                     </PageSection>
 
-                    <PageSection pretitle={"• "} title="Player Distribution">
+                    <PageSection title="Player Distribution" sub>
                         <BarGraph bars={bars} graphClassName="h-48" />
                     </PageSection>
 
                     {changelog.length > 0 && (
-                        <PageSection pretitle={"• "} title="Changelog">
-                            <ul className="flex flex-col gap-4">
+                        <PageSection title="Changelog" sub>
+                            <ul className="flex flex-col">
                                 {changelog.map(entry => (
                                     <SmallChangelog
                                         key={entry.id}

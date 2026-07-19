@@ -19,11 +19,13 @@ import type { ActionResult } from "../lib/actionHelpers";
  * @param minLevel - The hisdoc permission level deleting this entity requires.
  * @param action - Bound server action performing the delete; receives the trimmed note and
  *   redirects on success or returns a human-readable error.
+ * @param className - Optional classname for the button.
  */
-export default function DeleteEntityButton(props: {
+export default function DeleteEntityButton({className, ...props}: {
     entityLabel: string,
     minLevel: AreaPermission<"hisdoc">,
-    action: (note: string) => Promise<ActionResult>
+    action: (note: string) => Promise<ActionResult>,
+    className?: string
 }) {
     const ctx = useAuthContext();
     const { showError } = useErrorContext();
@@ -34,7 +36,7 @@ export default function DeleteEntityButton(props: {
         <>
             <SimpleButton
                 color={BUTTON_RED}
-                className="items-center gap-1"
+                className={`items-center gap-1 ${className}`}
                 title="Delete"
                 disabled={{ area: "hisdoc", minLevel: props.minLevel }}
                 callback={() => setOpen(true)}
