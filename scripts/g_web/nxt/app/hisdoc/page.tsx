@@ -1,9 +1,13 @@
 import "server-only";
+import { cookies } from "next/headers";
 import prisma from "@g/com/lib/prisma/client";
 import { parseTimelineFilters } from "./lib/timeline-filter";
 import { fetchTimelinePage } from "./lib/timeline-data";
 import InfiniteTimeline from "./ui/InfiniteTimeline";
 import TimelineFilters from "./ui/TimelineFilters";
+import ShowToggles from "./ui/ShowToggles";
+import StickyAside from "./ui/StickyAside";
+import { TimelinePreferencesProvider } from "./TimelinePreferencesContext";
 import { getMinecraftUsername } from "./lib/minecraft";
 
 /**
@@ -26,6 +30,11 @@ export default async function HisDocPage({
     }
 
     const filters = parseTimelineFilters(urlParams);
+
+    // Load initial values on server so can send already correct data to the client
+    const cookieStore = await cookies();
+    const initialShowTags = cookieStore.get("hd_timeline_show_tags")?.value !== "0";
+    const initialShowPersons = cookieStore.get("hd_timeline_show_persons")?.value !== "0";
 
     const [{ events: serialisedPage, hasMore }, allTags, allPersons] = await Promise.all([
         fetchTimelinePage(filters, null),
@@ -50,11 +59,16 @@ export default async function HisDocPage({
     }));
 
     return (
-        <div className="flex gap-6">
-            <TimelineFilters tags={allTags} persons={personsForFilters} />
-            <main className="flex flex-1 flex-col gap-4">
-                <InfiniteTimeline initialEvents={serialisedPage} initialHasMore={hasMore} />
-            </main>
-        </div>
+        <TimelinePreferencesProvider initialShowTags={initialShowTags} initialShowPersons={initialShowPersons}>
+            <div className="flex gap-6">
+                <StickyAside className="gap-4">
+                    <ShowToggles />
+                    <TimelineFilters tags={allTags} persons={personsForFilters} />
+                </StickyAside>
+                <main className="flex flex-1 flex-col gap-4">
+                    <InfiniteTimeline initialEvents={serialisedPage} initialHasMore={hasMore} />
+                </main>
+            </div>
+        </TimelinePreferencesProvider>
     );
 }

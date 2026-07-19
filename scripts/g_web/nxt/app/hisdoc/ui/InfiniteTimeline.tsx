@@ -10,6 +10,7 @@ import SmallPerson from "./SmallPerson";
 import { getTimelinePage } from "../actions";
 import { TimelineEvent as ApiTimelineEvent } from "../lib/timeline-data";
 import { colorToHex } from "../lib/color";
+import { useTimelinePreferences } from "../TimelinePreferencesContext";
 
 // How long a re-fetch (filter change or "load more") can run before the loading indicator is
 // shown — keeps quick re-fetches from flashing a spinner, while slow ones still give feedback
@@ -28,13 +29,13 @@ function toFlexiDateInput(e: ApiTimelineEvent): FlexiDateInput {
 }
 
 /**
- * Inline event card.
+ * Inline event card. Reads showTags/showPersons directly from TimelinePreferencesContext rather
+ * than as props, so it and ShowToggles stay in sync without prop-drilling through the page.
  *
  * @param e - The event data to render.
- * @param showTags - Whether to render the event's tags row.
- * @param showPersons - Whether to render the event's persons row.
  */
-function EventCard({ e, showTags, showPersons }: { e: ApiTimelineEvent; showTags: boolean; showPersons: boolean }) {
+function EventCard({ e }: { e: ApiTimelineEvent }) {
+    const { showTags, showPersons } = useTimelinePreferences();
     return (
         <div className="flex flex-col gap-2 rounded-lg bg-gray-800 p-4">
             <TextLink href={"/hisdoc/event/" + e.id} color={TEXT_LINK_WHITE} solid className="font-semibold">
@@ -86,8 +87,6 @@ function InfiniteTimelineInner({
 }) {
     const searchParams = useSearchParams();
     const searchParamsStr = searchParams.toString();
-    const showTags = searchParams.get("showtags") !== "0";
-    const showPersons = searchParams.get("showpersons") !== "0";
 
     const [events, setEvents] = useState<ApiTimelineEvent[]>(initialEvents);
     const [hasMore, setHasMore] = useState(initialHasMore);
@@ -140,7 +139,7 @@ function InfiniteTimelineInner({
     return (
         <div className="flex flex-col gap-4">
             {filterLoading && <p className="text-gray-400">Loading…</p>}
-            {events.map(e => <EventCard key={e.id} e={e} showTags={showTags} showPersons={showPersons} />)}
+            {events.map(e => <EventCard key={e.id} e={e} />)}
             {hasMore && (
                 <button
                     onClick={loadMore}

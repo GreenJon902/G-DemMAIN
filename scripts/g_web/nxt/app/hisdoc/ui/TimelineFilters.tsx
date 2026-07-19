@@ -1,6 +1,6 @@
 "use client";
 
-import { cloneElement, ReactElement, ReactNode, RefObject, Suspense, useState, useEffect, useRef } from "react";
+import { cloneElement, ReactElement, ReactNode, Suspense, useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { TagChip } from "./TagChip";
 import SmallPerson from "./SmallPerson";
@@ -74,7 +74,7 @@ const SEARCH_BOX_DEBOUNCE = 300;
  * @param collapsible - If true, children are hidden behind a Expand/Collapse toggle, collapsed by default.
  * @param summary - Content shown above children regardless of collapsed state (e.g. live stats).
  */
-function FilterContainer({
+export function FilterContainer({
     title,
     children,
     collapsible = false,
@@ -195,35 +195,6 @@ function FilterGroup<T extends { id: number }>({
 }
 
 /**
- * Pins the top of the given element to the lower of the top of the page or the bottom of the nav.
- * Pins the bottom of the given element to the bottom of the page.
- */
-function useStickyFillHeight(ref: RefObject<HTMLElement | null>) {
-    useEffect(() => {
-        const el = ref.current;
-        if (!el) return;
-
-        let rafId = 0;
-        const update = () => {
-            rafId = 0;
-            el.style.height = `calc(100dvh - ${el.getBoundingClientRect().top}px)`;
-        };
-        const scheduleUpdate = () => {
-            if (rafId === 0) rafId = requestAnimationFrame(update);
-        };
-
-        update();
-        window.addEventListener("scroll", scheduleUpdate, { passive: true });
-        window.addEventListener("resize", scheduleUpdate);
-        return () => {
-            window.removeEventListener("scroll", scheduleUpdate);
-            window.removeEventListener("resize", scheduleUpdate);
-            if (rafId !== 0) cancelAnimationFrame(rafId);
-        };
-    }, [ref]);
-}
-
-/**
  * Inner implementation of TimelineFilters. Calls useSearchParams, so it must
  * be wrapped in <Suspense> by the exported default (Next.js 15 requirement).
  *
@@ -240,9 +211,6 @@ function TimelineFiltersInner({
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
-
-    const asideRef = useRef<HTMLElement>(null);
-    useStickyFillHeight(asideRef);
 
     // Ref kept current every render so the debounce closure always sees the latest params
     const searchParamsRef = useRef(searchParams);
@@ -319,8 +287,6 @@ function TimelineFiltersInner({
     const qMode: SearchMode = searchParams.get("qmode") === "exact" ? "exact" : "keywords";
     const qSearchDescription = searchParams.get("qdesc") !== "0";
     const dateMode: DateRangeMode = searchParams.get("datemode") === "exclusive" ? "exclusive" : "inclusive";
-    const showTags = searchParams.get("showtags") !== "0";
-    const showPersons = searchParams.get("showpersons") !== "0";
 
     const hasFilters = !!(
         searchParams.get("tags") ||
@@ -330,31 +296,11 @@ function TimelineFiltersInner({
         searchParams.get("qdesc") ||
         searchParams.get("from") ||
         searchParams.get("to") ||
-        searchParams.get("datemode") ||
-        searchParams.get("showtags") ||
-        searchParams.get("showpersons")
+        searchParams.get("datemode")
     );
 
     return (
-        <aside
-            ref={asideRef}
-            className="sticky top-0 flex w-64 flex-shrink-0 flex-col gap-4 overflow-y-auto overscroll-contain"
-        >
-            <FilterContainer title="Show">
-                <ToggleButton
-                    checked={showTags}
-                    setter={checked => pushParams({ showtags: checked ? null : "0" })}
-                    label="Show tags"
-                    className="text-sm"
-                />
-                <ToggleButton
-                    checked={showPersons}
-                    setter={checked => pushParams({ showpersons: checked ? null : "0" })}
-                    label="Show persons"
-                    className="text-sm"
-                />
-            </FilterContainer>
-
+        <>
             <FilterContainer title="Search">
                 <TextInput
                     value={queryText}
@@ -469,7 +415,7 @@ function TimelineFiltersInner({
                     Clear filters
                 </SimpleButton>
             )}
-        </aside>
+        </>
     );
 }
 
