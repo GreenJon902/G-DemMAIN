@@ -276,6 +276,15 @@ CREATE OR REPLACE TABLE hd_changelog (
 ```
 
 
+### hd_changelog schema version 0
+
+Legacy entries imported before structured snapshots existed. `old_values`/`new_values` are always `{}` (or prefrably null) — no field-level diff data is available, only the entry's own metadata (`message`, `action`, `user_id`, `created_at`).
+
+```json
+{}
+```
+
+
 ### hd_changelog schema version 1
 
 `what = 'TAG'`

@@ -1,85 +1,27 @@
 import { z } from "zod";
-import { hd_person_type, hd_event_event_date_type, hd_event_event_date_units } from "@g/com/prisma/enums";
+import { hd_changelog_what, hd_person_type, hd_event_event_date_type, hd_event_event_date_units } from "@g/com/prisma/enums";
 import { FlexiDateInput } from "../../lib/flexidate";
 
-// One build function per hd_changelog "what", each pairing schema-version-aware parsing with a
-// concrete list of FieldDiff records (one per rendered row) built directly off the parsed
-// before/after snapshots. This intentionally fuses "what does this JSON shape look like" with
-// "what fields get rendered" for a given schema version, so FieldDiffRow never has to touch the
-// raw snapshot shape (no generics, no keyof-T indexing, no casts) — it just switches on
-// FieldDiff.kind, which TypeScript narrows exhaustively on its own. The FieldDiff types
-// themselves are schema-version-agnostic (see below); only the build* functions and the
+// A "builder" is registered per (what, schema_version) pair in BUILDERS below: it validates the
+// already-JSON.parsed before/after values against its own schema and builds the concrete list of
+// FieldDiff records (one per rendered row) directly off them. This intentionally fuses "what does
+// this JSON shape look like" with "what fields get rendered" for a given schema version, so
+// FieldDiffRow never has to touch the raw snapshot shape (no generics, no keyof-T indexing, no
+// casts) — it just switches on FieldDiff.kind, which TypeScript narrows exhaustively on its own.
+// The FieldDiff types themselves are schema-version-agnostic (see below); only the builders and the
 // `*SnapshotV1` types are version-specific. A future schema_version 2 gets its own sibling
-// `*SnapshotV2` type and `build*FieldDiffs` additions, not a generalization of these.
+// `*SnapshotV2` type and builder, registered alongside v1/v0 in BUILDERS — not a change to v1's.
 
-/** Thrown by the build* functions below when `schemaVersion` has no registered schema. */
+/** Thrown by {@link buildFieldDiffs} when there's no builder registered for (`what`, `schemaVersion`). */
 export class UnsupportedSchemaVersionError extends Error {
     constructor(public readonly schemaVersion: number) {
         super(`Unsupported hd_changelog schema_version: ${schemaVersion}`);
     }
 }
 
-/** hd_changelog schema_version 1 snapshot of an hd_tag row (see doc/Databases.md). */
-const TAG_SNAPSHOT_V1_SCHEMA = z.object({
-    id: z.number(),
-    name: z.string(),
-    description: z.string(),
-    color: z.number(),
-    soft_deleted: z.boolean()
-});
-export type TagSnapshotV1 = z.infer<typeof TAG_SNAPSHOT_V1_SCHEMA>;
-
-const TAG_SCHEMAS_BY_VERSION: Record<number, z.ZodType<TagSnapshotV1>> = {
-    1: TAG_SNAPSHOT_V1_SCHEMA
-};
-
-/** hd_changelog schema_version 1 snapshot of an hd_person row (see doc/Databases.md). */
-const PERSON_SNAPSHOT_V1_SCHEMA = z.object({
-    id: z.number(),
-    type: z.enum(hd_person_type),
-    data: z.string(),
-    linked_user_id: z.number().nullable(),
-    soft_deleted: z.boolean()
-});
-export type PersonSnapshotV1 = z.infer<typeof PERSON_SNAPSHOT_V1_SCHEMA>;
-
-const PERSON_SCHEMAS_BY_VERSION: Record<number, z.ZodType<PersonSnapshotV1>> = {
-    1: PERSON_SNAPSHOT_V1_SCHEMA
-};
-
-/**
- * hd_changelog schema_version 1 snapshot of an hd_event row plus its active relations at the time
- * of the change (see doc/Databases.md). `event_date1`/`event_date_diff`/`event_date2` come back as
- * `number` rather than `bigint` since `toChangelogJson` (com/lib/prisma/hisdoc/changelog.ts)
- * converts BigInt->Number before JSON.stringify — use {@link toFlexiDateInput} to convert back.
- */
-const EVENT_SNAPSHOT_V1_SCHEMA = z.object({
-    id: z.number(),
-    name: z.string(),
-    description: z.string(),
-    details: z.string().nullable(),
-    posted_by_user_id: z.number(),
-    posted_at: z.string(),
-    event_date_type: z.enum(hd_event_event_date_type),
-    event_date1: z.number(),
-    event_date_time_offset: z.number(),
-    event_date_units: z.enum(hd_event_event_date_units).nullable(),
-    event_date_diff: z.number().nullable(),
-    event_date2: z.number().nullable(),
-    soft_deleted: z.boolean(),
-    tags: z.array(z.object({ id: z.number(), name: z.string(), color: z.number() })),
-    persons: z.array(z.object({ id: z.number(), type: z.enum(hd_person_type), data: z.string() })),
-    relatedEvents: z.array(z.object({ id: z.number(), name: z.string() }))
-});
-export type EventSnapshotV1 = z.infer<typeof EVENT_SNAPSHOT_V1_SCHEMA>;
-
-const EVENT_SCHEMAS_BY_VERSION: Record<number, z.ZodType<EventSnapshotV1>> = {
-    1: EVENT_SNAPSHOT_V1_SCHEMA
-};
-
 // Generic (schema-version-agnostic) shapes used by the FieldDiff union below. These describe what
-// a renderer needs, not what any particular schema version's JSON looks like — a build* function
-// for a future schema version maps its own snapshot shape onto these same types.
+// a renderer needs, not what any particular schema version's JSON looks like — a builder for a
+// future schema version maps its own snapshot shape onto these same types.
 
 /** An embedded tag reference, as recorded in an EVENT snapshot's `tags` array. */
 export type TagRelationItem = { id: number; name: string; color: number };
@@ -140,19 +82,65 @@ export type FieldDiff =
     | PersonsFieldDiff
     | RelatedEventsFieldDiff;
 
-export type BuiltFieldDiffs<T> = { fields: FieldDiff[]; before: T | null; after: T | null };
+/** hd_changelog schema_version 1 snapshot of an hd_tag row (see doc/Databases.md). */
+const TAG_SNAPSHOT_V1_SCHEMA = z.object({
+    id: z.number(),
+    name: z.string(),
+    description: z.string(),
+    color: z.number(),
+    soft_deleted: z.boolean()
+});
+export type TagSnapshotV1 = z.infer<typeof TAG_SNAPSHOT_V1_SCHEMA>;
+
+/** hd_changelog schema_version 1 snapshot of an hd_person row (see doc/Databases.md). */
+const PERSON_SNAPSHOT_V1_SCHEMA = z.object({
+    id: z.number(),
+    type: z.enum(hd_person_type),
+    data: z.string(),
+    linked_user_id: z.number().nullable(),
+    soft_deleted: z.boolean()
+});
+export type PersonSnapshotV1 = z.infer<typeof PERSON_SNAPSHOT_V1_SCHEMA>;
 
 /**
- * Parses both sides of a TAG changelog entry against the schema registered for `schemaVersion`
- * and builds its field-diff rows. Throws {@link UnsupportedSchemaVersionError} if `schemaVersion`
- * has no registered schema, or (SyntaxError on malformed JSON, ZodError on a shape mismatch)
- * otherwise — callers should catch all of these and fall back to a raw-JSON display.
+ * hd_changelog schema_version 1 snapshot of an hd_event row plus its active relations at the time
+ * of the change (see doc/Databases.md). `event_date1`/`event_date_diff`/`event_date2` come back as
+ * `number` rather than `bigint` since `toChangelogJson` (com/lib/prisma/hisdoc/changelog.ts)
+ * converts BigInt->Number before JSON.stringify — use {@link toFlexiDateInput} to convert back.
  */
-export function buildTagFieldDiffs(schemaVersion: number, rawOld: string | null, rawNew: string | null): BuiltFieldDiffs<TagSnapshotV1> {
-    const schema = TAG_SCHEMAS_BY_VERSION[schemaVersion];
-    if (schema === undefined) throw new UnsupportedSchemaVersionError(schemaVersion);
-    const before = rawOld === null ? null : schema.parse(JSON.parse(rawOld));
-    const after = rawNew === null ? null : schema.parse(JSON.parse(rawNew));
+const EVENT_SNAPSHOT_V1_SCHEMA = z.object({
+    id: z.number(),
+    name: z.string(),
+    description: z.string(),
+    details: z.string().nullable(),
+    posted_by_user_id: z.number(),
+    posted_at: z.string(),
+    event_date_type: z.enum(hd_event_event_date_type),
+    event_date1: z.number(),
+    event_date_time_offset: z.number(),
+    event_date_units: z.enum(hd_event_event_date_units).nullable(),
+    event_date_diff: z.number().nullable(),
+    event_date2: z.number().nullable(),
+    soft_deleted: z.boolean(),
+    tags: z.array(z.object({ id: z.number(), name: z.string(), color: z.number() })),
+    persons: z.array(z.object({ id: z.number(), type: z.enum(hd_person_type), data: z.string() })),
+    relatedEvents: z.array(z.object({ id: z.number(), name: z.string() }))
+});
+export type EventSnapshotV1 = z.infer<typeof EVENT_SNAPSHOT_V1_SCHEMA>;
+
+export type BuiltFieldDiffs = {
+    fields: FieldDiff[];
+    before: TagSnapshotV1 | PersonSnapshotV1 | EventSnapshotV1 | null;
+    after: TagSnapshotV1 | PersonSnapshotV1 | EventSnapshotV1 | null;
+};
+
+/** A builder validates the already-JSON.parsed before/after values for one (what, schema_version) pair and builds its field-diff rows. */
+type Builder = (rawBefore: unknown, rawAfter: unknown) => BuiltFieldDiffs;
+
+/** Builds the field-diff rows for a TAG changelog entry against schema_version 1's shape. */
+function buildTagFieldDiffsV1(rawBefore: unknown, rawAfter: unknown): BuiltFieldDiffs {
+    const before = rawBefore === null ? null : TAG_SNAPSHOT_V1_SCHEMA.parse(rawBefore);
+    const after = rawAfter === null ? null : TAG_SNAPSHOT_V1_SCHEMA.parse(rawAfter);
 
     const fields: FieldDiff[] = [
         { kind: "text", label: "Name", old_value: before?.name, new_value: after?.name },
@@ -163,12 +151,10 @@ export function buildTagFieldDiffs(schemaVersion: number, rawOld: string | null,
     return { fields, before, after };
 }
 
-/** Same as {@link buildTagFieldDiffs}, for a PERSON changelog entry. */
-export function buildPersonFieldDiffs(schemaVersion: number, rawOld: string | null, rawNew: string | null): BuiltFieldDiffs<PersonSnapshotV1> {
-    const schema = PERSON_SCHEMAS_BY_VERSION[schemaVersion];
-    if (schema === undefined) throw new UnsupportedSchemaVersionError(schemaVersion);
-    const before = rawOld === null ? null : schema.parse(JSON.parse(rawOld));
-    const after = rawNew === null ? null : schema.parse(JSON.parse(rawNew));
+/** Builds the field-diff rows for a PERSON changelog entry against schema_version 1's shape. */
+function buildPersonFieldDiffsV1(rawBefore: unknown, rawAfter: unknown): BuiltFieldDiffs {
+    const before = rawBefore === null ? null : PERSON_SNAPSHOT_V1_SCHEMA.parse(rawBefore);
+    const after = rawAfter === null ? null : PERSON_SNAPSHOT_V1_SCHEMA.parse(rawAfter);
 
     const fields: FieldDiff[] = [
         { kind: "personType", label: "Type", old_value: before?.type, new_value: after?.type },
@@ -179,12 +165,10 @@ export function buildPersonFieldDiffs(schemaVersion: number, rawOld: string | nu
     return { fields, before, after };
 }
 
-/** Same as {@link buildTagFieldDiffs}, for an EVENT changelog entry. */
-export function buildEventFieldDiffs(schemaVersion: number, rawOld: string | null, rawNew: string | null): BuiltFieldDiffs<EventSnapshotV1> {
-    const schema = EVENT_SCHEMAS_BY_VERSION[schemaVersion];
-    if (schema === undefined) throw new UnsupportedSchemaVersionError(schemaVersion);
-    const before = rawOld === null ? null : schema.parse(JSON.parse(rawOld));
-    const after = rawNew === null ? null : schema.parse(JSON.parse(rawNew));
+/** Builds the field-diff rows for an EVENT changelog entry against schema_version 1's shape. */
+function buildEventFieldDiffsV1(rawBefore: unknown, rawAfter: unknown): BuiltFieldDiffs {
+    const before = rawBefore === null ? null : EVENT_SNAPSHOT_V1_SCHEMA.parse(rawBefore);
+    const after = rawAfter === null ? null : EVENT_SNAPSHOT_V1_SCHEMA.parse(rawAfter);
 
     const fields: FieldDiff[] = [
         { kind: "text", label: "Name", old_value: before?.name, new_value: after?.name },
@@ -199,4 +183,35 @@ export function buildEventFieldDiffs(schemaVersion: number, rawOld: string | nul
         { kind: "boolean", label: "Deleted", old_value: before?.soft_deleted, new_value: after?.soft_deleted }
     ];
     return { fields, before, after };
+}
+
+/** hd_changelog schema_version 0: legacy entries imported with no structured snapshot data — always `{}`. Shared across every `what`, since there's nothing type-specific to validate or render. */
+const EMPTY_SNAPSHOT_SCHEMA = z.object({});
+
+/** Builds an empty field-diff result for schema_version 0: validates the JSON is at least a plain object, but there's nothing structured to show. */
+function buildEmptyFieldDiffs(rawBefore: unknown, rawAfter: unknown): BuiltFieldDiffs {
+    if (rawBefore !== null) EMPTY_SNAPSHOT_SCHEMA.parse(rawBefore);
+    if (rawAfter !== null) EMPTY_SNAPSHOT_SCHEMA.parse(rawAfter);
+    return { fields: [], before: null, after: null };
+}
+
+// Every (what, schema_version) pair this app can render a diff for. A future schema_version 2 for,
+// say, EVENT gets its own buildEventFieldDiffsV2 and a `2: buildEventFieldDiffsV2` entry here — not
+// a change to buildEventFieldDiffsV1.
+const BUILDERS: Record<hd_changelog_what, Record<number, Builder>> = {
+    [hd_changelog_what.TAG]: { 0: buildEmptyFieldDiffs, 1: buildTagFieldDiffsV1 },
+    [hd_changelog_what.PERSON]: { 0: buildEmptyFieldDiffs, 1: buildPersonFieldDiffsV1 },
+    [hd_changelog_what.EVENT]: { 0: buildEmptyFieldDiffs, 1: buildEventFieldDiffsV1 }
+};
+
+/**
+ * Parses both sides of a changelog entry against the builder registered for (`what`, `schemaVersion`)
+ * and builds its field-diff rows. Throws {@link UnsupportedSchemaVersionError} if there's no builder
+ * registered for that pair, or (SyntaxError on malformed JSON, ZodError on a shape mismatch)
+ * otherwise — callers should catch all of these and fall back to a raw-JSON display.
+ */
+export function buildFieldDiffs(schemaVersion: number, what: hd_changelog_what, rawOld: string | null, rawNew: string | null): BuiltFieldDiffs {
+    const builder = BUILDERS[what][schemaVersion];
+    if (builder === undefined) throw new UnsupportedSchemaVersionError(schemaVersion);
+    return builder(rawOld === null ? null : JSON.parse(rawOld), rawNew === null ? null : JSON.parse(rawNew));
 }

@@ -8,7 +8,7 @@ import StatsPill from "../../ui/StatsPill";
 import WarningBanner from "../../ui/WarningBanner";
 import PageSection from "../../../ui/PageSection";
 import TextLink, { TEXT_LINK_WHITE } from "../../../ui/TextLink";
-import { buildTagFieldDiffs, buildPersonFieldDiffs, buildEventFieldDiffs, UnsupportedSchemaVersionError, FieldDiff } from "../lib/fieldDiffs";
+import { buildFieldDiffs, UnsupportedSchemaVersionError, FieldDiff } from "../lib/fieldDiffs";
 import { collectReferencedIds } from "../lib/collectRefs";
 import { resolveRefs } from "../lib/resolveRefs";
 import ChangelogDiff from "../ui/ChangelogDiff";
@@ -45,7 +45,7 @@ async function lookupEntityStatus(what: hd_changelog_what, entityId: number): Pr
 
 type Built = { fields: FieldDiff[]; before: { soft_deleted: boolean } | null; after: { soft_deleted: boolean } | null };
 
-/** Parses both snapshot sides for one `what` branch and builds its field-diff rows + referenced-entity lookups. */
+/** Parses both snapshot sides of a changelog entry and builds its field-diff rows + referenced-entity lookups. */
 async function buildDiff(
     what: hd_changelog_what,
     schemaVersion: number,
@@ -53,20 +53,7 @@ async function buildDiff(
     newValues: string | null,
     entryUserId: number | null
 ): Promise<{ diffSection: ReactNode } & Built> {
-    if (what === hd_changelog_what.TAG) {
-        const { fields, before, after } = buildTagFieldDiffs(schemaVersion, oldValues, newValues);
-        const refs = await resolveRefs(collectReferencedIds(what, before, after, entryUserId));
-        return { diffSection: <ChangelogDiff fields={fields} refs={refs} />, fields, before, after };
-    }
-
-    if (what === hd_changelog_what.PERSON) {
-        const { fields, before, after } = buildPersonFieldDiffs(schemaVersion, oldValues, newValues);
-        const refs = await resolveRefs(collectReferencedIds(what, before, after, entryUserId));
-        return { diffSection: <ChangelogDiff fields={fields} refs={refs} />, fields, before, after };
-    }
-
-    // what === hd_changelog_what.EVENT — the only remaining case, so left unguarded
-    const { fields, before, after } = buildEventFieldDiffs(schemaVersion, oldValues, newValues);
+    const { fields, before, after } = buildFieldDiffs(schemaVersion, what, oldValues, newValues);
     const refs = await resolveRefs(collectReferencedIds(what, before, after, entryUserId));
     return { diffSection: <ChangelogDiff fields={fields} refs={refs} />, fields, before, after };
 }
