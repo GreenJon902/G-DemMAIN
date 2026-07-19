@@ -50,8 +50,10 @@ export default async function Layout({
                             {/* Grows to absorb any leftover space in body's min-h-screen column, so
                                 footer always sits at the true bottom of the viewport on short pages
                                 instead of leaving a gap below it, while still flowing normally below
-                                taller content */}
-                            <div className="flex-1">{children}</div>
+                                taller content. Also a flex column itself (not just a flex item), so a
+                                child that fills available height (e.g. AbstractErrorPage's flex-1
+                                background) has an actual flex container to grow inside */}
+                            <div className="flex flex-1 flex-col">{children}</div>
                             <footer className="bottom-0 h-fit w-full bg-gray-950 p-2 text-gray-500">
                                 <ul>
                                     <li>
