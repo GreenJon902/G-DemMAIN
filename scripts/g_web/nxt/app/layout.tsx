@@ -4,6 +4,7 @@ import { AuthContextProvider } from "./AuthContext";
 import { ConfirmContextProvider } from "./ConfirmContext";
 import { ErrorContextProvider } from "./ErrorContext";
 import { NS } from "@/lib/session";
+import TextLink, { TEXT_LINK_GRAY } from "./ui/TextLink";
 import type { Viewport } from "next";
 
 export const dynamic = "force-dynamic";  // TODO: Find a better fix this
@@ -29,7 +30,7 @@ export default async function Layout({
         <html>
             <head>
             </head>
-            <body className="flex min-h-dvh flex-col bg-gray-900 text-white">
+            <body className="flex min-h-screen flex-col bg-gray-900 text-white">
                 <AuthContextProvider
                     initialIsLoggedIn={isLoggedIn}
                     initialSudoVerifiedAt={sudoVerifiedAt}
@@ -39,7 +40,21 @@ export default async function Layout({
                     <ErrorContextProvider>
                         <ConfirmContextProvider>
                             <header><nav> <GlobalNav /> </nav></header>
-                            {children}
+                            {/* Grows to absorb any leftover space in body's min-h-screen column, so
+                                footer always sits at the true bottom of the viewport on short pages
+                                instead of leaving a gap below it, while still flowing normally below
+                                taller content */}
+                            <div className="flex-1">{children}</div>
+                            <footer className="w-full h-fit bg-gray-950 text-gray-500 p-2 bottom-0">
+                                <ul>
+                                    <li>
+                                        Website built by <TextLink color={TEXT_LINK_GRAY} href="https://github.com/GreenJon902">GreenJon902</TextLink> for the G-Dem SMP.
+                                    </li>
+                                    <li>
+                                        Playerheads and skins supplied from <TextLink color={TEXT_LINK_GRAY} href="https://github.com/thejacedev/McHeads-API">mcheads.org</TextLink>.
+                                    </li>
+                                </ul>
+                            </footer>
                         </ConfirmContextProvider>
                     </ErrorContextProvider>
                 </AuthContextProvider>

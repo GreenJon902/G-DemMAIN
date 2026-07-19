@@ -36,7 +36,7 @@ export default function HisDocLayout({ children }: { children: ReactNode }) {
                 }
                 links={links}
             />
-            <main className="min-h-screen bg-gray-900 p-4">{children}</main>
+            <main className="bg-gray-900 p-4">{children}</main>
         </>
     );
 }
