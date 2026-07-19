@@ -9,7 +9,7 @@ import { createPerson, updatePerson } from "@g/com/lib/prisma/hisdoc/person";
 import { createTag, updateTag } from "@g/com/lib/prisma/hisdoc/tag";
 import { sendHisDocWebhook } from "@g/com/lib/webhook";
 import { hd_person_type } from "@g/com/prisma/enums";
-import { earliestUnix, latestUnix, parseFlexiDateForm } from "../lib/flexidate";
+import { earliestUnix, latestUnix, parseFlexiDateForm, MIN_FLEXIDATE_UNIX, MAX_FLEXIDATE_UNIX } from "../lib/date/flexidate";
 import { hexToColor } from "../lib/color";
 import { resolvePersonDisplayName } from "../changelog/lib/personDisplayName";
 import { type ActionResult, changelogNoteSchema, resolveActor, runMutation } from "../lib/actionHelpers";
@@ -68,15 +68,10 @@ function parseEventFormFields(formData: FormData) {
     return { name, description, details, tag_ids, person_ids, related_event_ids };
 }
 
-// Mirrors the client <input> min/max in form/ui/FlexiDateInput.tsx, so an out-of-range value is
-// rejected with a friendly message rather than failing at the database
-const eventDateTimeOffsetSchema = z.number().int().min(-32768).max(32767); // event_date_time_offset is a SMALLINT column
+// event_date_time_offset is a SMALLINT column; the client's offset field is a free-text "(+|-)HH:MM"
+// string with no numeric min/max of its own, so this bound is enforced only here
+const eventDateTimeOffsetSchema = z.number().int().min(-32768).max(32767);
 const eventDateDiffSchema = z.bigint().min(0n).max(BigInt(Number.MAX_SAFE_INTEGER)); // event_date_diff is BIGINT UNSIGNED, bounded to what a JS number can represent exactly
-
-// The earliest/latest instant a FlexiDate can represent must stay inside what MySQL's DATETIME
-// type supports, matching the client's date-picker min/max
-const MIN_FLEXIDATE_UNIX = Date.UTC(1000, 0, 1) / 1000;
-const MAX_FLEXIDATE_UNIX = Date.UTC(9999, 11, 31, 23, 59, 59) / 1000;
 
 /**
  * Validates the structural invariants and numeric bounds of a parsed FlexiDate, throwing if any
@@ -145,7 +140,7 @@ export async function addEvent(formData: FormData): Promise<ActionResult> {
                 event_date_time_offset: flexiDate.event_date_time_offset,
                 // assertFlexiDateInvariants above has already checked flexiDate matches one of the two
                 // centered/ranged shapes; the cast just restores that discriminated-union narrowing,
-                // which parseFlexiDateForm's flattened FlexiDateInput return type loses
+                // which parseFlexiDateForm's flattened FlexiDate return type loses
                 ...(flexiDate as EventDateFields),
                 tagIds: tag_ids,
                 personIds: person_ids,

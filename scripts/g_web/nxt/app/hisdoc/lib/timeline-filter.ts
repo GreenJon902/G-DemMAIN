@@ -209,8 +209,9 @@ export function buildTimelineWhere(filters: TimelineFilters): Prisma.hd_eventWhe
     ));
 
     // Date range — inclusive requires the event's range to overlap [from, to]; exclusive requires
-    //   it to fall entirely within [from, to]
-    // TODO: This ignores timezones. Is this correct?
+    //   it to fall entirely within [from, to]. `from`/`to` (parsed via Date.parse on a YYYY-MM-DD
+    //   string) are true UTC unix seconds, and so are event_start_key/event_end_key (they subtract
+    //   event_date_time_offset — see doc/Databases.md), so this comparison is UTC-consistent
     if (filters.dateMode === "exclusive") {
         if (filters.from !== null) andClauses.push({ event_start_key: { gte: filters.from } });
         if (filters.to !== null) andClauses.push({ event_end_key: { lte: filters.to } });

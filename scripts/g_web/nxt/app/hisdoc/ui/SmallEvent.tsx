@@ -1,6 +1,6 @@
 import TextLink, { TEXT_LINK_WHITE } from "@/app/ui/TextLink";
 import { FlexiDateDisplay } from "./FlexiDateDisplay";
-import { FlexiDateInput } from "../lib/flexidate";
+import { FlexiDate } from "../lib/date/flexidate";
 
 /**
  * A single line item for an event listing: its FlexiDate followed by a link to the event's page.
@@ -15,7 +15,7 @@ import { FlexiDateInput } from "../lib/flexidate";
  */
 export default function SmallEvent({
     id, name, ...date
-}: FlexiDateInput & { id: number, name: string }) {
+}: FlexiDate & { id: number, name: string }) {
     // TODO: The spacing+wrapping gets a bit messed up on iOS here
     return (
         <li className="mb-1 flex flex-wrap items-center gap-x-4 leading-none">

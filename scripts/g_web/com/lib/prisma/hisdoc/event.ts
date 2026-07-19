@@ -16,6 +16,10 @@ import { hd_changelog_action, hd_changelog_what, hd_event_event_date_type } from
 import type { hd_event_event_date_units } from "../../../generated/prisma/client";
 import { type Actor, writeChangelog, buildEventSnapshot } from "./changelog";
 
+// Structurally overlaps app/hisdoc/lib/date/flexidate.ts's `FlexiDate` type (same 6 underlying
+// hd_event date columns) but is kept separate: this is a strict discriminated union for the Prisma
+// write payload (compile-time centered/ranged narrowing, Prisma enum literals, no offset field),
+// whereas FlexiDate is a flat type for display/computation
 export type EventDateFields =
     | {
         event_date_type: typeof hd_event_event_date_type.centered,

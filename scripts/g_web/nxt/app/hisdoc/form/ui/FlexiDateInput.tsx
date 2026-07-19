@@ -1,16 +1,12 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import RadioButtons from "@/app/ui/RadioButtons";
-import { type FlexiDateInput, convertFlexiDateCount, formatDateInputValue, parseDateInputValue } from "../../lib/flexidate";
+import { type FlexiDate, convertFlexiDateCount, formatDateInputValue, parseDateInputValue, formatSignedOffset } from "../../lib/date/flexidate";
 import { FORM_INPUT_CLASS, useFormChanged } from "./FormInputs";
 
 // Zero-padded "00".."23" choices for the hour-precision hour selector
 const HOUR_OPTIONS = Array.from({ length: 24 }, (_, hour) => hour.toString().padStart(2, "0"));
-
-// event_date_time_offset is a SMALLINT column (doc/Databases.md) — bound the input to what it can hold
-const OFFSET_MIN = -32768;
-const OFFSET_MAX = 32767;
 
 // event_date_diff is stored in a BIGINT UNSIGNED column, but this <input type="number"> is backed by
 // a JS double, so Number.MAX_SAFE_INTEGER is the real ceiling — beyond it the input can't represent
@@ -44,50 +40,67 @@ function SubField({ label, htmlFor, children }: { label: string, htmlFor?: strin
  *
  * Dates are entered through native pickers — <input type="date"> for day-based values and
  * <input type="datetime-local"> for hour/minute-based ones — and converted to/from the stored
- * units-since-epoch counts with the flexidate offset applied (see formatDateInputValue /
- * parseDateInputValue in lib/flexidate.ts).
+ * units-since-epoch counts by treating the picker's literal digits as if they were UTC, with no
+ * offset math involved (see formatDateInputValue / parseDateInputValue in lib/date/flexidate.ts).
  *
  * The `defaultValue` prop initialises state from an existing FlexiDate (e.g.
  * when editing a record). If omitted, defaults to centered mode with empty fields.
  *
- * Hidden field names match what `parseFlexiDateForm` in `lib/flexidate.ts` expects:
+ * Hidden field names match what `parseFlexiDateForm` in `lib/date/flexidate.ts` expects:
  * `date_type`, `date1`, `date_time_offset`, `date_units`, `date_diff`, `date2`.
  *
  * @param defaultValue - Optional existing FlexiDate to pre-populate the fields.
  */
-export default function FlexiDateInput({ defaultValue }: { defaultValue?: FlexiDateInput }) {
+export default function FlexiDateInput({ defaultValue }: { defaultValue?: FlexiDate }) {
     const notifyChanged = useFormChanged();
 
     const [type, setType] = useState<"centered" | "ranged">(
         defaultValue?.event_date_type ?? "centered"
     );
-    const [dateTimeOffset, setDateTimeOffset] = useState(
-        defaultValue?.event_date_time_offset.toString() ?? "0"
+    const [dateTimeOffset, setDateTimeOffset] = useState(() =>
+        formatSignedOffset(defaultValue?.event_date_time_offset ?? 0)
     );
+    // The auto-detected offset string + timezone abbreviation (e.g. "BST"), shown as a sanity-check
+    // hint next to the offset field. Kept alongside the offset string it was detected for (rather
+    // than just the tz name) so the hint can disappear once the user edits the field away from it —
+    // re-appearing if they type it back to match — without needing to clear this on every keystroke.
+    const [detected, setDetected] = useState<{ offsetStr: string; tzName: string } | null>(null);
+
+    // Auto-fill the offset from the browser's own timezone for a brand-new event — editing an
+    // existing one keeps its stored offset untouched. Matches the legacy Java form's own
+    // `-new Date().getTimezoneOffset()` autofill.
+    useEffect(() => {
+        if (defaultValue) return;
+        const offsetStr = formatSignedOffset(-new Date().getTimezoneOffset());
+        setDateTimeOffset(offsetStr);
+        const tzPart = new Intl.DateTimeFormat(undefined, { timeZoneName: "short" })
+            .formatToParts(new Date())
+            .find(part => part.type === "timeZoneName");
+        if (tzPart) setDetected({ offsetStr, tzName: tzPart.value });
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally runs once, only for a brand-new event
+    }, []);
     // Centered-only fields — the picked instant is kept as the picker's own value string
     const [dateUnits, setDateUnits] = useState<"d" | "h" | "m">(
         defaultValue?.event_date_units ?? "d"
     );
     const [centerInput, setCenterInput] = useState(() => {
         if (defaultValue?.event_date_type !== "centered") return "";
-        const formatted = formatDateInputValue(defaultValue.event_date1, defaultValue.event_date_units!, defaultValue.event_date_time_offset);
+        const formatted = formatDateInputValue(defaultValue.event_date1, defaultValue.event_date_units!);
         // Hour precision only tracks the hour, so the minute component is always pinned to 00
         return defaultValue.event_date_units === "h" ? formatted.slice(0, 13) + ":00" : formatted;
     });
-    const [dateDiff, setDateDiff] = useState(defaultValue?.event_date_diff?.toString() ?? "");
+    const [dateDiff, setDateDiff] = useState(defaultValue?.event_date_diff?.toString() ?? "0");
     // Ranged-only fields, always whole days
     const [startInput, setStartInput] = useState(() =>
         defaultValue?.event_date_type === "ranged"
-            ? formatDateInputValue(defaultValue.event_date1, "d", defaultValue.event_date_time_offset)
+            ? formatDateInputValue(defaultValue.event_date1, "d")
             : ""
     );
     const [endInput, setEndInput] = useState(() =>
         defaultValue?.event_date_type === "ranged"
-            ? formatDateInputValue(defaultValue.event_date2!, "d", defaultValue.event_date_time_offset)
+            ? formatDateInputValue(defaultValue.event_date2!, "d")
             : ""
     );
-
-    const offsetNum = Number(dateTimeOffset) || 0;
 
     /** Switches mode, keeping each mode's own inputs so toggling back restores them. */
     function handleTypeChange(next: "centered" | "ranged") {
@@ -97,12 +110,12 @@ export default function FlexiDateInput({ defaultValue }: { defaultValue?: FlexiD
 
     // Converts the already-picked instant to the new unit and re-encodes it in that unit's input
     // format (date vs datetime-local). Converting the stored count directly (rather than
-    // reparsing the formatted string under the new unit) avoids compounding rounding drift from
-    // the offset across repeated precision switches
+    // reparsing the formatted string under the new unit) avoids compounding rounding drift across
+    // repeated precision switches
     function handleUnitsChange(next: "d" | "h" | "m") {
-        const prevCount = parseDateInputValue(centerInput, dateUnits, offsetNum);
+        const prevCount = parseDateInputValue(centerInput, dateUnits);
         setDateUnits(next);
-        setCenterInput(prevCount === null ? "" : formatDateInputValue(convertFlexiDateCount(prevCount, dateUnits, next), next, offsetNum));
+        setCenterInput(prevCount === null ? "" : formatDateInputValue(convertFlexiDateCount(prevCount, dateUnits, next), next));
         notifyChanged();
     }
 
@@ -123,12 +136,11 @@ export default function FlexiDateInput({ defaultValue }: { defaultValue?: FlexiD
         notifyChanged();
     }
 
-    // Hidden numeric values are derived at render so an offset change re-encodes the picked
-    // wall-clock dates automatically
+    // Hidden numeric values are derived at render from the picker's own literal digits
     const date1Count = type === "centered"
-        ? parseDateInputValue(centerInput, dateUnits, offsetNum)
-        : parseDateInputValue(startInput, "d", offsetNum);
-    const date2Count = type === "ranged" ? parseDateInputValue(endInput, "d", offsetNum) : null;
+        ? parseDateInputValue(centerInput, dateUnits)
+        : parseDateInputValue(startInput, "d");
+    const date2Count = type === "ranged" ? parseDateInputValue(endInput, "d") : null;
 
     return (
         <div className="flex flex-col gap-3">
@@ -144,23 +156,30 @@ export default function FlexiDateInput({ defaultValue }: { defaultValue?: FlexiD
                     : "Happened sometime between two dates"}
             />
 
-            {/* UTC offset — shared by both modes */}
-            <SubField label="UTC offset (minutes)" htmlFor="flexi_date_time_offset">
+            {/* Timezone offset — shared by both modes. Not literally "UTC": it's the offset of
+                whatever timezone the date fields below are entered in, which may not be the
+                browser's current one (e.g. backfilling a historical date from elsewhere) */}
+            <SubField label="Timezone offset of the date below" htmlFor="flexi_date_time_offset">
+                <p className="text-xs text-gray-400">
+                    Format: (+|-)HH:MM from UTC.
+                </p>
                 <input
                     id="flexi_date_time_offset"
-                    type="number"
+                    type="text"
                     className={FORM_INPUT_CLASS}
                     value={dateTimeOffset}
                     onChange={e => {
                         setDateTimeOffset(e.target.value);
                         notifyChanged();
                     }}
-                    step={1}
-                    min={OFFSET_MIN}
-                    max={OFFSET_MAX}
+                    pattern="[+\-]([01][0-9]|2[0-3]):[0-5][0-9]"
                     required
-                    placeholder="0"
+                    placeholder="+00:00"
                 />
+                <p className="text-xs text-gray-400">
+                    {detected?.offsetStr === dateTimeOffset && `Detected as ${detected.tzName} — check this matches. `}
+                    Enter the date/time below using that same local clock.
+                </p>
             </SubField>
 
             {type === "centered" ? (
@@ -194,11 +213,13 @@ export default function FlexiDateInput({ defaultValue }: { defaultValue?: FlexiD
                         </SubField>
                     ) : (
                         <SubField label={dateUnits === "d" ? "Date" : "Date & time"} htmlFor="flexi_date1_centered">
+                            {/* Entered using the timezone set by the offset field above — not UTC, and not
+                                necessarily the browser's current zone */}
                             <input
                                 id="flexi_date1_centered"
                                 type={dateUnits === "d" ? "date" : "datetime-local"}
                                 className={FORM_INPUT_CLASS}
-                                value={centerInput /* TODO: This defaults to 00+offset when switching from days to minutes, is this right? Also confirm this is definitely a UTC input, not a current-timezone input */ }
+                                value={centerInput /* TODO: This defaults to 00+offset when switching from days to minutes, is this right? */}
                                 onChange={e => {
                                     setCenterInput(e.target.value);
                                     notifyChanged();

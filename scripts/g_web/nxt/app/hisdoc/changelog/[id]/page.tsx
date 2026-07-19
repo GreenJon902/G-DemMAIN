@@ -9,7 +9,7 @@ import WarningBanner from "../../ui/WarningBanner";
 import PageSection from "../../../ui/PageSection";
 import TextLink, { TEXT_LINK_WHITE } from "../../../ui/TextLink";
 import { buildFieldDiffs, UnsupportedSchemaVersionError, FieldDiff } from "../lib/fieldDiffs";
-import { formatTimestamp } from "../../lib/dateFormat";
+import { formatTimestamp } from "../../lib/date/date";
 import { collectReferencedIds } from "../lib/collectRefs";
 import { resolveRefs } from "../lib/resolveRefs";
 import ChangelogDiff from "../ui/ChangelogDiff";

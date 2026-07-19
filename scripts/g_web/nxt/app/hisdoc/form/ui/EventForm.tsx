@@ -1,6 +1,6 @@
 "use client";
 
-import type { FlexiDateInput as FlexiDateValue } from "../../lib/flexidate";
+import type { FlexiDate as FlexiDateValue } from "../../lib/date/flexidate";
 import FlexiDateInput from "./FlexiDateInput";
 import type { ActionResult } from "../../lib/actionHelpers";
 import EntityForm from "./EntityForm";

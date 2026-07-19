@@ -1,5 +1,5 @@
 import TextLink, { TEXT_LINK_GRAY } from "../../ui/TextLink";
-import { formatTimestampDate } from "../lib/dateFormat";
+import { formatTimestampDate } from "../lib/date/date";
 
 /**
  * One list entry for an entity's changelog section (event/tag/person pages all show the same

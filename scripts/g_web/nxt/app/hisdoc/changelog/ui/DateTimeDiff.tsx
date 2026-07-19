@@ -1,5 +1,5 @@
 import { FieldRow, BeforeAfter, NotRecorded } from "./common";
-import { formatTimestamp } from "../../lib/dateFormat";
+import { formatTimestamp } from "../../lib/date/date";
 
 /**
  * Diffs an ISO-string datetime field (currently only hd_event.posted_at). Never word-diffed — an

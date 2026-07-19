@@ -170,46 +170,46 @@ CREATE OR REPLACE TABLE hd_event (
         COMMENT 'End of range in days since epoch for ranged events. NULL for centered events.',
 
     sort_key BIGINT GENERATED ALWAYS AS (
-        event_date1 * CASE event_date_type
-            WHEN 'centered' THEN CASE event_date_units
-                WHEN 'd' THEN 86400
-                WHEN 'h' THEN 3600
-                WHEN 'm' THEN 60
-                ELSE 1
-            END
-            WHEN 'ranged' THEN 86400
-            ELSE 1
-        END
+        (CASE event_date_type
+            WHEN 'centered' THEN (CASE event_date_units
+                WHEN 'd' THEN event_date1 * 86400 + 43200
+                WHEN 'h' THEN event_date1 * 3600
+                WHEN 'm' THEN event_date1 * 60
+                ELSE event_date1
+            END)
+            WHEN 'ranged' THEN event_date1 * 86400 + 43200
+            ELSE event_date1
+        END) - (event_date_time_offset * 60)
     ) STORED
-        COMMENT 'Computed sort key for timeline ordering (event_date1 converted to seconds since epoch). Maintained automatically by MariaDB as a STORED generated column; do not write manually.',
+        COMMENT 'Computed true-UTC sort key for timeline ordering (event_date1 converted to seconds since epoch, adjusted by event_date_time_offset). Day-precision values (centered "d" units, or any ranged date) are anchored to midday (+43200s) rather than midnight, so they sort as a neutral center-of-day estimate instead of always-first. Maintained automatically by MariaDB as a STORED generated column; do not write manually.',
 
     event_start_key BIGINT GENERATED ALWAYS AS (
-        CASE event_date_type
-            WHEN 'centered' THEN (CAST(event_date1 AS SIGNED) - CAST(event_date_diff AS SIGNED)) * CASE event_date_units
-                WHEN 'd' THEN 86400
-                WHEN 'h' THEN 3600
-                WHEN 'm' THEN 60
-                ELSE 1
-            END
-            WHEN 'ranged' THEN event_date1 * 86400
-            ELSE 1
-        END
+        (CASE event_date_type
+            WHEN 'centered' THEN (CASE event_date_units
+                WHEN 'd' THEN (CAST(event_date1 AS SIGNED) - CAST(event_date_diff AS SIGNED)) * 86400 + 43200
+                WHEN 'h' THEN (CAST(event_date1 AS SIGNED) - CAST(event_date_diff AS SIGNED)) * 3600
+                WHEN 'm' THEN (CAST(event_date1 AS SIGNED) - CAST(event_date_diff AS SIGNED)) * 60
+                ELSE CAST(event_date1 AS SIGNED) - CAST(event_date_diff AS SIGNED)
+            END)
+            WHEN 'ranged' THEN event_date1 * 86400 + 43200
+            ELSE event_date1
+        END) - (event_date_time_offset * 60)
     ) STORED
-        COMMENT 'Computed earliest possible unix-seconds bound for this event. Mirrors earliestUnix() in app/hisdoc/lib/flexidate.ts. Maintained automatically by MariaDB as a STORED generated column; do not write manually.',
+        COMMENT 'Computed true-UTC sort-ordering lower bound for this event (see sort_key''s comment on the midday convention for day precision). Close to, but not identical to, earliestUnix() in app/hisdoc/lib/date/flexidate.ts, which keeps day-precision values at their true midnight-anchored earliest bound rather than shifting to midday. Maintained automatically by MariaDB as a STORED generated column; do not write manually.',
 
     event_end_key BIGINT GENERATED ALWAYS AS (
-        CASE event_date_type
-            WHEN 'centered' THEN (CAST(event_date1 AS SIGNED) + CAST(event_date_diff AS SIGNED)) * CASE event_date_units
-                WHEN 'd' THEN 86400
-                WHEN 'h' THEN 3600
-                WHEN 'm' THEN 60
-                ELSE 1
-            END
-            WHEN 'ranged' THEN event_date2 * 86400
-            ELSE 1
-        END
+        (CASE event_date_type
+            WHEN 'centered' THEN (CASE event_date_units
+                WHEN 'd' THEN (CAST(event_date1 AS SIGNED) + CAST(event_date_diff AS SIGNED)) * 86400 + 43200
+                WHEN 'h' THEN (CAST(event_date1 AS SIGNED) + CAST(event_date_diff AS SIGNED)) * 3600
+                WHEN 'm' THEN (CAST(event_date1 AS SIGNED) + CAST(event_date_diff AS SIGNED)) * 60
+                ELSE CAST(event_date1 AS SIGNED) + CAST(event_date_diff AS SIGNED)
+            END)
+            WHEN 'ranged' THEN event_date2 * 86400 + 43200
+            ELSE event_date1
+        END) - (event_date_time_offset * 60)
     ) STORED
-        COMMENT 'Computed latest possible unix-seconds bound for this event. Mirrors latestUnix() in app/hisdoc/lib/flexidate.ts. Maintained automatically by MariaDB as a STORED generated column; do not write manually.',
+        COMMENT 'Computed true-UTC sort-ordering upper bound for this event (see sort_key''s comment on the midday convention for day precision). Close to, but not identical to, latestUnix() in app/hisdoc/lib/date/flexidate.ts, which leaves day-precision values at their raw midnight-anchored count rather than shifting to midday. Maintained automatically by MariaDB as a STORED generated column; do not write manually.',
 
     soft_deleted BOOLEAN NOT NULL DEFAULT FALSE
         COMMENT 'If true, this record is treated as deleted but retained for audit history.',
@@ -229,6 +229,8 @@ CREATE OR REPLACE TABLE hd_event (
     CONSTRAINT chk_flexidate_ranged_order   CHECK (event_date_type != 'ranged'   OR event_date1 <= event_date2)
 );
 ```
+
+**Note:** `event_date1`/`event_date_diff`/`event_date2` are not relative to UTC — they're the submitter's own local wall-clock count as entered in the event form, with `event_date_time_offset` separately recording (best-effort) what the real UTC offset was believed to be at entry time. `sort_key`/`event_start_key`/`event_end_key` subtract that offset back out, so — unlike `event_date1` itself — they *are* true-UTC instants, which is what makes them safe to sort/range-compare across events entered under different offsets. See `app/hisdoc/lib/date/flexidate.ts` for the formatting/parsing logic — `earliestUnix`/`latestUnix` are close to, but not identical to, `event_start_key`/`event_end_key`: the DB keys additionally anchor day-precision values to midday rather than midnight (see `sort_key`'s comment), which `earliestUnix`/`latestUnix` deliberately don't do, since they're used for true min/max range validation (`form/actions.tsx`) rather than sort-ordering. By contrast, `posted_at` above (and `hd_changelog.created_at` below) are plain `DATETIME`s populated by the database server's own `CURRENT_TIMESTAMP`/system clock, and are assumed to be true UTC instants — this assumes the DB server's clock is itself configured as UTC, which can't be verified from this repo alone (no server timezone config is checked in).
 
 
 ## hd_changelog

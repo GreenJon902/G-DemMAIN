@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { hd_changelog_what, hd_person_type, hd_event_event_date_type, hd_event_event_date_units } from "@g/com/prisma/enums";
-import { FlexiDateInput } from "../../lib/flexidate";
+import { FlexiDate } from "../../lib/date/flexidate";
 
 // A "builder" is registered per (what, schema_version) pair in BUILDERS below: it validates the
 // already-JSON.parsed before/after values against its own schema and builds the concrete list of
@@ -30,28 +30,6 @@ export type PersonRelationItem = { id: number; type: hd_person_type; data: strin
 /** An embedded related-event reference, as recorded in an EVENT snapshot's `relatedEvents` array. */
 export type EventRelationItem = { id: number; name: string };
 
-/** hd_event's 6 FlexiDate columns, in the number-encoded form they round-trip through changelog JSON as. */
-export type FlexiDateFields = {
-    event_date_type: hd_event_event_date_type;
-    event_date1: number;
-    event_date_time_offset: number;
-    event_date_units: hd_event_event_date_units | null;
-    event_date_diff: number | null;
-    event_date2: number | null;
-};
-
-/** Converts a snapshot's number-encoded date fields back to the bigint-based shape FlexiDateDisplay expects. */
-export function toFlexiDateInput(fields: FlexiDateFields): FlexiDateInput {
-    return {
-        event_date_type: fields.event_date_type,
-        event_date1: BigInt(fields.event_date1),
-        event_date_time_offset: fields.event_date_time_offset,
-        event_date_units: fields.event_date_units,
-        event_date_diff: fields.event_date_diff === null ? null : BigInt(fields.event_date_diff),
-        event_date2: fields.event_date2 === null ? null : BigInt(fields.event_date2)
-    };
-}
-
 // A FieldDiff is one rendered row: its `kind` determines which renderer FieldDiffRow dispatches
 // to, and (thanks to the discriminated union) also determines the concrete type of its old/new
 // value(s) with no cast required at the point of use.
@@ -65,7 +43,7 @@ type PersonTypeFieldDiff = { kind: "personType"; label: string; old_value: hd_pe
 type DateTimeFieldDiff = { kind: "datetime"; label: string; old_value: string | undefined; new_value: string | undefined };
 type UserRefFieldDiff = { kind: "userRef"; label: string; old_value: number | null | undefined; new_value: number | null | undefined };
 /** The 6 hd_event date columns, treated as one logical field — never partially diffed. */
-type FlexiDateFieldDiff = { kind: "flexidate"; label: string; old: FlexiDateFields | undefined; new: FlexiDateFields | undefined };
+type FlexiDateFieldDiff = { kind: "flexidate"; label: string; old: FlexiDate<number> | undefined; new: FlexiDate<number> | undefined };
 type TagsFieldDiff = { kind: "tags"; label: string; old: TagRelationItem[] | undefined; new: TagRelationItem[] | undefined };
 type PersonsFieldDiff = { kind: "persons"; label: string; old: PersonRelationItem[] | undefined; new: PersonRelationItem[] | undefined };
 type RelatedEventsFieldDiff = { kind: "relatedEvents"; label: string; old: EventRelationItem[] | undefined; new: EventRelationItem[] | undefined };
@@ -106,7 +84,7 @@ export type PersonSnapshotV1 = z.infer<typeof PERSON_SNAPSHOT_V1_SCHEMA>;
  * hd_changelog schema_version 1 snapshot of an hd_event row plus its active relations at the time
  * of the change (see doc/Databases.md). `event_date1`/`event_date_diff`/`event_date2` come back as
  * `number` rather than `bigint` since `toChangelogJson` (com/lib/prisma/hisdoc/changelog.ts)
- * converts BigInt->Number before JSON.stringify — use {@link toFlexiDateInput} to convert back.
+ * converts BigInt->Number before JSON.stringify — use `toFlexiDate` (lib/date/flexidate.ts) to convert back.
  */
 const EVENT_SNAPSHOT_V1_SCHEMA = z.object({
     id: z.number(),

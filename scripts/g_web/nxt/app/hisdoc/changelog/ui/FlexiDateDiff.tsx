@@ -1,9 +1,9 @@
 import { FlexiDateDisplay } from "../../ui/FlexiDateDisplay";
-import { FlexiDateFields, toFlexiDateInput } from "../lib/fieldDiffs";
+import { FlexiDate, toFlexiDate } from "../../lib/date/flexidate";
 import { FieldRow, BeforeAfter, NotRecorded } from "./common";
 
 /** True if all 6 FlexiDate columns match between two snapshots. */
-function dateFieldsEqual(a: FlexiDateFields, b: FlexiDateFields): boolean {
+function dateFieldsEqual(a: FlexiDate<number>, b: FlexiDate<number>): boolean {
     return a.event_date_type === b.event_date_type
         && a.event_date1 === b.event_date1
         && a.event_date_time_offset === b.event_date_time_offset
@@ -19,20 +19,20 @@ function dateFieldsEqual(a: FlexiDateFields, b: FlexiDateFields): boolean {
  */
 export default function FlexiDateDiff({ label, before, after }: {
     label: string;
-    before: FlexiDateFields | undefined;
-    after: FlexiDateFields | undefined;
+    before: FlexiDate<number> | undefined;
+    after: FlexiDate<number> | undefined;
 }) {
     if (before === undefined && after === undefined) return null;
 
     if (before !== undefined && after !== undefined && dateFieldsEqual(before, after)) {
-        return <FieldRow label={label} unchanged><FlexiDateDisplay {...toFlexiDateInput(after)} /></FieldRow>;
+        return <FieldRow label={label} unchanged><FlexiDateDisplay {...toFlexiDate(after)} /></FieldRow>;
     }
 
     return (
         <FieldRow label={label}>
             <BeforeAfter
-                before={before === undefined ? <NotRecorded /> : <FlexiDateDisplay {...toFlexiDateInput(before)} />}
-                after={after === undefined ? <NotRecorded /> : <FlexiDateDisplay {...toFlexiDateInput(after)} />}
+                before={before === undefined ? <NotRecorded /> : <FlexiDateDisplay {...toFlexiDate(before)} />}
+                after={after === undefined ? <NotRecorded /> : <FlexiDateDisplay {...toFlexiDate(after)} />}
             />
         </FieldRow>
     );

@@ -3,7 +3,7 @@
 import { Suspense, useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import TextLink, { TEXT_LINK_WHITE } from "@/app/ui/TextLink";
-import { FlexiDateInput } from "../lib/flexidate";
+import { toFlexiDate } from "../lib/date/flexidate";
 import { FlexiDateDisplay } from "./FlexiDateDisplay";
 import { TagChip } from "./TagChip";
 import SmallPerson from "./SmallPerson";
@@ -15,18 +15,6 @@ import { useTimelinePreferences } from "../TimelinePreferencesContext";
 // How long a re-fetch (filter change or "load more") can run before the loading indicator is
 // shown — keeps quick re-fetches from flashing a spinner, while slow ones still give feedback
 const LOADING_INDICATOR_DELAY_MS = 400;
-
-/** Converts an ApiTimelineEvent's numeric date fields to the bigint FlexiDateInput shape. */
-function toFlexiDateInput(e: ApiTimelineEvent): FlexiDateInput {
-    return {
-        event_date_type: e.event_date_type as "centered" | "ranged",
-        event_date1: BigInt(e.event_date1),
-        event_date_time_offset: e.event_date_time_offset ?? 0,
-        event_date_units: e.event_date_units as "d" | "h" | "m" | null,
-        event_date_diff: e.event_date_diff !== null ? BigInt(e.event_date_diff) : null,
-        event_date2: e.event_date2 !== null ? BigInt(e.event_date2) : null
-    };
-}
 
 /**
  * Inline event card. Reads showTags/showPersons directly from TimelinePreferencesContext rather
@@ -41,7 +29,7 @@ function EventCard({ e }: { e: ApiTimelineEvent }) {
             <TextLink href={"/hisdoc/event/" + e.id} color={TEXT_LINK_WHITE} solid className="font-semibold">
                 {e.name}
             </TextLink>
-            <FlexiDateDisplay {...toFlexiDateInput(e)} />
+            <FlexiDateDisplay {...toFlexiDate(e)} />
             <p className="line-clamp-3 text-sm text-gray-300">{e.description}</p>
             {showTags && e.tags.length > 0 && (
                 <div className="flex flex-row flex-wrap gap-2">

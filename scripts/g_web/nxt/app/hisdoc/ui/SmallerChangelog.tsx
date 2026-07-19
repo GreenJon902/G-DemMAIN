@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { formatTimestampDate } from "../lib/dateFormat";
+import { formatTimestampDate } from "../lib/date/date";
 
 /**
  * A compact changelog entry for use in a timeline: the same info as {@link SmallChangelog} (who,
