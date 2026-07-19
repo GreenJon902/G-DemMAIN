@@ -2,7 +2,7 @@ export const SUDO_WINDOW_MS = 30 * 60 * 1000;  // How long sudo mode remains act
 
 export type AreaConfig = {
     readonly levels: readonly string[],
-    readonly default: string | null,  // Null means no access by default
+    readonly default: string | null,  // Level for an unauthenticated visitor; null means no access
     readonly sudoFrom: string | null  // This level and above require sudo; null means none required. This only applies to write operations; read never requires sudo
 }
 
@@ -11,16 +11,16 @@ export type AreaConfig = {
 // Note, the permission specification must be manually mirrored in the database schema - `doc/Databases.md`.
 export const AREAS = {
     panel: {
-        levels: ["viewer", "admin"] as const,
-        default: null,      // null = no panel access by default
+        levels: ["viewer", "admin"],
+        default: null,      // unauthenticated visitors have no panel access
         sudoFrom: "admin"   // admin-level panel actions require sudo
     },
     hisdoc: {
-        levels: ["viewer", "editor", "admin"] as const,
-        default: "viewer",  // all users can view hisdoc by default
+        levels: ["viewer", "editor", "admin"],
+        default: "viewer",  // unauthenticated visitors can view hisdoc
         sudoFrom: null      // no sudo required for hisdoc operations
     }
-} satisfies Record<string, AreaConfig>;
+} as const satisfies Record<string, AreaConfig>;
 
 export type Area = keyof typeof AREAS;
 /** The valid permission level strings for a given area. */

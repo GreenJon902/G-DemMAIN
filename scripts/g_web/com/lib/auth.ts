@@ -41,7 +41,7 @@ const SessionDataSchema = z.object({
         username: z.string(),
         permissions: z.object({
             panel: z.enum(AREAS.panel.levels).nullable(),
-            hisdoc: z.enum(AREAS.hisdoc.levels).nullable()
+            hisdoc: z.enum(AREAS.hisdoc.levels)   // hisdoc_permission is NOT NULL in the DB, so a session can never legitimately lack it
         })
     }),
     sudoVerifiedAt: z.number().nullable()   // Timestamp when sudo mode was last entered, null if not active
@@ -123,8 +123,10 @@ export class SessionAccessor {
      */
     async optimisticCheckPermission<A extends Area>(area: A, minLevel: AreaPermission<A>): Promise<boolean> {
         const [session] = await this.#getIronSession();
-        if (session === null) return false;
-        return checkMinPermission(AREAS[area].levels, session.optimistic.permissions[area], minLevel);
+        // No session falls back to the area's configured unauthenticated-visitor level (e.g.
+        // hisdoc's public "viewer" access) rather than always failing
+        const userLevel = session === null ? AREAS[area].default : session.optimistic.permissions[area];
+        return checkMinPermission(AREAS[area].levels, userLevel, minLevel);
     }
 
     /**
@@ -136,11 +138,12 @@ export class SessionAccessor {
     }
 
     /**
-     * Returns the user's cached permission level for every area, or all-null if there is no session.
+     * Returns the user's cached permission level for every area, or each area's configured default
+     * (see AREAS[area].default) if there is no session.
      */
     async getOptimisticPermissions(): Promise<StoredPermissions> {
         const [session] = await this.#getIronSession();
-        if (session === null) return { panel: null, hisdoc: null };
+        if (session === null) return { panel: AREAS.panel.default, hisdoc: AREAS.hisdoc.default };
         return session.optimistic.permissions;
     }
 
