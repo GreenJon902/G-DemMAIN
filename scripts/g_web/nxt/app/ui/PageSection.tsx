@@ -22,7 +22,7 @@ export default function PageSection({
 
     return (
         <div>
-            <h1 className={`${sub ? "text-xl" : "text-3xl"} font-bold`}>
+            <h1 className={`${sub ? "text-xl" : "text-3xl"} font-bold text-white`}>
                 {pretitle && <span> {pretitle} </span>}
                 {icon && <span className="mr-2 inline-flex align-middle">{icon}</span>}
                 <span className={`underline ${sub ? "decoration-1" : "decoration-4"}`}> {titleNode ?? title} </span>

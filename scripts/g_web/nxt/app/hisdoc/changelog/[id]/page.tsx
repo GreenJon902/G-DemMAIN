@@ -6,11 +6,13 @@ import { notFound } from "next/navigation";
 import SplitPage from "../../ui/SplitPage";
 import StatsPill from "../../ui/StatsPill";
 import WarningBanner from "../../ui/WarningBanner";
+import PageSection from "../../../ui/PageSection";
 import TextLink, { TEXT_LINK_WHITE } from "../../../ui/TextLink";
 import { buildTagFieldDiffs, buildPersonFieldDiffs, buildEventFieldDiffs, UnsupportedSchemaVersionError, FieldDiff } from "../lib/fieldDiffs";
 import { collectReferencedIds } from "../lib/collectRefs";
 import { resolveRefs } from "../lib/resolveRefs";
 import ChangelogDiff from "../ui/ChangelogDiff";
+import EntityChangesTimeline from "../ui/EntityChangesTimeline";
 import UnsupportedSchemaVersion from "../ui/UnsupportedSchemaVersion";
 
 const ENTITY_PATH: Record<hd_changelog_what, string> = {
@@ -87,7 +89,16 @@ export default async function ChangelogEntryPage({ params }: { params: Promise<{
     });
     if (!entry) notFound();
 
-    const entityStatus = await lookupEntityStatus(entry.what, entry.entity_id);
+    const [entityStatus, entityChanges] = await Promise.all([
+        lookupEntityStatus(entry.what, entry.entity_id),
+        // Every other changelog entry for this same entity, for the mini timeline — mirrors the
+        // soft_deleted filtering of the "Changelog" list on the entity's own page
+        prisma().hd_changelog.findMany({
+            where: { what: entry.what, entity_id: entry.entity_id, soft_deleted: false },
+            orderBy: { created_at: "desc" },
+            include: { user: { select: { username: true } } }
+        })
+    ]);
 
     let diffSection: ReactNode;
     let before: { soft_deleted: boolean } | null = null;
@@ -140,13 +151,29 @@ export default async function ChangelogEntryPage({ params }: { params: Promise<{
                     <div className="mt-4">{diffSection}</div>
                 </>
             }
-            sidebar={
+            sidebarA={
                 <StatsPill>
                     <span>CID: {entry.id}</span>
                     <span>By {entry.user?.username ?? "System"}</span>
                     <span>{entry.created_at.toLocaleString()}</span>
                     <span>Schema v{entry.schema_version}</span>
                 </StatsPill>
+            }
+            sidebarBUnfoldedWrapper={StatsPill}
+            sidebarB={
+                entityChanges.length > 0 && (
+                    <PageSection title="History" sub>
+                        <EntityChangesTimeline
+                            changes={entityChanges.map(change => ({
+                                id: change.id,
+                                username: change.user?.username ?? null,
+                                created_at: change.created_at,
+                                message: change.message
+                            }))}
+                            selectedId={entry.id}
+                        />
+                    </PageSection>
+                )
             }
         />
     );

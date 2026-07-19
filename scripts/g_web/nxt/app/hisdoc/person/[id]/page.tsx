@@ -160,7 +160,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
                     )}
                 </>
             }
-            sidebar={
+            sidebarA={
                 <>
                     {!person.soft_deleted && (
                         <EntityActions

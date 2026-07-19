@@ -130,7 +130,7 @@ export default async function TagPage({ params }: { params: Promise<{ id: string
                     )}
                 </>
             }
-            sidebar={
+            sidebarA={
                 <>
                     {!tag.soft_deleted && (
                         <EntityActions

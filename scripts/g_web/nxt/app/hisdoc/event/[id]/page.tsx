@@ -129,7 +129,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                     )}
                 </>
             }
-            sidebar={
+            sidebarA={
                 <>
                     <div className="gap-2 flex-col flex">
                     {tags.length > 0 && (
