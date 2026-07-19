@@ -20,7 +20,7 @@ export default function SmallChangelog({ id, username, created_at, message }: {
             <TextLink href={`/hisdoc/changelog/${id}`} color={TEXT_LINK_GRAY} className="w-fit text-nowrap">
                 {username ?? "System"} · {created_at.toLocaleDateString()}
             </TextLink>: 
-            <p className="ml-1 whitespace-pre-wrap">{message}</p>
+            <p className="ml-1 whitespace-pre-wrap line-clamp-3">{message}</p>
         </li>
     );
 }

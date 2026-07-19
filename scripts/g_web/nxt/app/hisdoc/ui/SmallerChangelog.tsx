@@ -22,7 +22,7 @@ export default function SmallerChangelog({ id, username, created_at, message, bg
     return (
         <Link href={`/hisdoc/changelog/${id}`} className={`flex flex-col gap-0.5 rounded px-2 py-1 hover:brightness-75 ${bgColor}`}>
             <span className="text-sm text-nowrap text-gray-300">{username ?? "System"} · {created_at.toLocaleDateString()}</span>
-            <p className="line-clamp-2 text-sm text-white whitespace-pre-wrap">{message}</p>
+            <p className="line-clamp-2 text-sm text-white whitespace-pre-wrap max-w-96">{message}</p>
         </Link>
     );
 }
