@@ -9,3 +9,7 @@ WEBLOGIN_WEBHOOK
 WEBCOMMAND_WEBHOOK
 # The webhook url for sending notifications when a user sends a command from the panel. 
 # This should be formatted something like https://discord.com/api/webhooks/___/___.
+
+HISDOC_WEBHOOK
+# The webhook url for sending notifications when a user does a hisdoc action. 
+# This should be formatted something like https://discord.com/api/webhooks/___/___.
