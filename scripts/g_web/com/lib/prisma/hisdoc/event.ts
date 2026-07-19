@@ -194,7 +194,7 @@ async function logOtherSides(
     const verb = isCreate ? "creation" : "update";
     for (const [otherId, { before, action }] of otherEventChanges) {
         const after = await buildEventSnapshot(tx, otherId);
-        const message = `Event relation ${action} during ${verb} of '${mainEvent.name}' (${mainEvent.id})`;
+        const message = `Event relation ${action} during ${verb} of "${mainEvent.name}" (#${mainEvent.id})`;
         await writeChangelog(tx, actor, message, hd_changelog_what.EVENT, otherId, hd_changelog_action.UPDATE, before, after);
     }
 }

@@ -1,4 +1,5 @@
 import TextLink, { TEXT_LINK_GRAY } from "../../ui/TextLink";
+import { formatTimestampDate } from "../lib/dateFormat";
 
 /**
  * One list entry for an entity's changelog section (event/tag/person pages all show the same
@@ -18,7 +19,7 @@ export default function SmallChangelog({ id, username, created_at, message }: {
     return (
         <li className="flex flex-row">
             <TextLink href={`/hisdoc/changelog/${id}`} color={TEXT_LINK_GRAY} className="w-fit text-nowrap">
-                {username ?? "System"} · {created_at.toLocaleDateString()}
+                {username ?? "System"} · {formatTimestampDate(created_at)}
             </TextLink>: 
             <p className="ml-1 line-clamp-3 whitespace-pre-wrap">{message}</p>
         </li>

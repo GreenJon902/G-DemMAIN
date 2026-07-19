@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatTimestampDate } from "../lib/dateFormat";
 
 /**
  * A compact changelog entry for use in a timeline: the same info as {@link SmallChangelog} (who,
@@ -21,7 +22,7 @@ export default function SmallerChangelog({ id, username, created_at, message, bg
 }) {
     return (
         <Link href={`/hisdoc/changelog/${id}`} className={`flex flex-col gap-0.5 rounded px-2 py-1 hover:brightness-75 ${bgColor}`}>
-            <span className="text-sm text-nowrap text-gray-300">{username ?? "System"} · {created_at.toLocaleDateString()}</span>
+            <span className="text-sm text-nowrap text-gray-300">{username ?? "System"} · {formatTimestampDate(created_at)}</span>
             <p className="line-clamp-2 max-w-96 text-sm whitespace-pre-wrap text-white">{message}</p>
         </Link>
     );

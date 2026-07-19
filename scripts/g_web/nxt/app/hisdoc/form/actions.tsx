@@ -134,7 +134,7 @@ export async function addEvent(formData: FormData): Promise<ActionResult> {
         if (!flexiDate) throw new Error("Invalid or missing FlexiDate fields in form data");
         assertFlexiDateInvariants(flexiDate);
 
-        const message = `Created event '${name}'`;
+        const message = `Created event "${name}"`;
         const event = await createEvent(
             { userId: actor.userId },
             message,
@@ -241,7 +241,7 @@ export async function addPerson(formData: FormData): Promise<ActionResult> {
         const { type, data } = parsePersonFormFields(formData);
 
         const displayName = await resolvePersonDisplayName({ type, data });
-        const message = `Created person '${displayName}'`;
+        const message = `Created person "${displayName}"`;
         const person = await createPerson({ userId: actor.userId }, message, { type, data });
         personId = person.id;
 
@@ -310,7 +310,7 @@ export async function addTag(formData: FormData): Promise<ActionResult> {
     const failure = await runMutation(async () => {
         const { name, description, color } = parseTagFormFields(formData);
 
-        const message = `Created tag '${name}'`;
+        const message = `Created tag "${name}"`;
         const tag = await createTag({ userId: actor.userId }, message, { name, description, color });
         tagId = tag.id;
 

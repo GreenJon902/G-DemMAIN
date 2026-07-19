@@ -134,7 +134,7 @@ export class SessionAccessor {
      */
     async optimisticRequirePermission<A extends Area>(area: A, minLevel: AreaPermission<A>): Promise<void> {
         if (!await this.optimisticCheckPermission(area, minLevel))
-            throw new Error(`User does not have optimistic permission '${minLevel}' for area '${area}'`);
+            throw new Error(`User does not have optimistic permission "${minLevel}" for area "${area}"`);
     }
 
     /**
@@ -179,7 +179,7 @@ export class SessionAccessor {
      */
     async strictRequirePermission<A extends Area>(area: A, minLevel: AreaPermission<A>): Promise<void> {
         if (!await this.strictCheckPermission(area, minLevel))
-            throw new Error(`User does not have strict permission '${minLevel}' for area '${area}'`);
+            throw new Error(`User does not have strict permission "${minLevel}" for area "${area}"`);
     }
 
     /**

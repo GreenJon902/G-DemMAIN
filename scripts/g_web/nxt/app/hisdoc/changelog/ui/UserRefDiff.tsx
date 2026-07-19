@@ -2,10 +2,10 @@ import { ReactNode } from "react";
 import { ResolvedRefs } from "../lib/resolveRefs";
 import { FieldRow, BeforeAfter, NotRecorded, NullValue } from "./common";
 
-/** Resolves a g_web user id to its current username, falling back to "user #N" if the row is gone. */
+/** Resolves a g_web user id to its current username, falling back to "user (#N)" if the row is gone. */
 function resolveUsername(id: number | null, users: Map<number, string>): ReactNode {
     if (id === null) return <NullValue />;
-    return users.get(id) ?? `user #${id}`;
+    return users.get(id) ?? `user (#${id})`;
 }
 
 /**

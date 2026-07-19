@@ -1,4 +1,5 @@
 import { FieldRow, BeforeAfter, NotRecorded } from "./common";
+import { formatTimestamp } from "../../lib/dateFormat";
 
 /**
  * Diffs an ISO-string datetime field (currently only hd_event.posted_at). Never word-diffed — an
@@ -12,7 +13,7 @@ export default function DateTimeDiff({ label, before, after }: {
 }) {
     if (before === undefined && after === undefined) return null;
 
-    const format = (iso: string) => new Date(iso).toLocaleString();
+    const format = (iso: string) => formatTimestamp(new Date(iso));
 
     if (before !== undefined && after !== undefined && before === after) {
         return <FieldRow label={label} unchanged>{format(after)}</FieldRow>;

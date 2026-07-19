@@ -9,6 +9,7 @@ import WarningBanner from "../../ui/WarningBanner";
 import PageSection from "../../../ui/PageSection";
 import TextLink, { TEXT_LINK_WHITE } from "../../../ui/TextLink";
 import { buildFieldDiffs, UnsupportedSchemaVersionError, FieldDiff } from "../lib/fieldDiffs";
+import { formatTimestamp } from "../../lib/dateFormat";
 import { collectReferencedIds } from "../lib/collectRefs";
 import { resolveRefs } from "../lib/resolveRefs";
 import ChangelogDiff from "../ui/ChangelogDiff";
@@ -110,7 +111,7 @@ export default async function ChangelogEntryPage({ params }: { params: Promise<{
         }
     }
 
-    const entityLabel = `${entry.what} #${entry.entity_id}`;
+    const entityLabel = `${entry.what} (#${entry.entity_id})`;
     const titleNode = (
         <>
             Change #{entry.id}: {entityStatus.missing ? entityLabel : (
@@ -142,7 +143,7 @@ export default async function ChangelogEntryPage({ params }: { params: Promise<{
                 <StatsPill>
                     <span>CID: {entry.id}</span>
                     <span>By {entry.user?.username ?? "System"}</span>
-                    <span>{entry.created_at.toLocaleString()}</span>
+                    <span>{formatTimestamp(entry.created_at)}</span>
                     <span>Schema v{entry.schema_version}</span>
                 </StatsPill>
             }
