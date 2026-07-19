@@ -4,7 +4,7 @@ import SmallerEvent from "../../ui/SmallerEvent";
 import { TagRelationItem, PersonRelationItem, EventRelationItem } from "../lib/fieldDiffs";
 import { resolvePersonDisplayName } from "../lib/personDisplayName";
 import { ResolvedRefs, isEntityGone, isEntitySoftDeleted } from "../lib/resolveRefs";
-import { FieldRow, Note, personTypeLabel } from "./common";
+import { FieldRow, Note, personTypeLabel, None } from "./common";
 import { colorToHex } from "../../lib/color";
 
 type RelationStatus = "added" | "removed" | "unchanged";
@@ -35,6 +35,18 @@ function classify<T extends { id: number }>(before: T[] | undefined, after: T[] 
     });
 }
 
+/**
+ * True when every classified item is unchanged in presence (no additions/removals) — i.e. the
+ * whole relation field, not just individual items, didn't change. Mirrors the "(unchanged)"
+ * collapsing every other Diff component does for its FieldRow; RelationDiff's chip-level coloring
+ * alone doesn't give the row that same treatment. A before/after content disagreement for an id
+ * present on both sides is surfaced separately as a note — it doesn't itself count as a change,
+ * since it isn't something this event's edit did.
+ */
+function allUnchanged<T>(items: Array<Classified<T>>): boolean {
+    return items.every(({ status }) => status === "unchanged");
+}
+
 /** The stacked list of warning notes below a relation's chip row (empty renders nothing). */
 function NoteList({ notes }: { notes: string[] }) {
     if (notes.length === 0) return null;
@@ -60,7 +72,6 @@ export function TagsRelationDiff({ label, before, after, refs }: {
     refs: ResolvedRefs;
 }) {
     const items = classify(before, after);
-    if (items.length === 0) return null;
 
     const notes: string[] = [];
     const chips = items.map(({ id, status, beforeItem, afterItem }) => {
@@ -83,10 +94,16 @@ export function TagsRelationDiff({ label, before, after, refs }: {
         return <TagChip key={id} id={id} name={embedded.name} description="" bgColor={RELATION_BG[status]} holeColorCSS={colorToHex(embedded.color)} isLink={!missing} />;
     });
 
-    return (
-        <FieldRow label={label}>
+    const content = items.length === 0 ? <None /> : (
+        <>
             <div className="flex flex-wrap gap-2">{chips}</div>
             <NoteList notes={notes} />
+        </>
+    );
+
+    return (
+        <FieldRow label={label} unchanged={allUnchanged(items)}>
+            {content}
         </FieldRow>
     );
 }
@@ -99,7 +116,6 @@ export async function PersonsRelationDiff({ label, before, after, refs }: {
     refs: ResolvedRefs;
 }) {
     const items = classify(before, after);
-    if (items.length === 0) return null;
 
     // Resolve display names for the saved (embedded) data on both sides — not the live person, a
     // renamed NPC or reassigned Minecraft account should still show what this event actually
@@ -133,10 +149,16 @@ export async function PersonsRelationDiff({ label, before, after, refs }: {
         return <SmallPerson key={id} id={id} type={embedded.type} playerdata={embedded.data} name={embeddedName} isLink={!missing} bgColor={RELATION_BG[status]} />;
     });
 
-    return (
-        <FieldRow label={label}>
+    const content = items.length === 0 ? <None /> : (
+        <>
             <div className="flex flex-wrap gap-4">{chips}</div>
             <NoteList notes={notes} />
+        </>
+    );
+
+    return (
+        <FieldRow label={label} unchanged={allUnchanged(items)}>
+            {content}
         </FieldRow>
     );
 }
@@ -149,7 +171,6 @@ export function RelatedEventsRelationDiff({ label, before, after, refs }: {
     refs: ResolvedRefs;
 }) {
     const items = classify(before, after);
-    if (items.length === 0) return null;
 
     const notes: string[] = [];
     const chips = items.map(({ id, status, beforeItem, afterItem }) => {
@@ -170,10 +191,16 @@ export function RelatedEventsRelationDiff({ label, before, after, refs }: {
         return <SmallerEvent key={id} id={id} name={embedded.name} isLink={!missing} bgColor={RELATION_BG[status]} />;
     });
 
-    return (
-        <FieldRow label={label}>
+    const content = items.length === 0 ? <None /> : (
+        <>
             <div className="flex flex-wrap gap-2">{chips}</div>
             <NoteList notes={notes} />
+        </>
+    );
+
+    return (
+        <FieldRow label={label} unchanged={allUnchanged(items)}>
+            {content}
         </FieldRow>
     );
 }

@@ -116,7 +116,10 @@ function RelationSelect<T extends { id: number }>({ defaultSelected, source, ser
                 ? Array.from(selected.keys()).map(id => (
                     <input key={id} type="hidden" name={serialize.name} value={id} />
                 ))
-                : <input type="hidden" name={serialize.name} value={Array.from(selected.keys()).join(",")} />}
+                // Sorted so re-toggling an item (which moves it to the end of the Map's insertion
+                // order) doesn't change the serialized string — otherwise EntityForm's dirty check
+                // would see a "change" even though the selected set is identical to the original
+                : <input type="hidden" name={serialize.name} value={Array.from(selected.keys()).sort((a, b) => a - b).join(",")} />}
         </div>
     );
 }

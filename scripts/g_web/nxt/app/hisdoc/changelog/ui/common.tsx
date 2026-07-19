@@ -79,6 +79,10 @@ export function EmptyValue() {
     return <span className="text-gray-500 italic">(empty string)</span>;
 }
 
+export function None() {
+    return <span className="text-gray-500 italic">(none)</span>;
+}
+
 /** Human-readable label for an hd_person_type value. */
 export function personTypeLabel(type: hd_person_type): string {
     return type === hd_person_type.MINECRAFT ? "Minecraft" : "NPC";
