@@ -109,7 +109,7 @@ model hd_person {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model hd_tag {
   id           Int            @id @default(autoincrement())
-  name         String         @db.VarChar(255)
+  name         String         @unique(map: "uq_hd_tag_name") @db.VarChar(255)
   description  String         @db.LongText
   color        Int
   soft_deleted Boolean        @default(false)

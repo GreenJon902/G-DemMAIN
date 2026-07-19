@@ -82,6 +82,17 @@ function validateEventDates(fields: {
     }
 }
 
+/**
+ * Throws a human-readable error if another event already uses `name`. Pre-checks the
+ * uq_hd_event_name constraint, which spans soft-deleted rows too — so no soft_deleted filter here.
+ *
+ * @param excludeId - The event being updated, exempt from the clash check.
+ */
+async function assertEventNameFree(tx: Prisma.TransactionClient, name: string, excludeId?: number): Promise<void> {
+    const clash = await tx.hd_event.findFirst({ where: { name, ...(excludeId !== undefined && { id: { not: excludeId } }) } });
+    if (clash) throw new Error(`An event named "${name}" already exists (possibly deleted)`);
+}
+
 /** Calls add()/remove() for exactly the ids that differ between the current and desired sets. */
 async function syncIds(
     current: Array<number>,
@@ -197,6 +208,8 @@ export async function createEvent(actor: Actor, message: string, data: EventInpu
     const { tagIds, personIds, relatedEventIds, ...eventFields } = data;
 
     return prisma().$transaction(async (tx) => {
+        await assertEventNameFree(tx, eventFields.name);
+
         // Create the new event row
         const event = await tx.hd_event.create({
             data: { ...eventFields, posted_by_user_id: actor.userId }
@@ -225,6 +238,7 @@ export async function updateEvent(actor: Actor, message: string, id: number, dat
         // Get state beforehand
         const before = await tx.hd_event.findUniqueOrThrow({ where: { id } });
         if (before.soft_deleted) throw new Error(`Cannot update soft-deleted hd_event ${id}`);
+        if (eventFields.name !== undefined) await assertEventNameFree(tx, eventFields.name, id);
         const beforeSnapshot = await buildEventSnapshot(tx, id);
 
         // Date fields are only meaningful together, so validate the merged (existing + patched) result whenever any of them change

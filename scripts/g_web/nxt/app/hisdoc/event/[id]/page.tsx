@@ -76,7 +76,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
     // Thin server action wrapper that binds the event id for deleteEvent
     async function handleDelete(note: string) {
         "use server";
-        await deleteEvent(id, note);
+        return await deleteEvent(id, note);
     }
 
     return (

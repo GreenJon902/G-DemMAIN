@@ -1,8 +1,8 @@
 import "server-only";
 import { requirePermission } from "@/lib/session";
-import EntityForm from "../../form/ui/EntityForm";
-import { buildTagFormFields } from "../../form/lib/formFields";
-import { addTag } from "../../actions";
+import TextLink, { TEXT_LINK_GRAY } from "../../../ui/TextLink";
+import TagForm from "../../form/ui/TagForm";
+import { addTag } from "../../form/actions";
 
 /** Page for adding a new HisDoc tag. Requires hisdoc admin access. */
 export default async function AddTagPage() {
@@ -10,13 +10,11 @@ export default async function AddTagPage() {
 
     return (
         <main className="mx-auto flex max-w-2xl flex-col gap-6 p-6">
+            <TextLink href="/hisdoc/tags" color={TEXT_LINK_GRAY} className="self-start">
+                Return to tags...
+            </TextLink>
             <h1 className="text-3xl font-bold text-white">Add Tag</h1>
-            <EntityForm
-                fields={buildTagFormFields(undefined)}
-                action={addTag}
-                submitLabel="Add Tag"
-                minLevel="admin"
-            />
+            <TagForm action={addTag} submitLabel="Add Tag" />
         </main>
     );
 }

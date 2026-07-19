@@ -8,6 +8,7 @@ import { ActionButton, SimpleButton, BUTTON_RED, BUTTON_GRAY } from "@/app/ui/Bu
 import ModalShell from "@/app/ui/ModalShell";
 import TextInput from "@/app/ui/TextInput";
 import type { AreaPermission } from "@g/com/lib/authConstants";
+import type { ActionResult } from "../lib/actionHelpers";
 
 /**
  * A permission-gated delete button for a hisdoc entity page. Opens a modal that requires a
@@ -16,13 +17,13 @@ import type { AreaPermission } from "@g/com/lib/authConstants";
  *
  * @param entityLabel - Lowercase entity kind for the modal copy, e.g. "event".
  * @param minLevel - The hisdoc permission level deleting this entity requires.
- * @param action - Bound server action performing the delete; receives the trimmed note and is
- *   expected to redirect on success.
+ * @param action - Bound server action performing the delete; receives the trimmed note and
+ *   redirects on success or returns a human-readable error.
  */
 export default function DeleteEntityButton(props: {
     entityLabel: string,
     minLevel: AreaPermission<"hisdoc">,
-    action: (note: string) => Promise<void>
+    action: (note: string) => Promise<ActionResult>
 }) {
     const ctx = useAuthContext();
     const { showError } = useErrorContext();
@@ -59,7 +60,10 @@ export default function DeleteEntityButton(props: {
                         disabled={note.trim() === ""}
                         guard={makeAreaSudoGuard("hisdoc", props.minLevel, ctx)}
                         onError={showError}
-                        action={() => props.action(note.trim())}
+                        action={async () => {
+                            const result = await props.action(note.trim());
+                            if (result?.error) throw new Error(result.error);
+                        }}
                     >
                         Delete
                     </ActionButton>

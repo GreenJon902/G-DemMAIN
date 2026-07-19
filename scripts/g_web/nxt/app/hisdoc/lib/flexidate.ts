@@ -119,6 +119,50 @@ export function latestUnix(date: FlexiDateInput): bigint {
 }
 
 /**
+ * Formats a value measured in `units` since epoch as the corresponding picker input value,
+ * adjusted for the given UTC offset: a `YYYY-MM-DD` string for day units (<input type="date">),
+ * or `YYYY-MM-DDTHH:MM` for hour/minute units (<input type="datetime-local">).
+ * Inverse of parseDateInputValue.
+ *
+ * @param value - The stored count of `units` since epoch (e.g. hd_event.event_date1).
+ * @param units - The unit the value is measured in.
+ * @param offsetMinutes - UTC offset in minutes to apply before formatting.
+ */
+export function formatDateInputValue(value: bigint, units: "d" | "h" | "m", offsetMinutes: number): string {
+    const unix = value * UNIT_MULTIPLIERS[units];
+    const ms = (unix + BigInt(offsetMinutes * 60)) * 1000n;
+    const d = new Date(Number(ms));
+    const date = `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`;
+    if (units === "d") return date;
+    return `${date}T${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}`;
+}
+
+/**
+ * Parses a date / datetime-local picker value back into a count of `units` since epoch, adjusted
+ * for the given UTC offset. Returns null for an empty or unparseable value.
+ *
+ * Day counts round up so the stored value falls on the picked calendar date once the offset is
+ * re-applied for display (negative offsets would otherwise land on the previous day); hour and
+ * minute counts round to the nearest representable instant. Either way the round trip through
+ * formatDateInputValue is stable for offsets within ±12h.
+ *
+ * @param value - The picker's value string (`YYYY-MM-DD` or `YYYY-MM-DDTHH:MM[:SS]`).
+ * @param units - The unit to measure the result in.
+ * @param offsetMinutes - UTC offset in minutes the picked wall-clock value is expressed in.
+ */
+export function parseDateInputValue(value: string, units: "d" | "h" | "m", offsetMinutes: number): bigint | null {
+    if (!value) return null;
+    // Date-only values get a midnight time; either way a trailing Z pins parsing to UTC so the
+    // browser's local timezone never leaks in
+    const ms = Date.parse(value.includes("T") ? value + "Z" : value + "T00:00:00Z");
+    if (isNaN(ms)) return null;
+    const unix = ms / 1000 - offsetMinutes * 60;
+    const multiplier = Number(UNIT_MULTIPLIERS[units]);
+    const count = units === "d" ? Math.ceil(unix / multiplier) : Math.round(unix / multiplier);
+    return BigInt(count);
+}
+
+/**
  * Parses raw form fields into a typed FlexiDateInput. Returns null if required
  * fields are missing or cannot be parsed.
  *

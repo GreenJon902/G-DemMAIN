@@ -2,9 +2,9 @@ import "server-only";
 import prisma from "@g/com/lib/prisma/client";
 import { requirePermission } from "@/lib/session";
 import { notFound } from "next/navigation";
-import EntityForm from "../../../form/ui/EntityForm";
-import { buildTagFormFields } from "../../../form/lib/formFields";
-import { editTag } from "../../../actions";
+import TextLink, { TEXT_LINK_GRAY } from "../../../../ui/TextLink";
+import TagForm from "../../../form/ui/TagForm";
+import { editTag } from "../../../form/actions";
 
 /**
  * Page for editing an existing HisDoc tag. Requires hisdoc admin access.
@@ -25,19 +25,16 @@ export default async function EditTagPage({ params }: { params: Promise<{ id: st
     // Thin server action wrapper that binds the tag id for editTag
     async function handleEdit(formData: FormData) {
         "use server";
-        await editTag(id, formData);
+        return await editTag(id, formData);
     }
 
     return (
         <main className="mx-auto flex max-w-2xl flex-col gap-6 p-6">
+            <TextLink href={"/hisdoc/tag/" + id} color={TEXT_LINK_GRAY} className="self-start">
+                Return to tag...
+            </TextLink>
             <h1 className="text-3xl font-bold text-white">Edit Tag</h1>
-            <EntityForm
-                fields={buildTagFormFields(tag)}
-                action={handleEdit}
-                submitLabel="Save Changes"
-                minLevel="admin"
-                isEdit
-            />
+            <TagForm action={handleEdit} submitLabel="Save Changes" isEdit defaults={tag} />
         </main>
     );
 }

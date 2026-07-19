@@ -123,7 +123,9 @@ CREATE OR REPLACE TABLE hd_tag (
         COMMENT 'RGB colour packed as a signed integer (e.g. 16711680 = #FF0000). Converted to CSS hex by the application.',
 
     soft_deleted BOOLEAN NOT NULL DEFAULT FALSE
-        COMMENT 'If true, this record is treated as deleted but retained for audit history.'
+        COMMENT 'If true, this record is treated as deleted but retained for audit history.',
+
+    UNIQUE KEY uq_hd_tag_name (name)
 );
 ```
 

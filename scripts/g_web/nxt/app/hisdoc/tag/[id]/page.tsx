@@ -86,7 +86,7 @@ export default async function TagPage({ params }: { params: Promise<{ id: string
     // Thin server action wrapper that binds the tag id for deleteTag
     async function handleDelete(note: string) {
         "use server";
-        await deleteTag(id, note);
+        return await deleteTag(id, note);
     }
 
     return (

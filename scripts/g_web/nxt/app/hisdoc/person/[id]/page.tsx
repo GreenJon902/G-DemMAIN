@@ -106,7 +106,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
     // Thin server action wrapper that binds the person id for deletePerson
     async function handleDelete(note: string) {
         "use server";
-        await deletePerson(id, note);
+        return await deletePerson(id, note);
     }
 
     return (

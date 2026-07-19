@@ -32,6 +32,8 @@ export default function RadioButtons<T>({
                     .map(c => ({c: c, cname: nameConv(c)}))
                     .map((({c, cname}) => (
                         <button
+                            // type="button" so these never act as submit buttons inside a <form>
+                            type="button"
                             // Compare cnames as we can't compare objects
                             className={`flex-1 cursor-pointer p-1 first:rounded-l-md last:rounded-r-md ${(cname === selectedCName) ? selectedClass : unselectedClass}`}
                             key={cname}

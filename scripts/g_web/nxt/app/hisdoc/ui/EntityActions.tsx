@@ -1,6 +1,7 @@
 import { PencilSquareIcon } from "@heroicons/react/20/solid";
 import { LinkButton, BUTTON_INDIGO } from "@/app/ui/Button";
 import type { AreaPermission } from "@g/com/lib/authConstants";
+import type { ActionResult } from "../lib/actionHelpers";
 import DeleteEntityButton from "./DeleteEntityButton";
 
 /**
@@ -12,13 +13,13 @@ import DeleteEntityButton from "./DeleteEntityButton";
  * @param minLevel - The hisdoc permission level editing/deleting this entity requires.
  * @param editHref - The entity's edit page.
  * @param deleteAction - Bound server action performing the delete; receives the changelog note
- *   and is expected to redirect on success.
+ *   and redirects on success or returns a human-readable error.
  */
 export default function EntityActions(props: {
     entityLabel: string,
     minLevel: AreaPermission<"hisdoc">,
     editHref: string,
-    deleteAction: (note: string) => Promise<void>
+    deleteAction: (note: string) => Promise<ActionResult>
 }) {
     return (
         <div className="flex gap-2">
