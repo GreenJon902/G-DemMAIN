@@ -1,6 +1,13 @@
 import { ReactNode } from "react";
 import PageSection from "../../ui/PageSection";
 
+/** Default no-op passthrough for sidebarBUnfoldedWrapper — a stable reference so it doesn't get
+ * remounted every render (a default value defined inline in the destructuring below would be a
+ * fresh function, and thus a "different" component, on every render). */
+function PassthroughWrapper({ children }: { children: ReactNode }) {
+    return children;
+}
+
 /**
  * Two-column profile-style page layout: a flex-1 main column on the left and a shrink-to-fit
  * sidebar column on the right. Wraps everything in a top-level PageSection for `title`/`icon`.
@@ -23,7 +30,7 @@ import PageSection from "../../ui/PageSection";
  * @param titleNode - Richer title content (e.g. containing a link), rendered instead of plain text. Exactly one of `title`/`titleNode` must be given.
  */
 export default function SplitPage({
-    title, icon, main, sidebarA, sidebarB, sidebarBUnfoldedWrapper = ({ children }) => children, titleNode, mainClassName=""
+    title, icon, main, sidebarA, sidebarB, sidebarBUnfoldedWrapper = PassthroughWrapper, titleNode, mainClassName=""
 }: {
     title?: string, icon?: ReactNode, main: ReactNode, sidebarA: ReactNode, sidebarB?: ReactNode,
     sidebarBUnfoldedWrapper?: (props: { children: ReactNode }) => ReactNode, titleNode?: ReactNode, mainClassName?: string
