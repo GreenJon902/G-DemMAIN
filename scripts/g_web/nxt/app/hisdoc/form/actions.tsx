@@ -181,7 +181,6 @@ export async function editEvent(id: number, formData: FormData): Promise<ActionR
     const failure = await runMutation(async () => {
         const { name, description, details, tag_ids, person_ids, related_event_ids } =
             parseEventFormFields(formData);
-        console.log(related_event_ids);
 
         const changelogNote = changelogNoteSchema.parse(formData.get("changelog_note"));
 
