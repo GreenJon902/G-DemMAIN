@@ -60,6 +60,9 @@ sudo -u g_web HOME=/var/lib/g_web npm prune --omit=dev
 sudo chown -R g_web:g_web /var/lib/g_web
 ```
 
+10. Set up the Discord bot
+See `G-DemMAIN Discord Bot.md`. We need the bot created/configured on Discord's side and invited to the server.
+
 TODO: Document how permissions work
 So ownership is not important. g\_mc group gives read/write access for jon and g\_mc. We have the setgid bit for all infra and var/lib folders. THen read access everywhere cause who cares. We have umask set to 0002 so that permissions work correctly
 
