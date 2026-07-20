@@ -17,8 +17,13 @@ const ErrorCtx = createContext<ErrorContextType | null>(null);
  * Turns a thrown value into a human-readable message.
  * Recognises the digest that next/navigation's forbidden()/unauthorized()/notFound() attach to their errors,
  * since those otherwise surface as an opaque "NEXT_HTTP_ERROR_FALLBACK;<status>" string.
+ * Returns null for redirect errors (which are internal Next.js navigation, not real errors).
  */
-function describeError(error: unknown): string {
+function describeError(error: unknown): string | null {
+    // Redirect errors from Server Actions are internal navigation, not errors to display
+    if (error instanceof Error && error.message.includes("NEXT_REDIRECT")) {
+        return null;
+    }
     // Check if it's a next-navigation error
     if (isHTTPAccessFallbackError(error)) {
         const type = getAccessFallbackErrorTypeByStatus(getAccessFallbackHTTPStatus(error));
@@ -41,7 +46,9 @@ export function ErrorContextProvider({ children }: { children: ReactNode }) {
 
     const showError = (error: unknown) => {
         console.error(error);
-        setMessage(describeError(error));
+        const message = describeError(error);
+        if (message === null) return; // Suppress redirect errors
+        setMessage(message);
         setOpen(true);
     };
 

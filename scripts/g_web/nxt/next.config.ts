@@ -15,7 +15,7 @@ if (env == "development") {
 const nextConfig: NextConfig = {
     reactCompiler: true,
     images: {
-        remotePatterns: [new URL("https://api.mcheads.org/head/**/256/hat")]
+        remotePatterns: [new URL("https://api.mcheads.org/head/**/256/hat"), new URL("https://api.mcheads.org/skin/**")]
     },
     allowedDevOrigins: allowedDevOrigins,
     experimental: {
