@@ -3,6 +3,7 @@
 import { ReactNode, useState, useEffect } from "react";
 import RadioButtons from "@/app/ui/RadioButtons";
 import { type FlexiDate, convertFlexiDateCount, formatDateInputValue, parseDateInputValue, formatSignedOffset } from "../../lib/date/flexidate";
+import { pad2 } from "../../lib/date/utils";
 import { FORM_INPUT_CLASS, FieldError, RequiredMark, inputClass, useFieldValidation, useFormChanged } from "./FormInputs";
 
 // Zero-padded "00".."23" choices for the hour-precision hour selector
@@ -70,6 +71,7 @@ export default function FlexiDateInput({ defaultValue }: { defaultValue?: FlexiD
     // Auto-fill the offset from the browser's own timezone for a brand-new event — editing an
     // existing one keeps its stored offset untouched. Matches the legacy Java form's own
     // `-new Date().getTimezoneOffset()` autofill.
+    // Also auto-fills the centered date to today field.
     useEffect(() => {
         if (defaultValue) return;
         const offsetStr = formatSignedOffset(-new Date().getTimezoneOffset());
@@ -81,6 +83,13 @@ export default function FlexiDateInput({ defaultValue }: { defaultValue?: FlexiD
             .formatToParts(new Date())
             .find(part => part.type === "timeZoneName");
         if (tzPart) setDetected({ offsetStr, tzName: tzPart.value });
+
+        // Default the centered date to today — only meaningful for day precision (the initial
+        // default), since that's the only mode with no time component to also get right; must run
+        // client-only for the same reason as the offset autofill above
+        const now = new Date();
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setCenterInput(`${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`);
         // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally runs once, only for a brand-new event
     }, []);
     // Centered-only fields — the picked instant is kept as the picker's own value string
