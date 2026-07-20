@@ -133,7 +133,7 @@ The names of the records themselves are in seconds since the unix-epoch.
             "used": int                  Kilobytes                                # The heap currently in use
         } | null,
         "players": [str, ...] | null     Usernames of currently online players
-    },
+    } | null,                            # Absent entirely in records predating this field
     "cgroups": {
         [cgroup_name]: {                     # Keys not necessarily constant
             "cpu": int | null,           Microseconds, Absolute  # Value is sum of cpu time on each core

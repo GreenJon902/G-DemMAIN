@@ -1,6 +1,6 @@
 "use client";
 import PageSection from "../../ui/PageSection";
-import { CpuRamGraph, MultiCPUGraph, TransferGraph } from "../ui/Graphs";
+import { CpuRamGraph, MultiCPUGraph, TpsHeapGraph, TransferGraph } from "../ui/Graphs";
 import { loadGraphDataAction } from "./actions";
 import RadioButtons from "@/app/ui/RadioButtons";
 import { MonitorOption } from "@/lib/panelUtils";
@@ -110,7 +110,14 @@ export default function GraphPageContent({
                     </table>
                 </div>
             </PageSection>
-            { /*  TODO: MC TPS, and java heap memory usage */ }
+            <PageSection title="Minecraft">
+                <div className="flex w-full flex-wrap gap-4">
+                    <TpsHeapGraph
+                        data={gd.map(d => ({ time: d.time, tps: d.minecraft.tps, mem: d.minecraft.mem?.used }))}
+                        allocatedMem={gd[0]?.minecraft.mem?.total ?? null}
+                    />
+                </div>
+            </PageSection>
             <PageSection title="CGroups">
                 {
                     Array.from(gd[0]?.cgroups.keys().map(cgname => (

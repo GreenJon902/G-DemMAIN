@@ -2,6 +2,7 @@ export type BaseUnit = { [value: number]: string, 1: string };  // <value> of th
 export const BYTES = { 1: "B", [10**3]: "KB", [10**6]: "MB", [10**9]: "GB", [10**12]: "TB", [10**15]: "PB"};
 export const SECONDS = { 1: "s", 60: "m", [60*60]: "h", [60*60*24]: "d"};
 export const PERCENTAGE = { 1: "%" };
+export const TPS = { 1: "tps" };
 
 /**
  * Change the base unit of the given baseunit to a higher value.

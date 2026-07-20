@@ -3,7 +3,7 @@
 import { ActionButton, BUTTON_GREEN, BUTTON_RED, BUTTON_YELLOW } from "./../ui/Button";
 import PageSection from "../ui/PageSection";
 import { loadPanelDataAction, Unit, unitAction } from "./actions";
-import { CpuRamGraph } from "./ui/Graphs";
+import { CpuRamGraph, TpsHeapGraph } from "./ui/Graphs";
 import { UnitStatus } from "@/lib/panelUtils";
 import { makeAreaSudoGuard, useAuthContext } from "@/app/AuthContext";
 import { useConfirmContext } from "@/app/ConfirmContext";
@@ -18,13 +18,16 @@ export default function PanelPageContent(
             { /* Resource monitors -------------------------------------------------- */ }
             <PageSection title="Important Graphs">
                 <div className="flex w-full flex-wrap gap-4">
+                    <TpsHeapGraph
+                        data={gd.map(d => ({ time: d.time, tps: d.minecraft.tps, mem: d.minecraft.mem?.used }))}
+                        allocatedMem={gd[0]?.minecraft.mem?.total ?? null}
+                    />
                     <CpuRamGraph
                         data={gd.map(d => ({ time: d.time, cpu: d.sys_cpu?.agg, mem: d.sys_mem?.used }))}
                         totMem={gd[0]?.sys_mem?.total ?? null}
                         noCores={gd[0]?.sys_cpu?.ind.size ?? null}
                         what="System"
                     />
-                    { /*  TODO: MC TPS and heap mem usage*/ }
                 </div>
             </PageSection>
             { /* Service status -------------------------------------------------- */ }

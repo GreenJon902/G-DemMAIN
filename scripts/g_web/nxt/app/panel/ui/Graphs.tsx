@@ -2,8 +2,8 @@
  * This file contains different graph presets/templates that are used frequently.
  */
 
-import { BaseUnit, BYTES, humanize, PERCENTAGE, rebase, SECONDS } from "@/lib/unitUtils";
-import { Graph, LINE_COLORS, LINE_CYAN, LINE_FUCHSIA, LINE_GRAY, LINE_ROSE, LINE_VIOLET } from "./Graph";
+import { BaseUnit, BYTES, humanize, PERCENTAGE, rebase, SECONDS, TPS } from "@/lib/unitUtils";
+import { Graph, LINE_COLORS, LINE_CYAN, LINE_FUCHSIA, LINE_GRAY, LINE_LIME, LINE_ROSE, LINE_VIOLET } from "./Graph";
 
 type nunumber = null | undefined | number;
 
@@ -35,6 +35,32 @@ export function CpuRamGraph({
             xTicks={{ bottom: cpuRet?.xTicks }}  // cpuRet's xTicks should be the same as memRet's xTicks
             yTicks={{ left: cpuRet?.yTicks , right: memRet?.yTicks }}
             containerClassName="min-w-50 flex-1" 
+            graphClassName="h-50"
+        />
+    );
+}
+
+/**
+ * @param data - The data to plot. If a value is not given, then it will be ignored.
+ * @param allocatedMem - The heap's -Xmx ceiling, if this is undefined then no memory line will be drawn.
+ */
+export function TpsHeapGraph({
+    data, allocatedMem
+}: {
+    data: Array<{ time: number, tps: nunumber, mem: nunumber }>,
+    allocatedMem: number | null,
+}) {
+    const tpsRet = prepareData(data, 20, false, TPS, "", "tps");  // TPS is capped at 20
+    const memRet = prepareData(data, allocatedMem, true, rebase(BYTES, 10**3), "", "mem");
+    return (
+        <Graph
+            lines={[
+                ...(memRet) ? [{ data: memRet?.props.mem, color: LINE_GRAY, label: "MC RAM", underFill: true}] : [],
+                ...(tpsRet) ? [{ data: tpsRet?.props.tps, color: LINE_LIME, label: "MC TPS", points: true}] : []
+            ]}
+            xTicks={{ bottom: tpsRet?.xTicks }}  // tpsRet's xTicks should be the same as memRet's xTicks
+            yTicks={{ left: tpsRet?.yTicks , right: memRet?.yTicks }}
+            containerClassName="min-w-50 flex-1"
             graphClassName="h-50"
         />
     );
