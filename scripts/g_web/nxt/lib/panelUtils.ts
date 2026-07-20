@@ -206,6 +206,11 @@ const zMem = z.strictObject({
     used: zNatural,  // Kilobytes
     total: zNatural
 });
+const zMinecraft = z.strictObject({
+    tps: z.number().nonnegative().nullable(),  // Ticks per second, rolling average capped at 20
+    mem: zMem.nullable(),  // Heap usage, in kilobytes
+    players: z.array(z.string()).nullable()  // Usernames of currently online players
+});
 const zCoercedMap = <T extends z.ZodTypeAny> (zValue: T) => z.record(z.string().nonempty(), zValue).transform(obj => new Map(Object.entries(obj)));
 const MonitorRecord = z.strictObject({
     sys_cpu: z.strictObject({
@@ -226,6 +231,7 @@ const MonitorRecord = z.strictObject({
         total: zNatural,  // Bytes
         used: zNatural
     })).nullable(),
+    minecraft: zMinecraft,
     cgroups: zCoercedMap(z.strictObject({
         cpu: zNatural.nullable(),  // Microseconds, absolute, sum of ms on each core
         mem: zMem.nullable(),
@@ -313,6 +319,7 @@ export async function loadMonitorRecords(interval: number, number?: number | und
             time: records[i].time - latestTime,  // Normalise times
             sys_cpu: convNullAggInd(cpunoKeys, last.sys_cpu, current.sys_cpu, arbCpuToUsage),  // Percentage utilisation
             sys_mem: current.sys_mem,  // In Kilobytes
+            minecraft: { tps: current.minecraft.tps, mem: current.minecraft.mem },  // TPS and heap usage in kilobytes
             sys_net_io: convNullAggInd(netioKeys, last.sys_net_io, current.sys_net_io, (l, c) => netIOToSpeed(l, c, dt)),  // Bytes per second
             sys_disk_io: convNullAggInd(diskioKeys, last.sys_disk_io, current.sys_disk_io, (l, c) => diskIOToSpeed(l, c, dt)),  // Bytes per second
             cgroups: convMap(cgroupKeys, last.cgroups, current.cgroups, (l, c) => ({
@@ -327,6 +334,8 @@ export async function loadMonitorRecords(interval: number, number?: number | und
     //     Some data isn't really time dependent
     // Disk usage:
     const diskUsage = records.at(-1)?.data.sys_disk_usage ?? null;  // Take newest found value
+    // Minecraft players:
+    const minecraftPlayers = records.at(-1)?.data.minecraft.players ?? null;  // Take newest found value
     // CGroup procs:
     const cgroupsProcs = (records.length > 0) ? new Map([...records.at(-1)!.data.cgroups.keys()].map(k => [k,
         records.at(-1)!.data.cgroups.get(k)?.procs ?? null
@@ -336,6 +345,7 @@ export async function loadMonitorRecords(interval: number, number?: number | und
         timestamp: latestTime * 1000,  // Timestamp is in ms
         timed: graphData,
         disk_usage: diskUsage,
+        minecraft_players: minecraftPlayers,
         cgroup_procs: cgroupsProcs
     };
 }
