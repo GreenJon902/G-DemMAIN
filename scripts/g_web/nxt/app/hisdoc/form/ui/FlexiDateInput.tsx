@@ -68,6 +68,18 @@ export default function FlexiDateInput({ defaultValue }: { defaultValue?: FlexiD
     // re-appearing if they type it back to match — without needing to clear this on every keystroke.
     const [detected, setDetected] = useState<{ offsetStr: string; tzName: string } | null>(null);
 
+    // Centered-only fields — the picked instant is kept as the picker's own value string
+    const [dateUnits, setDateUnits] = useState<"d" | "h" | "m">(
+        defaultValue?.event_date_units ?? "d"
+    );
+    const [centerInput, setCenterInput] = useState(() => {
+        if (defaultValue?.event_date_type !== "centered") return "";
+        const formatted = formatDateInputValue(defaultValue.event_date1, defaultValue.event_date_units!);
+        // Hour precision only tracks the hour, so the minute component is always pinned to 00
+        return defaultValue.event_date_units === "h" ? formatted.slice(0, 13) + ":00" : formatted;
+    });
+    const [dateDiff, setDateDiff] = useState(defaultValue?.event_date_diff?.toString() ?? "0");
+
     // Auto-fill the offset from the browser's own timezone for a brand-new event — editing an
     // existing one keeps its stored offset untouched. Matches the legacy Java form's own
     // `-new Date().getTimezoneOffset()` autofill.
@@ -88,21 +100,10 @@ export default function FlexiDateInput({ defaultValue }: { defaultValue?: FlexiD
         // default), since that's the only mode with no time component to also get right; must run
         // client-only for the same reason as the offset autofill above
         const now = new Date();
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+
         setCenterInput(`${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`);
         // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally runs once, only for a brand-new event
     }, []);
-    // Centered-only fields — the picked instant is kept as the picker's own value string
-    const [dateUnits, setDateUnits] = useState<"d" | "h" | "m">(
-        defaultValue?.event_date_units ?? "d"
-    );
-    const [centerInput, setCenterInput] = useState(() => {
-        if (defaultValue?.event_date_type !== "centered") return "";
-        const formatted = formatDateInputValue(defaultValue.event_date1, defaultValue.event_date_units!);
-        // Hour precision only tracks the hour, so the minute component is always pinned to 00
-        return defaultValue.event_date_units === "h" ? formatted.slice(0, 13) + ":00" : formatted;
-    });
-    const [dateDiff, setDateDiff] = useState(defaultValue?.event_date_diff?.toString() ?? "0");
     // Ranged-only fields, always whole days
     const [startInput, setStartInput] = useState(() =>
         defaultValue?.event_date_type === "ranged"
