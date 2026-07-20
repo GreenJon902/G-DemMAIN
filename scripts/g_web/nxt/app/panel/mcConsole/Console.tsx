@@ -212,6 +212,7 @@ export default function Console({ mccwss_port }: { mccwss_port: number }) {
         } else if (sudoVerifiedAt !== null && socketRef.current === null && !connectingRef.current) {
             connectRef.current();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- pushMeta only closes over the stable setEntries dispatcher, so an older render's copy behaves identically; this should only re-run on sudoVerifiedAt changes
     }, [sudoVerifiedAt]);
 
     // Function to handle sending the command

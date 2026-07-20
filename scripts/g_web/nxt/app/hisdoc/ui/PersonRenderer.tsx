@@ -58,7 +58,7 @@ export default function PersonRenderer({
                 clearTimeout(timeoutId);
                 viewer.dispose();
             };
-        } catch (error) {
+        } catch {
             // If skin3d initialization fails, we can't render anything
             return () => clearTimeout(timeoutId);
         }
