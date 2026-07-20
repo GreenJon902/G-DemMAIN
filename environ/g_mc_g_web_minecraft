@@ -13,13 +13,7 @@ MINECRAFT_LOG_PATH
 MINECRAFT_MONITOR_CONSOLE_AUTH_KEY
 # The shared key g_mc_monitor's console socket requires clients to present.
 
-MINECRAFT_MONITOR_CHAT_AUTH_KEY
-# The shared key g_mc_monitor's chat socket requires clients to present.
-
 MINECRAFT_MONITOR_CONSOLE_PORT
 # The port g_mc_monitor's console socket listens on (see doc/G-DemMAIN Monitor Mod.md). Loopback-only, so no firewall rule is needed.
-
-MINECRAFT_MONITOR_CHAT_PORT
-# The port g_mc_monitor's chat socket listens on (see doc/G-DemMAIN Monitor Mod.md). Loopback-only, so no firewall rule is needed.
 
 

@@ -1,0 +1,48 @@
+[Unit]
+Description=Runner for the Discord bot
+
+After=network.target
+
+# Limit to 2 restarts (in a 5m period), after that mark as failed
+StartLimitIntervalSec=5m
+StartLimitBurst=2
+
+# Status logging
+# We need to do it like this as OnFailure cannot run bash
+OnFailure=g_service_failed@Discord-g_discord.service
+
+[Service]
+User=g_discord
+Group=g_discord
+# TODO: Will we need a working directory?
+#WorkingDirectory=/var/lib/g_discord
+ExecStart=/usr/bin/python3 /opt/infra/scripts/g_discord/g_discord.py
+
+EnvironmentFile=/etc/g-demmain/common.env
+EnvironmentFile=/etc/g-demmain/g_mc_g_discord_minecraft.env
+EnvironmentFile=/etc/g-demmain/g_discord_bot.env
+
+# Disable print buffering
+Environment=PYTHONUNBUFFERED=1
+
+# Status logging
+ExecStartPost=/bin/python3 /opt/infra/scripts/webhooks.py status Discord g_discord starting
+ExecStopPost=/bin/python3 /opt/infra/scripts/webhooks.py status Discord g_discord stopped
+
+# Restart only when it crashes, not on /stop
+Restart=on-failure
+RestartSec=10
+
+# Any files created will be read/writable by the user g_discord and the group g_discord
+UMask=0002
+
+# Security hardening:
+PrivateTmp=true
+# Blocks write access to certain folders
+ProtectSystem=full
+
+# Allow monitoring of disk read/write
+IOAccounting=yes
+
+[Install]
+WantedBy=multi-user.target

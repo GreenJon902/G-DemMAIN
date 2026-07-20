@@ -17,3 +17,13 @@ Build it with `./gradlew build` in the `g_mc_monitor` directory, then drop the r
 # Webhooks - `webhooks.py`
 This script is used to send messages in discord (e.g. status updates).
 It requires certain env-variables to be set.
+
+# Discord bot - `g_discord`
+A Python bot bridging Minecraft chat and exposing `/list`, talking to `g_mc_monitor`'s chat socket
+and FUSE filesystem - see [G-DemMAIN Monitor Mod.md](../doc/G-DemMAIN%20Monitor%20Mod.md) for the
+protocol. Requires `discord.py`, `python-dotenv` and `requests` (see `doc/Initial Setup.md`).
+Run with `python3 g_discord.py [config path]`, defaulting to
+`/opt/infra/static-config/g_discord/config.json` (kept in the repo, not synced to `/var/lib` - see
+`static-config/README.md`) - pass a different path to use a local static config when developing.
+`DISCORD_BOT_TOKEN` must be set in the environment (it's a secret, so it isn't in `.devenv` -
+export it yourself).
