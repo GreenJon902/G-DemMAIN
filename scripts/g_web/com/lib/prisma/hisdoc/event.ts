@@ -16,6 +16,10 @@ import { hd_changelog_action, hd_changelog_what, hd_event_event_date_type } from
 import type { hd_event_event_date_units } from "../../../generated/prisma/client";
 import { type Actor, writeChangelog, buildEventSnapshot } from "./changelog";
 
+// Structurally overlaps app/hisdoc/lib/date/flexidate.ts's `FlexiDate` type (same 6 underlying
+// hd_event date columns) but is kept separate: this is a strict discriminated union for the Prisma
+// write payload (compile-time centered/ranged narrowing, Prisma enum literals, no offset field),
+// whereas FlexiDate is a flat type for display/computation
 export type EventDateFields =
     | {
         event_date_type: typeof hd_event_event_date_type.centered,
@@ -80,6 +84,17 @@ function validateEventDates(fields: {
         if (fields.event_date2 === null) throw new Error("ranged events require event_date2");
         if (fields.event_date1 > fields.event_date2) throw new Error("ranged events require event_date1 <= event_date2");
     }
+}
+
+/**
+ * Throws a human-readable error if another event already uses `name`. Pre-checks the
+ * uq_hd_event_name constraint, which spans soft-deleted rows too — so no soft_deleted filter here.
+ *
+ * @param excludeId - The event being updated, exempt from the clash check.
+ */
+async function assertEventNameFree(tx: Prisma.TransactionClient, name: string, excludeId?: number): Promise<void> {
+    const clash = await tx.hd_event.findFirst({ where: { name, ...(excludeId !== undefined && { id: { not: excludeId } }) } });
+    if (clash) throw new Error(`An event named "${name}" already exists (possibly deleted)`);
 }
 
 /** Calls add()/remove() for exactly the ids that differ between the current and desired sets. */
@@ -183,7 +198,7 @@ async function logOtherSides(
     const verb = isCreate ? "creation" : "update";
     for (const [otherId, { before, action }] of otherEventChanges) {
         const after = await buildEventSnapshot(tx, otherId);
-        const message = `Event relation ${action} during ${verb} of '${mainEvent.name}' (${mainEvent.id})`;
+        const message = `Event relation ${action} during ${verb} of "${mainEvent.name}" (#${mainEvent.id})`;
         await writeChangelog(tx, actor, message, hd_changelog_what.EVENT, otherId, hd_changelog_action.UPDATE, before, after);
     }
 }
@@ -197,6 +212,8 @@ export async function createEvent(actor: Actor, message: string, data: EventInpu
     const { tagIds, personIds, relatedEventIds, ...eventFields } = data;
 
     return prisma().$transaction(async (tx) => {
+        await assertEventNameFree(tx, eventFields.name);
+
         // Create the new event row
         const event = await tx.hd_event.create({
             data: { ...eventFields, posted_by_user_id: actor.userId }
@@ -224,6 +241,8 @@ export async function updateEvent(actor: Actor, message: string, id: number, dat
     return prisma().$transaction(async (tx) => {
         // Get state beforehand
         const before = await tx.hd_event.findUniqueOrThrow({ where: { id } });
+        if (before.soft_deleted) throw new Error(`Cannot update soft-deleted hd_event ${id}`);
+        if (eventFields.name !== undefined) await assertEventNameFree(tx, eventFields.name, id);
         const beforeSnapshot = await buildEventSnapshot(tx, id);
 
         // Date fields are only meaningful together, so validate the merged (existing + patched) result whenever any of them change
@@ -256,11 +275,16 @@ export async function updateEvent(actor: Actor, message: string, id: number, dat
     });
 }
 
-/** Soft-deletes an event and records the deletion in the changelog. Does not touch its relations. */
+/**
+ * Soft-deletes an event and records the deletion in the changelog. Does not touch its relations.
+ * Rejects already soft-deleted events.
+ */
 export async function deleteEvent(actor: Actor, message: string, id: number): Promise<void> {
     // TODO: Log relations?
     await prisma().$transaction(async (tx) => {
         // Get state beforehand
+        const before = await tx.hd_event.findUniqueOrThrow({ where: { id } });
+        if (before.soft_deleted) throw new Error(`Cannot delete already soft-deleted hd_event ${id}`);
         const beforeSnapshot = await buildEventSnapshot(tx, id);
 
         // (Soft) delete event row

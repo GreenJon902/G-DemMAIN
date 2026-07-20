@@ -1,5 +1,9 @@
 import { ComponentProps } from "react";
 
+// Shared styling for single-line "value box" inputs (text, date, etc.) so they look consistent
+// wherever they're used, even where TextInput itself can't be used (e.g. type="date")
+export const VALUE_INPUT_CLASS = "flex-1 rounded-md bg-gray-600 px-1 outline-none focus:bg-gray-700";
+
 /**
  * A standardly-styled text input element.
  * @param name - Optional value for the html "name" and "id" tags.
@@ -20,8 +24,7 @@ export default function TextInput({
 } & Omit<ComponentProps<"input">, "text" | "id" | "type" | "className">) {
     const input = (<input
         type={password ? "password" : "text"}
-        className="flex-1 rounded-md bg-gray-600 px-1 outline-none focus:bg-gray-700" 
-
+        className={VALUE_INPUT_CLASS}
         name={name}
         id={name}
         {...props}

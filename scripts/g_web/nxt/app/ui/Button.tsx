@@ -9,17 +9,22 @@
 import { ArrowPathIcon } from "@heroicons/react/20/solid";
 import { Url } from "next/dist/shared/lib/router/router";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ReactNode, Ref, useState } from "react";
+import { useAuthContext } from "@/app/AuthContext";
+import type { AreaPermissionRequirement } from "@g/com/lib/authConstants";
 
 // Since we need to specify tailwind colors in full (including "hover:bg-green-123123"), we will use constants
 // This also means colors will be fixed and must hence be consistent
-type ButtonColor = { normal: string, focusVisible: string, hover: string }
+export type ButtonColor = { normal: string, focusVisible: string, hover: string }
 const ButtonColor = (normal: string, focusVisible: string, hover: string): ButtonColor => ({ normal, focusVisible, hover });
 export const BUTTON_GREEN:  ButtonColor = ButtonColor("bg-green-600",  "focus-visible:bg-green-800",  "hover:bg-green-800");
 export const BUTTON_YELLOW: ButtonColor = ButtonColor("bg-yellow-600", "focus-visible:bg-yellow-800", "hover:bg-yellow-800");
 export const BUTTON_RED:    ButtonColor = ButtonColor("bg-red-600",    "focus-visible:bg-red-800",    "hover:bg-red-800");
 export const BUTTON_CYAN:    ButtonColor = ButtonColor("bg-cyan-600",    "focus-visible:bg-cyan-800",    "hover:bg-cyan-800");
 export const BUTTON_INDIGO:    ButtonColor = ButtonColor("bg-indigo-600",    "focus-visible:bg-indigo-800",    "hover:bg-indigo-800");
+export const BUTTON_GRAY:    ButtonColor = ButtonColor("bg-gray-600",    "focus-visible:bg-gray-700",    "hover:bg-gray-700");
+export const BUTTON_BLUE:    ButtonColor = ButtonColor("bg-blue-600",    "focus-visible:bg-blue-800",    "hover:bg-blue-800");
 
 /**
  * Gets the `className` that all button-like components will use.
@@ -34,6 +39,93 @@ function getButtonClass(color: ButtonColor, className: string, disabled = false)
         : `${color.normal} ${color.focusVisible} ${color.hover}`;
     return `relative flex ${cursor} justify-center rounded-md px-1 text-nowrap outline-none ${colors} ${className}`;
 }
+
+// Props shared by every button-like component, regardless of what it actually renders as
+type AbstractButtonSharedProps = {
+    children: ReactNode,
+    color: ButtonColor,
+    className?: string,
+    title?: string,
+    disabled?: boolean | AreaPermissionRequirement,  // A boolean disables unconditionally; a requirement disables when the user lacks that permission
+    confirm?: () => boolean | Promise<boolean>,       // Optional pre-flight check; the primary action only proceeds if this resolves true
+    onError?: (error: unknown) => void                // Called with whatever confirm/onActivate throws; rethrown if not given
+};
+
+// actualType picks the rendered element and is set internally by each public wrapper below, never by their callers
+type AbstractButtonProps =
+    | (AbstractButtonSharedProps & { actualType: "LINK", href: Url, newTab?: boolean, ref?: Ref<HTMLAnchorElement> })
+    | (AbstractButtonSharedProps & { actualType: "BUTTON", onActivate: () => Promise<void> | void, ref?: Ref<HTMLButtonElement> });
+
+/**
+ * Private base for every exported button-like component (LinkButton, ActionButton, SimpleButton).
+ * Owns everything that shouldn't drift between them: colour/disabled styling, permission-aware
+ * disabling, the confirm gate, error handling, and which element actually gets rendered
+ * ("LINK" for a Next Link, "BUTTON" for a native button — set internally by each public wrapper,
+ * not exposed to their callers). Pending/loading state is NOT handled here — that stays local to
+ * ActionButton, which pre-composes its own spinner into the `children` it passes down.
+ */
+function AbstractButton(props: AbstractButtonProps) {
+    const { children, color, className = "", title, confirm, onError } = props;
+    const { checkPermission } = useAuthContext();
+    const router = useRouter();
+
+    const disabled = typeof props.disabled === "object"
+        ? !checkPermission(props.disabled.area, props.disabled.minLevel)
+        : (props.disabled ?? false);
+
+    // Runs the confirm gate (if any), then `proceed`, routing any thrown error to onError
+    const activate = async (proceed: () => Promise<void> | void) => {
+        try {
+            if (confirm && !await confirm()) return;
+            await proceed();
+        } catch (error) {
+            if (onError) onError(error);
+            else throw error;
+        }
+    };
+
+    if (disabled) {
+        return (
+            <span className={getButtonClass(color, className, true)} title={title}>
+                {children}
+            </span>
+        );
+    }
+
+    if (props.actualType === "LINK") {
+        const { href, newTab, ref } = props;
+        return (
+            <Link
+                href={href}
+                ref={ref}
+                title={title}
+                className={getButtonClass(color, className)}
+                target={newTab ? "_blank" : "_self"}
+                onClick={confirm ? (e) => {
+                    e.preventDefault();
+                    // Next's App Router router.push only accepts a string, unlike Link's href
+                    activate(() => router.push(href as string));
+                } : undefined}
+            >
+                {children}
+            </Link>
+        );
+    }
+
+    const { onActivate, ref } = props;
+    return (
+        <button
+            type="button"
+            ref={ref}
+            title={title}
+            onClick={() => activate(onActivate)}
+            className={getButtonClass(color, className)}
+        >
+            {children}
+        </button>
+    );
+}
+
 /**
  * A button that isn't a button at all, it's a styled Link (react.Link, not <a>) component.
  *
@@ -41,35 +133,51 @@ function getButtonClass(color: ButtonColor, className: string, disabled = false)
  * @param href - The page to go to when this is clicked.
  * @param color - The {@link ButtonColor} of this button.
  * @param className - Optional extra class names for the button, e.g. size-6.
+ * @param title - Optional tooltip text shown on hover.
  * @param newTab - Does this link open in a new tab, aka target="_blank".
- * @param disabled - When true, renders as a non-navigable span with greyed-out styling.
+ * @param disabled - When true (or a permission the user lacks), renders as a non-navigable span with greyed-out styling.
+ * @param confirm - Optional pre-flight check; navigation only proceeds if this resolves true.
+ * @param onError - Called with whatever `confirm` throws; rethrown if not given.
+ * @param ref - An optional reference to the underlying anchor element.
  */
 export function LinkButton({
     children,
     href,
+    newTab = false,
     color,
     className = "",
-    newTab = false,
-    disabled = false
+    title,
+    disabled,
+    confirm,
+    onError,
+    ref
 }: {
     children: ReactNode,
     href: Url,
+    newTab?: boolean,
     color: ButtonColor,
     className?: string,
-    newTab?: boolean,
-    disabled?: boolean
+    title?: string,
+    disabled?: boolean | AreaPermissionRequirement,
+    confirm?: () => boolean | Promise<boolean>,
+    onError?: (error: unknown) => void,
+    ref?: Ref<HTMLAnchorElement>
 }) {
-    if (disabled) {
-        return (
-            <span className={getButtonClass(color, className, true)}>
-                {children}
-            </span>
-        );
-    }
     return (
-        <Link href={href} className={getButtonClass(color, className)} target={newTab ? "_blank" : "_self"}>
+        <AbstractButton
+            actualType="LINK"
+            href={href}
+            newTab={newTab}
+            color={color}
+            className={className}
+            title={title}
+            disabled={disabled}
+            confirm={confirm}
+            onError={onError}
+            ref={ref}
+        >
             {children}
-        </Link>
+        </AbstractButton>
     );
 }
 
@@ -77,39 +185,41 @@ export function LinkButton({
  * A button that runs a server action.
  * This shows a loading action icon and is un-clickable while it is running.
  *
- * @param children - the normal content to display inside the button.
- * @param action - the server-action to run when the button is pressed.
- * @param confirm - an optional function to call when the button is clicked to confirm that we want to execute the action. Returns true (or a Promise resolving to true) to run the action, false to abort. Runs before the loading state is entered.
- * @param onError - an optional handler called with the thrown value if `guard` or `action` throw. If not supplied the error is rethrown instead.
+ * @param children - The normal content to display inside the button.
+ * @param action - The server-action to run when the button is pressed.
+ * @param guard - An optional function, checked once `confirm` has passed, that decides whether the
+ *                action is actually allowed to run (e.g. a sudo check) — return false to silently abort.
  * @param color - The {@link ButtonColor} of this button.
- * @param classname - optional extra class names for the button, e.g. size-6.
+ * @param className - Optional extra class names for the button, e.g. size-6.
+ * @param title - Optional tooltip text shown on hover.
+ * @param disabled - When true (or a permission the user lacks), renders as a non-interactive span with greyed-out styling.
+ * @param confirm - Optional pre-flight check; `guard`/`action` only run if this resolves true.
+ * @param onError - Called with whatever `confirm`, `guard`, or `action` throws; rethrown if not given.
  * @param ref - An optional reference to the actual button element.
- * @param disabled - When true, the button is permanently greyed out and non-interactive (e.g. user lacks permission).
  */
 export function ActionButton({
     children,
     action,
-    confirm = () => true,
     guard,
-    onError,
-    color,
-    className = "",
-    ref,  // defaults to undefined
-    disabled = false
+    ref,
+    ...sharedProps
 }: {
     children: ReactNode,
     action: () => Promise<void>,
-    confirm?: () => boolean | Promise<boolean>,
     guard?: () => boolean | Promise<boolean>,
-    onError?: (error: unknown) => void,
     color: ButtonColor,
     className?: string,
-    ref?: Ref<HTMLButtonElement>,
-    disabled?: boolean
+    title?: string,
+    disabled?: boolean | AreaPermissionRequirement,
+    confirm?: () => boolean | Promise<boolean>,
+    onError?: (error: unknown) => void,
+    ref?: Ref<HTMLButtonElement>
 }) {
     const [isPending, setIsPending] = useState(false);
-    const buttonClicked = async () => {
-        if (isPending || !await confirm()) return;
+
+    // Reentrancy guard lives here (not in AbstractButton) since only ActionButton tracks pending state
+    const onActivate = async () => {
+        if (isPending) return;
         setIsPending(true);
         try {
             if (guard && !await guard()) {
@@ -117,21 +227,17 @@ export function ActionButton({
                 return;
             }
             await action();
-        } catch (error) {
-            if (onError) onError(error);
-            else throw error;
         } finally {
             setIsPending(false);
         }
     };
 
-    // Create a button that shows either a the content or the spinner
     return (
-        <button type="button" onClick={buttonClicked} className={getButtonClass(color, className, disabled)} disabled={isPending || disabled} ref={ref}>
+        <AbstractButton actualType="BUTTON" onActivate={onActivate} ref={ref} {...sharedProps}>
             { /* Render both at same time so size remains constant, but hide the one we don't need */ }
             <ArrowPathIcon className={`size-6 animate-spin self-stretch stroke-2 text-white ${isPending ? "" : "invisible"} absolute`} />
-            <div className={`${isPending ? "invisible" : ""}`}> {children} </div> 
-        </button> 
+            <div className={isPending ? "invisible" : ""}>{children}</div>
+        </AbstractButton>
     );
 }
 
@@ -142,21 +248,30 @@ export function ActionButton({
  * @param callback - The function to call when this is clicked.
  * @param color - The {@link ButtonColor} of this button.
  * @param className - Optional extra class names for the button, e.g. size-6.
+ * @param title - Optional tooltip text shown on hover.
+ * @param disabled - When true (or a permission the user lacks), renders as a non-interactive span with greyed-out styling.
+ * @param confirm - Optional pre-flight check; `callback` only runs if this resolves true.
+ * @param onError - Called with whatever `confirm`/`callback` throws; rethrown if not given.
+ * @param ref - An optional reference to the actual button element.
  */
 export function SimpleButton({
     children,
     callback,
-    color,
-    className = ""
+    ...sharedProps
 }: {
     children: ReactNode,
-    callback: () => void,
+    callback: () => void | Promise<void>,
     color: ButtonColor,
     className?: string,
+    title?: string,
+    disabled?: boolean | AreaPermissionRequirement,
+    confirm?: () => boolean | Promise<boolean>,
+    onError?: (error: unknown) => void,
+    ref?: Ref<HTMLButtonElement>
 }) {
-    return ( 
-        <button onClick={callback} className={getButtonClass(color, className)} >
-            {children} 
-        </button> 
+    return (
+        <AbstractButton actualType="BUTTON" onActivate={callback} {...sharedProps}>
+            {children}
+        </AbstractButton>
     );
 }

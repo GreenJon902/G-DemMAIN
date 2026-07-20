@@ -18,6 +18,7 @@ nxt/.next/
 /out/
 .next/
 mcc/dist/
+nxt/minecraft-cache.json
 
 # production
 /build

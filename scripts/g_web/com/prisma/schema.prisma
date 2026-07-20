@@ -42,6 +42,8 @@ model hd_event {
   event_date_diff                                                  BigInt?                    @db.UnsignedBigInt
   event_date2                                                      BigInt?                    @db.UnsignedBigInt
   sort_key                                                         BigInt?
+  event_start_key                                                  BigInt?
+  event_end_key                                                    BigInt?
   soft_deleted                                                     Boolean                    @default(false)
   user                                                             user                       @relation(fields: [posted_by_user_id], references: [id], onUpdate: Restrict, map: "hd_event_ibfk_1")
   hd_event_event_wri_hd_event_event_wri_event_idTohd_event         hd_event_event_wri[]       @relation("hd_event_event_wri_event_idTohd_event")
@@ -50,6 +52,8 @@ model hd_event {
   hd_event_tag                                                     hd_event_tag[]
 
   @@index([sort_key], map: "idx_hd_event_sort")
+  @@index([event_start_key], map: "idx_hd_event_start")
+  @@index([event_end_key], map: "idx_hd_event_end")
   @@index([posted_by_user_id], map: "posted_by_user_id")
 }
 
@@ -105,7 +109,7 @@ model hd_person {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model hd_tag {
   id           Int            @id @default(autoincrement())
-  name         String         @db.VarChar(255)
+  name         String         @unique(map: "uq_hd_tag_name") @db.VarChar(255)
   description  String         @db.LongText
   color        Int
   soft_deleted Boolean        @default(false)

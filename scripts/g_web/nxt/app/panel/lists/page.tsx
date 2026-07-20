@@ -2,10 +2,13 @@
  * This file provides the UI for viewing and updating the various player-lists for the minecraft server (e.g. whitelist.json).
  */
 
+import type { Metadata } from "next";
 import ItemRow from "./ItemRow";
-import PanelPageSection from "../ui/PanelPageSection";
+import PageSection from "../../ui/PageSection";
 import { BANNEDIP_LIST, BANNEDPLAYER_LIST, loadListItems, OPERATOR_LIST, List as PUList, WHITELIST_LIST } from "@/lib/panelUtils";
 import { AutoLabelSinceLastRefresh } from "../../ui/LabelSinceLastRefresh";
+
+export const metadata: Metadata = { title: "Lists | Panel" };
 
 
 // Define the lists (e.g. whitelist or banned-players) that we want to render
@@ -27,7 +30,7 @@ export default function Page() {
         <>
             {
                 LISTS.map(async (list, i) => (
-                    <PanelPageSection title={list.rendername} key={i} >
+                    <PageSection title={list.rendername} key={i} >
                         <div className="space-y-1">
                             <div> 
                                 {(await loadListItems(list.list))?.map(item => (
@@ -35,7 +38,7 @@ export default function Page() {
                                 )) ?? <span className="italic">Data missing!</span>}
                             </div>
                         </div>
-                    </PanelPageSection>
+                    </PageSection>
                 ))
             }
             <AutoLabelSinceLastRefresh />

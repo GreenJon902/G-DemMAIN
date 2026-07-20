@@ -1,7 +1,7 @@
 "use client";
 
 import { ActionButton, BUTTON_GREEN, BUTTON_RED, BUTTON_YELLOW } from "./../ui/Button";
-import PanelPageSection from "./ui/PanelPageSection";
+import PageSection from "../ui/PageSection";
 import { loadPanelDataAction, Unit, unitAction } from "./actions";
 import { CpuRamGraph } from "./ui/Graphs";
 import { UnitStatus } from "@/lib/panelUtils";
@@ -16,7 +16,7 @@ export default function PanelPageContent(
     return (
         <>
             { /* Resource monitors -------------------------------------------------- */ }
-            <PanelPageSection title="Important Graphs">
+            <PageSection title="Important Graphs">
                 <div className="flex w-full flex-wrap gap-4">
                     <CpuRamGraph
                         data={gd.map(d => ({ time: d.time, cpu: d.sys_cpu?.agg, mem: d.sys_mem?.used }))}
@@ -26,9 +26,9 @@ export default function PanelPageContent(
                     />
                     { /*  TODO: MC TPS and heap mem usage*/ }
                 </div>
-            </PanelPageSection>
+            </PageSection>
             { /* Service status -------------------------------------------------- */ }
-            <PanelPageSection title="Units">
+            <PageSection title="Units">
                 <table className="w-full overflow-hidden rounded-md"><tbody>
                     {
                         data.unitsStatuses.map(({ unit, status }) => (
@@ -43,13 +43,13 @@ export default function PanelPageContent(
                                     </span>
                                 </td>
                                 <td className="flex gap-1 p-1"> {/* All changing controls go into the same <td> as the frequent changing causes firefox to get confused and not render backgrounds correctly */}
-                                    <UnitControls unit={unit} status={status} className="flex-1" isAdmin={data.isAdmin} />
+                                    <UnitControls unit={unit} status={status} className="flex-1" />
                                 </td>
                             </tr>
                         ))
                     }
                 </tbody></table>
-            </PanelPageSection>
+            </PageSection>
         </>
     );
 
@@ -89,10 +89,10 @@ function StatusIndicator({ unit, status }: { unit: Unit, status: UnitStatus | un
 /**
  * Create the controls for the given unit.
  * @param className - This will be given to each child.
- * @param isAdmin - Whether the current user has panel admin permission. Controls are disabled when false.
  */
-function UnitControls({ unit, status, className="", isAdmin }: { unit: Unit, status: UnitStatus | undefined, className?: string, isAdmin: boolean }) {
+function UnitControls({ unit, status, className="" }: { unit: Unit, status: UnitStatus | undefined, className?: string }) {
     const authCtx = useAuthContext();
+    const isAdmin = authCtx.checkPermission("panel", "admin");
     const guard = makeAreaSudoGuard("panel", "admin", authCtx);
     const { requestConfirm } = useConfirmContext();
     const { showError } = useErrorContext();

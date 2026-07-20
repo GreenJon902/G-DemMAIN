@@ -1,8 +1,29 @@
 import "@/app/globals.css";
 
-import { BUTTON_CYAN, BUTTON_GREEN, BUTTON_INDIGO, BUTTON_RED, BUTTON_YELLOW, LinkButton } from "../ui/Button";
+import AreaIndicator from "../ui/AreaIndicator";
+import SubNav, { SubNavLink } from "../ui/SubNav";
 import Link from "next/link";
-import { requirePermission, NS } from "@/lib/session";
+import { requirePermission } from "@/lib/session";
+import type { Metadata } from "next";
+
+// Overrides the root template for everything under /panel — deliberately just one level ("|
+// G-DemMAIN", not "| Panel | G-DemMAIN"), since /panel's own page wants exactly "Panel | G-DemMAIN"
+// (via the default below) while its sub-pages bake "| Panel" into their own title string to reach
+// the same 3-level result — Next doesn't chain multiple ancestor templates automatically.
+export const metadata: Metadata = {
+    title: {
+        template: "%s | G-DemMAIN",
+        default: "Panel"
+    }
+};
+
+const links: SubNavLink[] = [
+    { href: "/panel", children: "Panel Home" },
+    { href: "/panel/graphs", children: "Graphs" },
+    { href: "/panel/lists", children: "Lists" },
+    { href: "/panel/mcLogs", children: "Minecraft Logs" },
+    { href: "/panel/mcConsole", children: "Console", disabled: { area: "panel", minLevel: "admin" } }
+];
 
 export default async function Layout({
     children
@@ -10,24 +31,18 @@ export default async function Layout({
     children: React.ReactNode,
 }) {
     await requirePermission("panel", "viewer");
-    const isAdmin = await NS.optimisticCheckPermission("panel", "admin");
 
     // Add the panel specific nav bar
     return (
         <>
-            <header className="flex w-full flex-wrap items-center gap-2 border-t border-t-gray-500 bg-gray-700 p-2">
-                {/* We give the text a very large flex so only it scales, however we still give the buttons flex so that they fill the entire width if they go on the newline */}
-                <div className="flex w-full flex-nowrap items-center gap-3 sm:flex-100">
-                    <Link href="/panel" className="flex-100 text-3xl font-extrabold text-nowrap underline hover:text-gray-400">G-DemMAIN Panel</Link>
-                </div>
-                <div className="flex flex-1 flex-wrap items-center gap-2 sm:flex-nowrap">
-                    <LinkButton href="/panel" className="h-min flex-1" color={BUTTON_INDIGO}>Panel Home</LinkButton>  
-                    <LinkButton href="/panel/graphs" className="h-min flex-1" color={BUTTON_CYAN}>Graphs</LinkButton>  
-                    <LinkButton href="/panel/lists" className="h-min flex-1" color={BUTTON_GREEN}>Lists</LinkButton>  
-                    <LinkButton href="/panel/mcLogs" className="h-min flex-1" color={BUTTON_YELLOW}>Minecraft Logs</LinkButton>  
-                    <LinkButton href="/panel/mcConsole" className="h-min flex-1" color={BUTTON_RED} disabled={!isAdmin}>Console</LinkButton>
-                </div>
-            </header>
+            <SubNav
+                logo={
+                    <Link href="/panel">
+                        <AreaIndicator className="text-3xl font-extrabold text-nowrap underline">G-DemMAIN Panel</AreaIndicator>
+                    </Link>
+                }
+                links={links}
+            />
             <main className="p-4">
                 {children}
             </main>

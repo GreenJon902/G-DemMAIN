@@ -1,9 +1,16 @@
+import type { Metadata } from "next";
 import { loadLogContent } from "@/lib/panelUtils";
 import { notFound } from "next/navigation";
-import PanelPageSection from "../../ui/PanelPageSection";
-import Link from "next/link";
+import PageSection from "../../../ui/PageSection";
+import TextLink, { TEXT_LINK_GRAY } from "../../../ui/TextLink";
 import { AutoLabelSinceLastRefresh } from "@/app/ui/LabelSinceLastRefresh";
 import LogView from "../../ui/LogView";
+
+/** Sets the page title to "<logFile> | Logs | Panel". */
+export async function generateMetadata({ params }: { params: Promise<{ logFile: string }> }): Promise<Metadata> {
+    const { logFile } = await params;
+    return { title: `${logFile} | Logs | Panel` };
+}
 
 export default async function Page({
     params
@@ -18,18 +25,19 @@ export default async function Page({
 
     return (
         <>
-            <Link 
-                href="/panel/mcLogs" 
-                className="mb-2 block text-gray-300 underline decoration-gray-500 decoration-dotted"
+            <TextLink
+                href="/panel/mcLogs"
+                color={TEXT_LINK_GRAY}
+                className="mb-2 block"
             >
                 Return to log list...
-            </Link>
-            <PanelPageSection title={logFile}>
+            </TextLink>
+            <PageSection title={logFile}>
                 <LogView 
                     lines={logContents.split("\n")} 
                     className="min-w-150"
                 />
-            </PanelPageSection>
+            </PageSection>
             <AutoLabelSinceLastRefresh />
         </>
     );

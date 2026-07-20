@@ -4,8 +4,8 @@ import { createContext, useContext, useEffect, useRef, useState, ReactNode } fro
 import TextInput from "@/app/ui/TextInput";
 import ModalShell from "@/app/ui/ModalShell";
 import { ActionButton, BUTTON_GREEN, SimpleButton, BUTTON_RED } from "@/app/ui/Button";
-import type { Area, AreaPermission } from "@g/com/lib/auth";
-import { SUDO_WINDOW_MS } from "@g/com/lib/authConstants";
+import { AREAS, checkMinPermission, type Area, type AreaPermission, SUDO_WINDOW_MS } from "@g/com/lib/authConstants";
+import type { StoredPermissions } from "@g/com/lib/auth";
 import { getAreaSudoStatusAction, enterSudoAction } from "@/app/actions";
 
 type SudoModalMode = "verify" | "disabled" | null;
@@ -13,16 +13,17 @@ type SudoModalMode = "verify" | "disabled" | null;
 type AuthBroadcast =
     | { type: "sudo-entered"; at: number }
     | { type: "sudo-exited" }
-    | { type: "logged-in" }
+    | { type: "logged-in"; permissions: StoredPermissions }  // Only need to sync permissions, other fields will be reloaded before use
     | { type: "logged-out" };
 
 export type AuthContextType = {
     isLoggedIn: boolean;
     sudoVerifiedAt: number | null;  // When was sudo mode entered. If this was longer ago than SUDO_WINDOW_MS then the user is not in sudo mode
     tfaEnabled: boolean;            // User has 2fa enabled
+    checkPermission: <A extends Area>(area: A, minLevel: AreaPermission<A>) => boolean;  // Checks the cached, client-synced permissions — same semantics as NS.optimisticCheckPermission
     requestSudo: () => Promise<boolean>;       // Function to request that the user is in sudo mode. This blocks until the user is in sudo mode and true is returned, or the user is not and false is returned
     showSudoUnavailable: () => Promise<void>;  // Function to display that this user is unable to enter sudo mode. This blocks until the modal is dismissed
-    onSudoExited: () => void;               
+    onSudoExited: () => void;
 };
 
 const AuthCtx = createContext<AuthContextType | null>(null);
@@ -38,16 +39,19 @@ export function AuthContextProvider({
     initialIsLoggedIn,
     initialSudoVerifiedAt,
     initialTfaEnabled,
+    initialPermissions,
     children
 }: {
     initialIsLoggedIn: boolean;
     initialSudoVerifiedAt: number | null;
     initialTfaEnabled: boolean;
+    initialPermissions: StoredPermissions;
     children: ReactNode;
 }) {
     const [isLoggedIn, setIsLoggedIn] = useState(initialIsLoggedIn);
     const [sudoVerifiedAt, setSudoVerifiedAt] = useState(initialSudoVerifiedAt);
     const [tfaEnabled, setTfaEnabled] = useState(initialTfaEnabled);
+    const [permissions, setPermissions] = useState(initialPermissions);
 
     const channelRef = useRef<BroadcastChannel | null>(null);
     useEffect(() => {
@@ -58,7 +62,7 @@ export function AuthContextProvider({
             switch (data.type) {
             case "sudo-entered": setSudoVerifiedAt(data.at); break;
             case "sudo-exited":  setSudoVerifiedAt(null);   break;
-            case "logged-in":    setIsLoggedIn(true);       break;
+            case "logged-in":    setIsLoggedIn(true); setPermissions(data.permissions); break;
             case "logged-out":   window.location.reload();  break;  // Clear all data and let server routing redirect (to login)
             }
         };
@@ -73,12 +77,17 @@ export function AuthContextProvider({
         const prev = prevIsLoggedInRef.current;
         prevIsLoggedInRef.current = initialIsLoggedIn;
         setIsLoggedIn(initialIsLoggedIn);
-        // Broadcast login/logout transitions so other tabs update without waiting for a navigation
-        if (initialIsLoggedIn && !prev)  channelRef.current?.postMessage({ type: "logged-in"  } satisfies AuthBroadcast);
+        // Broadcast login/logout transitions so other tabs update without waiting for a navigation.
+        // Reads initialPermissions directly (not permissions state) since it's guaranteed fresh for
+        // this render; it's deliberately not a dep here since it should only piggyback on an actual
+        // login transition, not re-fire this effect on every permissions change (synced separately below)
+        if (initialIsLoggedIn && !prev)  channelRef.current?.postMessage({ type: "logged-in", permissions: initialPermissions } satisfies AuthBroadcast);
         if (!initialIsLoggedIn && prev)  channelRef.current?.postMessage({ type: "logged-out" } satisfies AuthBroadcast);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [initialIsLoggedIn]);
     useEffect(() => { setSudoVerifiedAt(initialSudoVerifiedAt); }, [initialSudoVerifiedAt]);
     useEffect(() => { setTfaEnabled(initialTfaEnabled); }, [initialTfaEnabled]);
+    useEffect(() => { setPermissions(initialPermissions); }, [initialPermissions]);
     /* eslint-enable react-hooks/set-state-in-effect */
 
     // Clear sudoVerifiedAt when the sudo window expires
@@ -122,8 +131,11 @@ export function AuthContextProvider({
         channelRef.current?.postMessage({ type: "sudo-exited" } satisfies AuthBroadcast);
     };
 
+    const checkPermission = <A extends Area>(area: A, minLevel: AreaPermission<A>): boolean =>
+        checkMinPermission(AREAS[area].levels, permissions[area], minLevel);
+
     return (
-        <AuthCtx.Provider value={{ isLoggedIn, sudoVerifiedAt, tfaEnabled, requestSudo, showSudoUnavailable, onSudoExited }}>
+        <AuthCtx.Provider value={{ isLoggedIn, sudoVerifiedAt, tfaEnabled, checkPermission, requestSudo, showSudoUnavailable, onSudoExited }}>
             {children}
             <SudoModal mode={mode} onVerified={() => settle(true)} onDismiss={() => settle(false)} />
         </AuthCtx.Provider>

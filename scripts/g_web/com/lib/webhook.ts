@@ -6,7 +6,7 @@ import { spawn } from "child_process";
 import { existsSync } from "fs";
 import { C } from "./environ";
 
-const WEBHOOKS_FILE = "/opt/infra/scripts/webhooks.py";  // Path to the webhooks python file
+const WEBHOOKS_FILE = (process.env.NODE_ENV === "development" && process.env.G_WEBHOOKS_FILE) || "/opt/infra/scripts/webhooks.py";
 
 /**
  * Send a notifation that the given user has logged into the website.
@@ -23,6 +23,30 @@ export function sendWebloginWebhook(name: string) {
  */
 export function sendWebcommandWebhook(name: string, command: string) {
     executeCommand("webcommand", name, command);
+}
+
+/**
+ * Send a notification that a HisDoc entity was added, edited or deleted.
+ * Note this will not wait for the webhook to finish.
+ * @param entityType - Which kind of hisdoc entity was changed.
+ * @param action - What was done to it.
+ * @param entityId - The entity's database id.
+ * @param entityName - Human-readable name for the entity (event/tag name, person display name).
+ * @param actorId - The database id of the g_web user who made the change.
+ * @param actorUsername - The g_web username of the user who made the change.
+ * @param changelogNote - The changelog message for this change (typed note for edits/deletes, the
+ *   auto-generated message for adds).
+ */
+export function sendHisDocWebhook(
+    entityType: "event" | "person" | "tag",
+    action: "add" | "edit" | "delete",
+    entityId: number,
+    entityName: string,
+    actorId: number,
+    actorUsername: string,
+    changelogNote: string
+) {
+    executeCommand("hisdoc", entityType, action, String(entityId), entityName, String(actorId), actorUsername, changelogNote);
 }
 
 /**

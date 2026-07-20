@@ -31,6 +31,8 @@ ruleTester.run("require-server-only-for-com", localPlugin.rules["require-server-
         "import type { User } from \"@g/com/lib/user\";",
         // authConstants is intentionally client-safe
         "import { SOME_CONSTANT } from \"@g/com/lib/authConstants\";",
+        // Prisma-generated enums are plain const objects, intentionally client-safe
+        "import { hd_person_type } from \"@g/com/prisma/enums\";",
         // Guard can come after the @g/com import — the check runs at Program:exit
         "import { getUser } from \"@g/com/lib/user\";\nimport \"server-only\";"
     ],
