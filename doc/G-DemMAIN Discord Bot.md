@@ -24,15 +24,19 @@ The bot needs, in the Discord server (and specifically in the channel used for
 `chatChannelId` - see Config below):
 - **Send Messages** - to relay Minecraft chat/events into Discord.
 - **Use Slash Commands** - to make `/list` invocable.
+- **Manage Webhooks** - chat messages are relayed via a webhook (created automatically the first
+  time the bot starts, named `g_discord chat bridge`) so each one can be posted under the sending
+  player's own name instead of the bot's.
 
 These are picked as part of generating the invite URL below, not set separately.
 
 ## Inviting the bot to the server
 
 **OAuth2 tab → URL Generator**: under Scopes, check `bot` and `applications.commands`. Under Bot
-Permissions (which appears once `bot` is checked), check Send Messages and Use Slash Commands
-(see [Permissions](#permissions)). Copy the generated URL, open it in a browser, and authorize it
-into the server - this is the standard, portal-generated invite link, nothing hand-built is needed.
+Permissions (which appears once `bot` is checked), check Send Messages, Use Slash Commands and
+Manage Webhooks (see [Permissions](#permissions)). Copy the generated URL, open it in a browser,
+and authorize it into the server - this is the standard, portal-generated invite link, nothing
+hand-built is needed.
 
 Note that `/list` is registered as a **global** command (`tree.sync()` with no guild specified) -
 Discord can take up to an hour to propagate a newly-registered global command to clients the first

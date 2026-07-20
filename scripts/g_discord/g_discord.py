@@ -20,6 +20,10 @@ PLAYERS_DIR = "/home/greenjon902/Desktop/G-DemMAIN/.claude/worktrees/fluttering-
 # run on the same host as g_mc
 MC_MONITOR_HOST = "127.0.0.1"
 
+# Name of the webhook g_discord creates in the chat channel, used to post chat messages under the
+# sending player's own name instead of the bot's
+WEBHOOK_NAME = "G-DemMAIN g_d*sc*rd"  # It blocks calling it discord
+
 # Emoji shown for each chat-socket event type
 EVENT_EMOJI = {
     "server_started": ":white_check_mark:",
@@ -129,6 +133,13 @@ class ChatSocket:
             self._writer = None
             await asyncio.sleep(RECONNECT_DELAY)
 
+async def _get_or_create_webhook(channel):
+    """Gets g_discord's webhook for channel, creating it if it doesn't already exist."""
+    for webhook in await channel.webhooks():
+        if webhook.name == WEBHOOK_NAME:
+            return webhook
+    return await channel.create_webhook(name=WEBHOOK_NAME)
+
 chat_socket = None  # Created in on_ready, once the target Discord channel can be fetched
 chat_bridge_started = False
 
@@ -140,11 +151,15 @@ async def on_ready():
     if not chat_bridge_started:  # on_ready can fire again on reconnect, only start this once
         chat_bridge_started = True
         channel = await client.fetch_channel(CHAT_CHANNEL_ID)
+        webhook = await _get_or_create_webhook(channel)
 
-        # send_callback for ChatSocket - handle_chat_line with channel already supplied
+        # send_callback for ChatSocket - handle_chat_line with channel/webhook already supplied
         async def relay_to_discord(data):
             if data["type"] == "message":
-                await channel.send(f"**[{data['source']}]** {data['username']}: {data['message']}")
+                # Drop the "[source]" prefix for real in-game chat, keep it for other bridges
+                name = data["username"] if data["source"] == "Minecraft" else f"[{data['source']}] {data['username']}"
+                # TODO: set avatar_url to the player's Minecraft head (e.g. via https://mc-heads.net/avatar/{username}) instead of the default webhook avatar
+                await webhook.send(content=data["message"], username=name)
             elif data["type"] == "event":
                 emoji = EVENT_EMOJI.get(data["event"], ":question:")
                 await channel.send(f"{emoji} {data['message']}")
@@ -168,7 +183,9 @@ async def list_command(interaction: discord.Interaction):
 @client.event
 async def on_message(message: discord.Message):
     """Relays messages sent in the configured Discord chat channel to Minecraft chat."""
-    if message.author == client.user or message.channel.id != CHAT_CHANNEL_ID:
+    # webhook_id is set for messages posted by the chat-bridge webhook itself (see
+    # _get_or_create_webhook) - without this check we'd relay our own relayed messages right back
+    if message.author == client.user or message.webhook_id is not None or message.channel.id != CHAT_CHANNEL_ID:
         return
     if chat_socket is None or not chat_socket.connected:
         await message.channel.send("Couldn't reach the Minecraft server - is it down?")
