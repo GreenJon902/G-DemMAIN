@@ -1,6 +1,7 @@
 package net.gdemmain.gmcmonitor.socket;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.gdemmain.gmcmonitor.ServerHolder;
@@ -8,6 +9,8 @@ import net.gdemmain.gmcmonitor.MonitorConfig;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Map;
 
 /**
@@ -18,17 +21,36 @@ import java.util.Map;
  */
 public class ChatSocketServer extends SocketServer {
 	private static final Gson GSON = new Gson();
+	private static final int HISTORY_SIZE = 10;
 
 	private final MonitorConfig.MessageTemplates templates;
+	private final Deque<JsonObject> history = new ArrayDeque<>();
 
 	public ChatSocketServer(String authKey, MonitorConfig.MessageTemplates templates) {
 		super("chat", authKey);
 		this.templates = templates;
 	}
 
+	/** Records a message/event JSON object as history, dropping the oldest once past HISTORY_SIZE. */
+	private void recordHistory(JsonObject json) {
+		synchronized (history) {
+			history.addLast(json);
+			while (history.size() > HISTORY_SIZE) {
+				history.removeFirst();
+			}
+		}
+	}
+
 	@Override
 	protected void onClientConnected(ClientConnection connection) {
-		// No history/handshake payload needed for the chat socket
+		JsonObject historyEnvelope = new JsonObject();
+		historyEnvelope.addProperty("type", "history");
+		JsonArray lines = new JsonArray();
+		synchronized (history) {
+			history.forEach(lines::add);
+		}
+		historyEnvelope.add("lines", lines);
+		connection.send(GSON.toJson(historyEnvelope));
 	}
 
 	@Override
@@ -59,6 +81,7 @@ public class ChatSocketServer extends SocketServer {
 		json.addProperty("type", "message");
 		json.addProperty("username", username);
 		json.addProperty("message", message);
+		recordHistory(json);
 		broadcast(GSON.toJson(json));
 	}
 
@@ -68,6 +91,7 @@ public class ChatSocketServer extends SocketServer {
 		json.addProperty("type", "event");
 		json.addProperty("event", event);
 		fields.forEach(json::addProperty);
+		recordHistory(json);
 		broadcast(GSON.toJson(json));
 	}
 

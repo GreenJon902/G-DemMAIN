@@ -3,16 +3,19 @@ package net.gdemmain.gmcmonitor;
 /**
  * Persisted mod configuration, serialized as JSON to config/g_mc_monitor.json.
  * Most fields keep their default values below when absent from an existing config file, so the
- * file can be edited by hand and new fields introduced later fill themselves in. authKey,
- * consolePort and chatPort are the exception - they have no default and
+ * file can be edited by hand and new fields introduced later fill themselves in. consoleAuthKey,
+ * chatAuthKey, consolePort and chatPort are the exception - they have no default and
  * {@link ConfigManager#load()} refuses to start the mod if any of them is missing, since a
- * silently-defaulted secret or port is worse than a loud failure. In production these three are
+ * silently-defaulted secret or port is worse than a loud failure. In production these four are
  * meant to come from static-config/g_mc/config/g_mc_monitor.json.template, populated from the
  * environ variables by utils/sync-static-config.py.
  */
 public class MonitorConfig {
-	/** Shared secret both the console and chat sockets require clients to present before anything else. Required, no default. */
-	public String authKey;
+	/** Secret the console socket requires clients to present before anything else. Required, no default. */
+	public String consoleAuthKey;
+
+	/** Secret the chat socket requires clients to present before anything else. Separate from consoleAuthKey so the two sockets don't share a key. Required, no default. */
+	public String chatAuthKey;
 
 	/** Address the console/chat sockets bind to - defaults to loopback-only since there's no need for remote access. */
 	public String socketBindAddress = "127.0.0.1";
@@ -25,6 +28,9 @@ public class MonitorConfig {
 
 	/** Where to mount the FUSE filesystem exposing tps/heap/players. Relative paths resolve against the server run directory. */
 	public String fuseMountPath = "monitor-mount";
+
+	/** If false (default), a failure to mount the FUSE filesystem or bind the console/chat sockets crashes startup. If true, such failures are only logged and the mod continues in a degraded state. */
+	public boolean unsafe = false;
 
 	public MessageTemplates messageTemplates = new MessageTemplates();
 

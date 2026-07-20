@@ -40,17 +40,17 @@ public class GMcMonitor implements DedicatedServerModInitializer {
 		try {
 			fuseFS.mountAt(mountPath);
 		} catch (RuntimeException e) {
-			LOGGER.error("Failed to mount monitor filesystem - see doc/G-DemMAIN Monitor Mod.md for FUSE prerequisites", e);
+			handleStartupFailure(config, "Failed to mount monitor filesystem - see doc/G-DemMAIN Monitor Mod.md for FUSE prerequisites", e);
 		}
 
-		consoleSocketServer = new ConsoleSocketServer(config.authKey, consoleCapture);
-		chatSocketServer = new ChatSocketServer(config.authKey, config.messageTemplates);
+		consoleSocketServer = new ConsoleSocketServer(config.consoleAuthKey, consoleCapture);
+		chatSocketServer = new ChatSocketServer(config.chatAuthKey, config.messageTemplates);
 		try {
 			InetAddress bindAddress = InetAddress.getByName(config.socketBindAddress);
 			consoleSocketServer.start(bindAddress, config.consolePort);
 			chatSocketServer.start(bindAddress, config.chatPort);
 		} catch (IOException e) {
-			LOGGER.error("Failed to start console/chat sockets", e);
+			handleStartupFailure(config, "Failed to start console/chat sockets", e);
 		}
 
 		new EventHooks(chatSocketServer).register();
@@ -68,5 +68,19 @@ public class GMcMonitor implements DedicatedServerModInitializer {
 		});
 
 		LOGGER.info("G-DemMAIN Monitor initialized");
+	}
+
+	/**
+	 * Called when the FUSE mount or the console/chat sockets fail to start. With config.unsafe
+	 * false (the default), this crashes startup (mirroring the loud-failure approach used for
+	 * missing required config fields) - with it true, the failure is only logged and the mod keeps
+	 * running in a degraded state.
+	 */
+	private static void handleStartupFailure(MonitorConfig config, String message, Exception cause) {
+		if (config.unsafe) {
+			LOGGER.error(message, cause);
+		} else {
+			throw new IllegalStateException(message + " (set \"unsafe\": true in config/g_mc_monitor.json to continue without it)", cause);
+		}
 	}
 }

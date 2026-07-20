@@ -10,7 +10,7 @@ Note, some copied config files have environment variables hardcoded, so this sho
 The `sync-static-config.py` script will copy the of the contents of folders specified in `sync-map.ini` to their respective destinations (also specified by that file).
 This script will check for any discrepancies between the destination folders and the local folders, and ask you what to do in each case. This will not make any changes without user-input.
 
-The `sync-map.ini` should contain a section with header `sync-map`, which should contain key-value pairs of `<local-folder-path (relative to root of repo)>=<destination-folder-path>`.
+The `sync-map.ini` should contain a `recursive` section, a `flat` section, or both, each containing key-value pairs of `<local-folder-path (relative to root of repo)>=<destination-folder-path>`. `recursive` entries are walked into subfolders (e.g. for systemd drop-in folders like `mysql.service.d`). `flat` entries only look at the immediate contents of the destination folder - use this when the destination is a folder you don't otherwise own (e.g. `/etc` itself), so a recursive walk doesn't end up scanning unrelated files looking for orphaned synced files.
 
 After updating systemd service config files, you'll need to run `systemctl daemon-reload`.
 After updating the sshd config, first validate the config is correct with `sshd -t`, if there are no errors (no output) then run `systemctl reload sshd`.

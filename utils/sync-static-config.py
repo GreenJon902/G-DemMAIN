@@ -43,16 +43,20 @@ def vprint(*pargs, **pkw):
 print("Executing in", os.getcwd())
 print("Ran with args", sys.argv, "which parsed to", args)
 
-# Load sync-map
+# Load sync-map. [recursive] entries are walked into subfolders (e.g. systemd-services'
+# mysql.service.d), [flat] entries only look at the immediate contents of the destination folder -
+# needed for destinations like /etc itself, where walking recursively would mean scanning the
+# entire folder tree for orphaned synced files instead of just the handful we actually own.
 config = ConfigParser()
 if not os.path.exists(args.syncmap):
     raise Exception("Sync map file does not exist - " + args.syncmap + " - are you sure you're in the right folder?")
 config.read(args.syncmap)
-sync_map = dict(config["sync-map"])
+sync_map = [(source, destination, True) for (source, destination) in config.items("recursive")] if config.has_section("recursive") else []
+sync_map += [(source, destination, False) for (source, destination) in config.items("flat")] if config.has_section("flat") else []
 print("Loaded map:", sync_map)
 
 # Check source and destination folders exist
-for (source, destination) in sync_map.items():
+for (source, destination, recursive) in sync_map:
     if not os.path.exists(source):
         raise Exception("Source folder does not exist - " + source)
     if not os.path.exists(destination):
@@ -79,13 +83,24 @@ def possible_template_open(path):
     populated = re.sub(TEMPLATE_ITEM_PATTERN, sub, contents)
     return populated
 
-    
+
+# Yields file paths directly inside folder. Recursive descends into subfolders like os.walk,
+# flat only looks at folder's immediate contents (via os.listdir) and skips subfolders entirely.
+def list_files(folder, recursive):
+    if recursive:
+        for (root, dirs, files) in os.walk(folder):
+            for file in files:
+                yield os.path.join(root, file)
+    else:
+        for entry in os.listdir(folder):
+            full = os.path.join(folder, entry)
+            if not os.path.isdir(full):
+                yield full
+
+
 # Check for any files that we have previously added to the destination folder that should no longer be there
-for (source, destination) in sync_map.items():
-    for (root, dirs, files) in os.walk(destination):
-        for file in files:
-            file = os.path.join(root, file)
-            
+for (source, destination, recursive) in sync_map:
+    for file in list_files(destination, recursive):
             # If file is a symlink then ignore it
             if os.path.islink(file):
                 vprint(f"Ignoring symlink at {PATH_COL}{file}{RESET}")
@@ -123,12 +138,10 @@ for (source, destination) in sync_map.items():
                         continue
 
 # Check for any new or changed files
-for (source_folder, destination_folder) in sync_map.items():
-    for (root, dirs, files) in os.walk(source_folder):
-        for source_file_just_name in files:
-            
+for (source_folder, destination_folder, recursive) in sync_map:
+    for source_file in list_files(source_folder, recursive):
+
             # Paths
-            source_file = os.path.join(root, source_file_just_name)
             relpath = os.path.relpath(source_file, source_folder)
             destination_file = os.path.join(destination_folder, relpath.removesuffix(".template"))
             
@@ -152,7 +165,7 @@ for (source_folder, destination_folder) in sync_map.items():
                     
                     if source != destination:
                         # Don't match so show diff and ask user if we want to replace it
-                        print(f"Diff (without header) for {PATH_COL}{source_file_just_name}{RESET}:")
+                        print(f"Diff (without header) for {PATH_COL}{os.path.basename(source_file)}{RESET}:")
                         
                         # Print files next to eachother with line numbers
                         source = source.split("\n")

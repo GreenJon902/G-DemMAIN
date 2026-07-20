@@ -26,11 +26,15 @@ public class ConsoleSocketServer extends SocketServer {
 		consoleCapture.addListener(this::broadcastLine);
 	}
 
-	private void broadcastLine(String line) {
+	private static JsonObject lineMessage(String line) {
 		JsonObject message = new JsonObject();
 		message.addProperty("type", "line");
 		message.addProperty("text", line);
-		broadcast(GSON.toJson(message));
+		return message;
+	}
+
+	private void broadcastLine(String line) {
+		broadcast(GSON.toJson(lineMessage(line)));
 	}
 
 	@Override
@@ -38,7 +42,7 @@ public class ConsoleSocketServer extends SocketServer {
 		JsonObject history = new JsonObject();
 		history.addProperty("type", "history");
 		JsonArray lines = new JsonArray();
-		consoleCapture.getHistory().forEach(lines::add);
+		consoleCapture.getHistory().forEach(line -> lines.add(lineMessage(line)));
 		history.add("lines", lines);
 		connection.send(GSON.toJson(history));
 	}

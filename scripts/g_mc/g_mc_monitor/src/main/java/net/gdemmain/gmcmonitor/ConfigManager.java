@@ -15,8 +15,8 @@ import java.util.List;
  * managed by static-config/g_mc/config/g_mc_monitor.json.template via utils/sync-static-config.py,
  * which stamps its own header line onto files it owns and treats a file it didn't write as a
  * conflict. Fields the mod defines a default for (see MonitorConfig) still get that default in
- * memory when absent from the file - only authKey/consolePort/chatPort, which have no default,
- * need to actually be present on disk.
+ * memory when absent from the file - only consoleAuthKey/chatAuthKey/consolePort/chatPort, which
+ * have no default, need to actually be present on disk.
  */
 public final class ConfigManager {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -46,15 +46,18 @@ public final class ConfigManager {
 	}
 
 	/**
-	 * authKey/consolePort/chatPort are deliberately given no default value - a mod silently
-	 * listening on a made-up port, or accepting a made-up shared key, is a worse failure mode than
-	 * refusing to start. In production these come from
+	 * consoleAuthKey/chatAuthKey/consolePort/chatPort are deliberately given no default value - a
+	 * mod silently listening on a made-up port, or accepting a made-up shared key, is a worse
+	 * failure mode than refusing to start. In production these come from
 	 * static-config/g_mc/config/g_mc_monitor.json.template via utils/sync-static-config.py.
 	 */
 	private static void requireSet(MonitorConfig config, Path path) {
 		List<String> missing = new ArrayList<>();
-		if (config.authKey == null || config.authKey.isBlank()) {
-			missing.add("authKey");
+		if (config.consoleAuthKey == null || config.consoleAuthKey.isBlank()) {
+			missing.add("consoleAuthKey");
+		}
+		if (config.chatAuthKey == null || config.chatAuthKey.isBlank()) {
+			missing.add("chatAuthKey");
 		}
 		if (config.consolePort == null) {
 			missing.add("consolePort");
