@@ -190,6 +190,8 @@ async def on_message(message: discord.Message):
     if chat_socket is None or not chat_socket.connected:
         await message.channel.send("Couldn't reach the Minecraft server - is it down?")
         return
-    await chat_socket.send_to_socket(message.author.display_name, message.content)
+    # clean_content resolves mentions/channels/roles to their readable form (e.g. "@Notch") instead
+    # of raw IDs (e.g. "<@123456789012345678>"), which is what content would otherwise contain
+    await chat_socket.send_to_socket(message.author.display_name, message.clean_content)
 
 client.run(BOT_TOKEN)
