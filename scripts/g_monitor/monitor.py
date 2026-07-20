@@ -63,6 +63,11 @@ RE_CGROUP_CPU = re.compile(r"^\s*usage_usec\s+(\d+)\s*$", re.MULTILINE)
 RE_CGROUP_DISK_IO = re.compile(r"^\s*\d+:\d+\s+rbytes=(?P<bytes_read>\d+)\s+wbytes=(?P<bytes_written>\d+)\s+rios=\d+\s+wios=\d+\s+dbytes=\d+\s+dios=\d+\s*$", re.MULTILINE)
 PROC_CMD_A = "/proc"
 PROC_CMD_B = "cmdline"
+MC_FUSE_MOUNT = "../g_mc/g_mc_monitor/fuse"#"/var/lib/g_mc/monitor"
+MC_TPS = "tps"
+MC_HEAP_USED = "heap_used_bytes"
+MC_HEAP_ALLOCATED = "heap_allocated_bytes"
+MC_PLAYERS = "players"
 RE_FILENAME = re.compile(r"^(\d+).json$")
 
 # Utils ---
@@ -230,7 +235,30 @@ def read_cgroup_procs(cgroup):
     proc_ids = [id_.strip() for id_ in open(os.path.join(CGROUP_A, cgroup, CGROUP_B_PROCS), "r").read().split("\n")]
     procs = {int(id_): open(os.path.join(PROC_CMD_A, id_, PROC_CMD_B), "r").read().replace("\x00", " ").strip() for id_ in proc_ids if id_ != ""}
     return procs
-    
+
+def read_mc_tps():
+    """
+    Returns float - rolling average TPS (ticks per second) over the last 100 ticks, capped at 20.
+    """
+    return float(open(os.path.join(MC_FUSE_MOUNT, MC_TPS), "r").read())
+
+def read_mc_mem():
+    """
+    Returns {"total": int, "used": int}.
+    The data is in kB.
+    "total" is the heap's -Xmx ceiling, "used" is the heap currently in use.
+    """
+    return {
+        "used": int(int(open(os.path.join(MC_FUSE_MOUNT, MC_HEAP_USED), "r").read()) / 1024),  # We round this for consistency with sys_mem
+        "total": int(int(open(os.path.join(MC_FUSE_MOUNT, MC_HEAP_ALLOCATED), "r").read()) / 1024)
+    }
+
+def read_mc_players():
+    """
+    Returns [str, ...] - the usernames of currently online players.
+    """
+    return os.listdir(os.path.join(MC_FUSE_MOUNT, MC_PLAYERS))
+
 
 def read_data():
     """
@@ -242,6 +270,11 @@ def read_data():
         "sys_net_io": read_sys_net_io,
         "sys_disk_io": read_sys_disk_io,
         "sys_disk_usage": read_sys_disk_usage,
+        "minecraft": lambda: attempt_build_dict({
+            "tps": read_mc_tps,
+            "mem": read_mc_mem,
+            "players": read_mc_players
+        }),
         "cgroups": lambda: {
             cgroup: attempt_build_dict({
                 "cpu": read_cgroup_cpu,

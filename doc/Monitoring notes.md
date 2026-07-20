@@ -126,6 +126,14 @@ The names of the records themselves are in seconds since the unix-epoch.
             "used": int                  Bytes
         } 
     } | null,
+    "minecraft": {
+        "tps": float | null,             Ticks per second, rolling average over the last 100 ticks, capped at 20
+        "mem": {
+            "total": int,                Kilobytes                                # The heap's -Xmx ceiling
+            "used": int                  Kilobytes                                # The heap currently in use
+        } | null,
+        "players": [str, ...] | null     Usernames of currently online players
+    },
     "cgroups": {
         [cgroup_name]: {                     # Keys not necessarily constant
             "cpu": int | null,           Microseconds, Absolute  # Value is sum of cpu time on each core
