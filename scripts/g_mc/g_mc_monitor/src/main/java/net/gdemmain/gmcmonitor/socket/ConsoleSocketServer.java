@@ -26,14 +26,17 @@ public class ConsoleSocketServer extends SocketServer {
 		consoleCapture.addListener(this::broadcastLine);
 	}
 
-	private static JsonObject lineMessage(String line) {
+	private static JsonObject lineMessage(ConsoleCapture.ConsoleLine line) {
 		JsonObject message = new JsonObject();
 		message.addProperty("type", "line");
-		message.addProperty("text", line);
+		message.addProperty("datetime", line.datetime());
+		message.addProperty("level", line.level());
+		message.addProperty("thread", line.thread());
+		message.addProperty("message", line.message());
 		return message;
 	}
 
-	private void broadcastLine(String line) {
+	private void broadcastLine(ConsoleCapture.ConsoleLine line) {
 		broadcast(GSON.toJson(lineMessage(line)));
 	}
 
@@ -52,6 +55,7 @@ public class ConsoleSocketServer extends SocketServer {
 		JsonObject json = JsonParser.parseString(jsonLine).getAsJsonObject();
 		String type = json.has("type") ? json.get("type").getAsString() : "";
 		if (!type.equals("command") || !json.has("command")) {
+			GMcMonitor.LOGGER.warn("Console socket client {} sent an invalid message: {}", connection.getRemoteSocketAddress(), jsonLine);
 			return;
 		}
 		String command = json.get("command").getAsString();

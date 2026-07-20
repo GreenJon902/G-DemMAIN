@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
 
 /** One connected, authenticated client of a {@link SocketServer}. */
@@ -29,5 +30,10 @@ public class ClientConnection {
 			socket.close();
 		} catch (IOException ignored) {
 		}
+	}
+
+	/** Used for identifying this client in log messages. */
+	public SocketAddress getRemoteSocketAddress() {
+		return socket.getRemoteSocketAddress();
 	}
 }

@@ -48,7 +48,7 @@ public class GMcMonitor implements DedicatedServerModInitializer {
 		try {
 			InetAddress bindAddress = InetAddress.getByName(config.socketBindAddress);
 			consoleSocketServer.start(bindAddress, config.consolePort);
-			chatSocketServer.start(bindAddress, config.chatPort);
+			chatSocketServer.start(bindAddress, config.chatPort);  // If in unsafe mode, we'd still prefer console blocks chat starting than chat blocking console
 		} catch (IOException e) {
 			handleStartupFailure(config, "Failed to start console/chat sockets", e);
 		}

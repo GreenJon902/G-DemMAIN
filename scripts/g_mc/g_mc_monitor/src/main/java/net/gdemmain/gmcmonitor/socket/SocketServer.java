@@ -119,6 +119,15 @@ public abstract class SocketServer {
 		}
 	}
 
+	/** Sends a JSON line to every currently connected, authenticated client except {@code exclude}. */
+	protected void broadcastExcept(String jsonLine, ClientConnection exclude) {
+		for (ClientConnection client : clients) {
+			if (client != exclude) {
+				client.send(jsonLine);
+			}
+		}
+	}
+
 	/** Called once a client has authenticated successfully. */
 	protected abstract void onClientConnected(ClientConnection connection);
 

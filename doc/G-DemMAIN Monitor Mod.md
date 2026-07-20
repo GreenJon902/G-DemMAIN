@@ -129,6 +129,9 @@ own section below.
   {"authKey": "supersecretkey123"}
   ```
   Anything else, or a wrong key, closes the connection with no response.
+- After that, any line the client sends that isn't valid JSON, or doesn't match the shape expected
+  by that socket (see each socket's own section below), is dropped and logged server-side as a
+  warning - it never gets a response, and the connection is left open.
 
 **Outgoing (server → client):**
 
@@ -137,7 +140,7 @@ own section below.
   streamed live - a `line` object for the console socket, `message`/`event` objects for the chat
   socket (see each socket's own section below for the shapes):
   ```json
-  {"type": "history", "lines": [{"type": "line", "text": "..."}, "..."]}
+  {"type": "history", "lines": [{...}, {...}]}
   ```
 
 ## Console socket protocol
@@ -148,11 +151,18 @@ that happen first - this section covers what's exchanged after that.
 **Outgoing (server → client):**
 
 - From then on, every new line printed to console (log output, chat, command feedback - whatever
-  actually goes to stdout) is streamed as it happens:
+  actually goes to stdout, at whatever level is enabled, including DEBUG/TRACE) is streamed as it
+  happens, as separate fields rather than one pre-formatted string:
   ```json
-  {"type": "line", "text": "[12:00:05] [Server thread/INFO]: <Notch> hello"}
+  {"type": "line", "datetime": "2026-07-20T14:07:00.123Z", "level": "INFO", "thread": "Server thread", "message": "<Notch> hello"}
   ```
-  History entries (see [Socket handshake](#socket-handshake)) use this same shape.
+  `datetime` is ISO 8601/RFC 3339 in UTC with millisecond precision, and (being fixed-width) also
+  sorts correctly as a plain string - useful for ordering lines from multiple sources. `level` is
+  one of Log4j2's standard level names (`TRACE`/`DEBUG`/`INFO`/`WARN`/`ERROR`/`FATAL`) - filter
+  client-side if you only want some of them. The last-10 history buffer (see
+  [Socket handshake](#socket-handshake)) is narrower though: only INFO and above is kept there, so
+  a burst of DEBUG noise can't push useful history out of the fixed-size buffer. History entries
+  otherwise use this same shape.
 
 **Incoming (client → server):**
 
@@ -172,9 +182,9 @@ that happen first - this section covers what's exchanged after that.
 
 **Outgoing (server → client):**
 
-- Real player chat:
+- Real player chat, with `source` always `"Minecraft"`:
   ```json
-  {"type": "message", "username": "Notch", "message": "hello"}
+  {"type": "message", "source": "Minecraft", "username": "Notch", "message": "hello"}
   ```
 - One-way events - `event` is one of `player_joined`, `player_left`, `player_died`,
   `server_started`, `server_stopped`, `player_advancement`. `message` is the event's template
@@ -200,6 +210,11 @@ e.g. `[Web] <Notch>: hello from the web`) as a **system chat message**, not a si
 message - modern Minecraft requires real, connected player accounts to sign chat, so there is no
 way to make an arbitrary external username show up as a genuine player message. It will look like
 chat and appear in the normal chat log, but isn't cryptographically attributed to a player.
+
+If there are other clients connected, the same `{"type": "message", ...}` object (`source` as sent,
+unchanged) is also relayed straight back out to every other connected chat-socket client - but not
+back to the client that sent it - so e.g. a Discord bridge sees a message a Web bridge sent, and
+vice versa, without needing the game server to be reachable.
 
 ## In-game commands
 

@@ -33,18 +33,18 @@ public class EventHooks {
 
 		ServerLifecycleEvents.SERVER_STARTED.register(server -> {
 			ServerHolder.set(server);
-			sendEvent("server_started", templates.serverStarted, Map.of());
+			sendEvent(ChatEvent.SERVER_STARTED, templates.serverStarted, Map.of());
 		});
-		ServerLifecycleEvents.SERVER_STOPPING.register(server -> sendEvent("server_stopped", templates.serverStopped, Map.of()));
+		ServerLifecycleEvents.SERVER_STOPPING.register(server -> sendEvent(ChatEvent.SERVER_STOPPED, templates.serverStopped, Map.of()));
 		ServerLifecycleEvents.SERVER_STOPPED.register(server -> ServerHolder.clear());
 
 		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
 			String name = handler.getPlayer().getGameProfile().name();
-			sendEvent("player_joined", templates.playerJoined, Map.of("player", name));
+			sendEvent(ChatEvent.PLAYER_JOINED, templates.playerJoined, Map.of("player", name));
 		});
 		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
 			String name = handler.getPlayer().getGameProfile().name();
-			sendEvent("player_left", templates.playerLeft, Map.of("player", name));
+			sendEvent(ChatEvent.PLAYER_LEFT, templates.playerLeft, Map.of("player", name));
 		});
 
 		ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
@@ -52,7 +52,7 @@ public class EventHooks {
 				return;
 			}
 			String deathMessage = player.getCombatTracker().getDeathMessage().getString();
-			sendEvent("player_died", templates.playerDied, Map.of("player", player.getGameProfile().name(), "message", deathMessage));
+			sendEvent(ChatEvent.PLAYER_DIED, templates.playerDied, Map.of("player", player.getGameProfile().name(), "message", deathMessage));
 		});
 
 		ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) ->
@@ -64,11 +64,11 @@ public class EventHooks {
 		if (instance == null) {
 			return;
 		}
-		instance.sendEvent("player_advancement", instance.templates.playerAdvancement,
+		instance.sendEvent(ChatEvent.PLAYER_ADVANCEMENT, instance.templates.playerAdvancement,
 				Map.of("player", player.getGameProfile().name(), "advancement", advancementTitle.getString()));
 	}
 
-	private void sendEvent(String event, String template, Map<String, String> fields) {
+	private void sendEvent(ChatEvent event, String template, Map<String, String> fields) {
 		String rendered = template;
 		for (Map.Entry<String, String> entry : fields.entrySet()) {
 			rendered = rendered.replace("{" + entry.getKey() + "}", entry.getValue());

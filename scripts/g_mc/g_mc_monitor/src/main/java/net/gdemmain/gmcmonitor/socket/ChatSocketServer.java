@@ -4,6 +4,8 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import net.gdemmain.gmcmonitor.ChatEvent;
+import net.gdemmain.gmcmonitor.GMcMonitor;
 import net.gdemmain.gmcmonitor.ServerHolder;
 import net.gdemmain.gmcmonitor.MonitorConfig;
 import net.minecraft.network.chat.Component;
@@ -22,6 +24,9 @@ import java.util.Map;
 public class ChatSocketServer extends SocketServer {
 	private static final Gson GSON = new Gson();
 	private static final int HISTORY_SIZE = 10;
+
+	/** The "source" value used for real in-game chat messages, as opposed to a bridge client's own name. */
+	private static final String INGAME_SOURCE = "Minecraft";
 
 	private final MonitorConfig.MessageTemplates templates;
 	private final Deque<JsonObject> history = new ArrayDeque<>();
@@ -58,11 +63,21 @@ public class ChatSocketServer extends SocketServer {
 		JsonObject json = JsonParser.parseString(jsonLine).getAsJsonObject();
 		String type = json.has("type") ? json.get("type").getAsString() : "";
 		if (!type.equals("message") || !json.has("source") || !json.has("username") || !json.has("message")) {
+			GMcMonitor.LOGGER.warn("Chat socket client {} sent an invalid message: {}", connection.getRemoteSocketAddress(), jsonLine);
 			return;
 		}
 		String source = json.get("source").getAsString();
 		String username = json.get("username").getAsString();
 		String message = json.get("message").getAsString();
+
+		// Relay to every other connected bridge client, so e.g. a Discord bridge sees a message a Web bridge sent
+		JsonObject outgoing = new JsonObject();
+		outgoing.addProperty("type", "message");
+		outgoing.addProperty("source", source);
+		outgoing.addProperty("username", username);
+		outgoing.addProperty("message", message);
+		recordHistory(outgoing);
+		broadcastExcept(GSON.toJson(outgoing), connection);
 
 		MinecraftServer server = ServerHolder.get();
 		if (server == null) {
@@ -72,13 +87,14 @@ public class ChatSocketServer extends SocketServer {
 				.replace("{source}", source)
 				.replace("{username}", username)
 				.replace("{message}", message);
-		server.execute(() -> server.sendSystemMessage(Component.literal(formatted)));
+		server.execute(() -> server.getPlayerList().broadcastSystemMessage(Component.literal(formatted), false));
 	}
 
 	/** Relays a real in-game chat message out to clients. */
 	public void broadcastChatMessage(String username, String message) {
 		JsonObject json = new JsonObject();
 		json.addProperty("type", "message");
+		json.addProperty("source", INGAME_SOURCE);
 		json.addProperty("username", username);
 		json.addProperty("message", message);
 		recordHistory(json);
@@ -86,10 +102,10 @@ public class ChatSocketServer extends SocketServer {
 	}
 
 	/** Sends a one-way event notification (join/left/died/started/stopped/advancement) to clients. */
-	public void broadcastEvent(String event, Map<String, String> fields) {
+	public void broadcastEvent(ChatEvent event, Map<String, String> fields) {
 		JsonObject json = new JsonObject();
 		json.addProperty("type", "event");
-		json.addProperty("event", event);
+		json.addProperty("event", event.wireName());
 		fields.forEach(json::addProperty);
 		recordHistory(json);
 		broadcast(GSON.toJson(json));
