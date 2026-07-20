@@ -22,8 +22,8 @@ const generate = () => {
     const LIST_FOLDER = zod.string().default("/var/lib/g_mc").parse(process.env.LIST_FOLDER);  // For testing we can override this. This folder contains whitelist.json and ...
     const MC_LOG_FOLDER = zod.string().default("/var/lib/g_mc/logs").parse(process.env.MC_LOG_FOLDER);  // For testing we can override this 
 
-    const MINECRAFT_RCON_PORT = zPort.parse(process.env.MINECRAFT_RCON_PORT);
-    const MINECRAFT_RCON_PASSWORD = zod.string().parse(process.env.MINECRAFT_RCON_PASSWORD);
+    const MINECRAFT_MONITOR_CONSOLE_PORT = zPort.parse(process.env.MINECRAFT_MONITOR_CONSOLE_PORT);
+    const MINECRAFT_MONITOR_CONSOLE_AUTH_KEY = zTNe.parse(process.env.MINECRAFT_MONITOR_CONSOLE_AUTH_KEY);
 
     const G_WEB_DATABASE_USER = zTNe.parse(process.env.G_WEB_DATABASE_USER);
     const G_WEB_DATABASE_PASSWORD = zTNe.parse(process.env.G_WEB_DATABASE_PASSWORD);
@@ -31,7 +31,7 @@ const generate = () => {
     const G_WEB_DATABASE_PORT = zPort.parse(process.env.G_WEB_DATABASE_PORT);
 
     return {
-        MCCWSS_PORT, SESSION_PASSWORD, DONT_REQUIRE_WEBHOOKS_FILE, LIST_FOLDER, MC_LOG_FOLDER, MINECRAFT_RCON_PORT, MINECRAFT_RCON_PASSWORD, G_WEB_DATABASE_USER, G_WEB_DATABASE_PASSWORD, G_WEB_DATABASE_HOST, G_WEB_DATABASE_PORT
+        MCCWSS_PORT, SESSION_PASSWORD, DONT_REQUIRE_WEBHOOKS_FILE, LIST_FOLDER, MC_LOG_FOLDER, MINECRAFT_MONITOR_CONSOLE_PORT, MINECRAFT_MONITOR_CONSOLE_AUTH_KEY, G_WEB_DATABASE_USER, G_WEB_DATABASE_PASSWORD, G_WEB_DATABASE_HOST, G_WEB_DATABASE_PORT
     };
 };
 

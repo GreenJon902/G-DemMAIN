@@ -22,7 +22,7 @@ const links: SubNavLink[] = [
     { href: "/panel/graphs", children: "Graphs" },
     { href: "/panel/lists", children: "Lists" },
     { href: "/panel/mcLogs", children: "Minecraft Logs" },
-    { href: "/panel/mcConsole", children: "Console", disabled: { area: "panel", minLevel: "admin" } }
+    { href: "/panel/mcConsole", children: "Console" }
 ];
 
 export default async function Layout({

@@ -2,7 +2,7 @@ import { ComponentProps } from "react";
 
 // Shared styling for single-line "value box" inputs (text, date, etc.) so they look consistent
 // wherever they're used, even where TextInput itself can't be used (e.g. type="date")
-export const VALUE_INPUT_CLASS = "flex-1 rounded-md bg-gray-600 px-1 outline-none focus:bg-gray-700";
+export const VALUE_INPUT_CLASS = "flex-1 rounded-md bg-gray-600 px-1 outline-none focus:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50";
 
 /**
  * A standardly-styled text input element.

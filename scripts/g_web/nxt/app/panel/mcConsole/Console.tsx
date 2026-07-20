@@ -1,28 +1,34 @@
 "use client";
-// TODO: Implement colouring text
 
 /**
  * Auth + connection flow for the MC console:
  *
- * Every connection attempt runs through `connectRef.current()`, which:
- *   1. Calls `getAreaSudoStatusAction("panel")` (server action) to check whether sudo mode is
- *      currently active on the user's session.
+ * Connecting only ever requires "viewer" (see `ensureSudo`), so a plain viewer with no 2FA connects
+ * instantly and can watch the live feed read-only. Sending a command additionally requires "admin",
+ * checked (and sudo-gated) independently right before the command is sent - the server (mcc)
+ * re-checks this fresh on every command too, so the client-side check here is UX only, not the
+ * actual security boundary.
+ *
+ * `ensureSudo(minLevel)`:
+ *   1. Calls `getAreaSudoStatusAction("panel", minLevel)` (server action) to check whether sudo mode
+ *      is currently required and active for the given level.
  *   2. If sudo is required but 2FA is not enabled, shows the "sudo unavailable" modal and aborts.
  *   3. If sudo is required and 2FA is enabled, opens the 2FA verification modal and waits for the
  *      user to enter their code (`requestSudo()`). Aborts if they cancel.
- *   4. Opens the WebSocket. The server (`@g/mcc`) re-validates sudo via `strictCheckPermission` at
- *      connection time, so the server and client checks are always in sync.
- *   5. The server sets a `setTimeout` to close the socket when the sudo window expires, giving
- *      a server-side guarantee even if the client-side enforcement fails.
+ *   4. Returns whether the caller may proceed, plus whether sudo was actually required (used by the
+ *      connection to decide whether it needs to react to sudo mode expiring later - see below).
  *
  * Lifecycle:
- *   - On mount: `connectRef.current()` is called automatically.
- *   - On sudo expiry: the `AuthContext` timer clears `sudoVerifiedAt`; the `sudoVerifiedAt`
- *     effect detects the transition, closes the socket, and the close handler triggers a
- *     reconnect (which will re-prompt for sudo).
+ *   - On mount: `connectRef.current()` is called automatically, gated on `ensureSudo("viewer")`.
+ *   - The server (`@g/mcc`) re-validates permissions/sudo at connection and command time, so the
+ *     server and client checks are always in sync.
+ *   - On sudo expiry: the `AuthContext` timer clears `sudoVerifiedAt`; the effect below only closes
+ *     the socket if *this* connection actually needed sudo to open (tracked in
+ *     `connectionSudoGatedRef`) - otherwise a plain viewer session would be disconnected just because
+ *     sudo expired elsewhere (e.g. another tab), which never mattered for them.
  *   - On send while disconnected: `sendCommand` awaits `connectRef.current()` before sending,
- *     so typing a command while the socket is closed triggers a reconnect + auth flow and then
- *     sends the command if reconnection succeeds.
+ *     so typing a command while the socket is closed triggers a reconnect and then sends the
+ *     command if reconnection succeeds.
  *   - On reconnect from account page: if the user enters sudo elsewhere while the socket is
  *     closed, the `sudoVerifiedAt` effect detects `sudoVerifiedAt` becoming non-null and
  *     calls `connectRef.current()` automatically.
@@ -31,19 +37,56 @@
 import { useEffect, useRef, useState } from "react";
 import { BUTTON_GREEN, SimpleButton } from "../../ui/Button";
 import TextInput from "../../ui/TextInput";
+import ToggleButton from "../../ui/ToggleButton";
 import { useAuthContext } from "../../AuthContext";
 import { getAreaSudoStatusAction } from "../../actions";
+import { zConsoleServerMessage, type ConsoleLine, type ConsoleMeta, type ConsoleCommand } from "@g/com/lib/mcConsoleProtocol";
+import { formatConsoleLine, LEVEL_COLOR } from "./consoleFormat";
+
+type Entry = { kind: "line", line: ConsoleLine } | { kind: "meta", meta: ConsoleMeta } | { kind: "note" };
+
+// How long to wait before retrying an unexpected connection failure (e.g. the MC server itself being
+// down, so mcc closes the socket instantly) - without this, a persistently-failing upstream would
+// cause a tight, zero-delay reconnect loop
+const RECONNECT_DELAY_MS = 3000;
+
+// We keep more entries stored than we display - most stored entries can be DEBUG/TRACE (hidden by
+// default), so capping storage to the same count as what's displayed would leave almost nothing to
+// show the moment "Show debug logs" is turned on
+const MAX_STORED_ENTRIES = 1000;
+const MAX_DISPLAYED_ENTRIES = 50;
+
+/** The level to filter this entry on, or null for "note" (which is never filtered). */
+function entryLevel(entry: Entry) {
+    return entry.kind === "note" ? null : entry.kind === "line" ? entry.line.level : entry.meta.level;
+}
+
+/** Parses a string as JSON, returning undefined (rather than throwing) if it isn't valid JSON. */
+function tryParseJson(text: string): unknown {
+    try {
+        return JSON.parse(text);
+    } catch {
+        return undefined;
+    }
+}
 
 export default function Console({ mccwss_port }: { mccwss_port: number }) {
     /**
      * We need to pass mccwss_port from the server to the client-component as a prop as client can't access environ.
      */
 
-    // Store the messages from MCCWSS
-    const [consoleContent, setConsoleContent] = useState<Array<string>>([]);
-    const pushConsoleContent = (text: string) => setConsoleContent(prev => [...prev, text]);
+    // Store the entries received from MCCWSS (both real console lines and locally/mcc-synthesized notices)
+    const [entries, setEntries] = useState<Array<Entry>>([]);
+    const appendEntries = (newEntries: Array<Entry>) =>
+        setEntries(prev => [...prev, ...newEntries].slice(-MAX_STORED_ENTRIES));
+    const pushMeta = (level: ConsoleMeta["level"], message: string) =>
+        appendEntries([{ kind: "meta", meta: { type: "meta", level, source: "Client", message } }]);
 
-    const { sudoVerifiedAt, requestSudo, showSudoUnavailable } = useAuthContext();
+    // Whether to show DEBUG/TRACE lines - off by default since they're noisy
+    const [showDebug, setShowDebug] = useState(false);
+
+    const { sudoVerifiedAt, requestSudo, showSudoUnavailable, checkPermission } = useAuthContext();
+    const isAdmin = checkPermission("panel", "admin");
 
     const socketRef = useRef<WebSocket | null>(null);
     const isMountedRef = useRef(false);
@@ -51,14 +94,33 @@ export default function Console({ mccwss_port }: { mccwss_port: number }) {
     const connectingRef = useRef(false);
     // Suppress the "Server closed the connection" message when we close intentionally
     const intentionalCloseRef = useRef(false);
+    // Whether the current connection's viewer-level check actually required sudo (only then does losing sudo matter to it)
+    const connectionSudoGatedRef = useRef(false);
     // Keep latest auth callbacks reachable from async/event-handler contexts without dep-array churn
     const requestSudoRef = useRef(requestSudo);
     const showSudoUnavailableRef = useRef(showSudoUnavailable);
     useEffect(() => { requestSudoRef.current = requestSudo; }, [requestSudo]);
     useEffect(() => { showSudoUnavailableRef.current = showSudoUnavailable; }, [showSudoUnavailable]);
 
+    // Checks (and if necessary, prompts for) sudo mode for the given permission level.
+    // Returns whether the caller may proceed, and whether sudo was actually required for this check.
+    async function ensureSudo(minLevel: "viewer" | "admin"): Promise<{ ok: boolean, requiredSudo: boolean }> {
+        const status = await getAreaSudoStatusAction("panel", minLevel);
+        if (!status.requiresSudo) return { ok: true, requiredSudo: false };
+
+        const what = minLevel === "admin" ? "run commands" : "use the console";
+        if (!status.tfaEnabled) {
+            await showSudoUnavailableRef.current();
+            pushMeta("WARN", `You must enter sudo mode to ${what}.`);
+            return { ok: false, requiredSudo: true };
+        }
+        const ok = await requestSudoRef.current();
+        if (!ok) pushMeta("WARN", `You must enter sudo mode to ${what}.`);
+        return { ok, requiredSudo: true };
+    }
+
     // Stable entry point for initiating a connection. Updated after every render so it always
-    // captures the latest mccwss_port and pushConsoleContent without needing them in dependency arrays.
+    // captures the latest mccwss_port and pushMeta without needing them in dependency arrays.
     // Resolves true when the socket opens, false on any failure (auth cancelled, error, etc.).
     const connectRef = useRef<() => Promise<boolean>>(null!);
     useEffect(() => {
@@ -68,56 +130,57 @@ export default function Console({ mccwss_port }: { mccwss_port: number }) {
 
             return new Promise<boolean>((resolve) => {
                 (async () => {
-                    // Verify sudo mode on the server before opening the socket
-                    const status = await getAreaSudoStatusAction("panel", "admin");
+                    // Verify (viewer-level) sudo mode on the server before opening the socket
+                    const { ok, requiredSudo } = await ensureSudo("viewer");
+                    connectionSudoGatedRef.current = requiredSudo;
                     if (!isMountedRef.current) { connectingRef.current = false; resolve(false); return; }
+                    if (!ok) { connectingRef.current = false; resolve(false); return; }
 
-                    if (status.requiresSudo) {
-                        if (!status.tfaEnabled) {
-                            connectingRef.current = false;
-                            await showSudoUnavailableRef.current();
-                            pushConsoleContent("INFO: You must enter sudo mode to use the console.");
-                            resolve(false);
-                            return;
-                        }
-                        const ok = await requestSudoRef.current();
-                        if (!isMountedRef.current) { connectingRef.current = false; resolve(false); return; }
-                        if (!ok) {
-                            connectingRef.current = false;
-                            pushConsoleContent("INFO: You must enter sudo mode to use the console.");
-                            resolve(false);
-                            return;
-                        }
-                    }
-
-                    if (!isMountedRef.current) { connectingRef.current = false; resolve(false); return; }
-
-                    pushConsoleContent("INFO: Connecting...");
+                    pushMeta("INFO", "Connecting...");
                     const socket = new WebSocket(`ws://${window.location.hostname}:${mccwss_port}`);
                     socketRef.current = socket;
 
                     // Append to the array in a way that makes react update
                     socket.addEventListener("open", () => {
-                        pushConsoleContent("INFO: Connected!");
+                        pushMeta("INFO", "Connected!");
                         resolve(true);
                     });
                     socket.addEventListener("message", (event) => {
-                        pushConsoleContent(event.data as string);
+                        const parsed = zConsoleServerMessage.safeParse(tryParseJson(event.data as string));
+                        if (!parsed.success) {
+                            console.error("Console: dropping unparseable message from mcc<", event.data, ">", parsed.error);
+                            return;
+                        }
+                        const message = parsed.data;
+                        if (message.type === "history") {
+                            const historyEntries: Array<Entry> = message.lines.map(line => ({ kind: "line", line }));
+                            appendEntries([...historyEntries, { kind: "note" }]);
+                        } else if (message.type === "meta") {
+                            appendEntries([{ kind: "meta", meta: message }]);
+                        } else {
+                            appendEntries([{ kind: "line", line: message }]);
+                        }
                     });
                     socket.addEventListener("error", () => {
-                        pushConsoleContent("INFO: An error occured!");
+                        pushMeta("ERROR", "An error occured!");
                         resolve(false);
                     });
                     socket.addEventListener("close", () => {
                         socketRef.current = null;
                         connectingRef.current = false;
-                        if (!intentionalCloseRef.current) {
-                            pushConsoleContent("INFO: Server closed the connection! This may be to refresh sudo-mode.");
-                        }
+                        const wasIntentional = intentionalCloseRef.current;
                         intentionalCloseRef.current = false;
                         resolve(false);
-                        // Reconnect (will re-check sudo, prompting the user again if necessary)
-                        connectRef.current();
+                        if (wasIntentional) {
+                            // A deliberate close (e.g. sudo refresh) - reconnect right away, it'll re-prompt if needed
+                            connectRef.current();
+                        } else {
+                            // An unexpected close (mcc itself down, or its upstream monitor-mod connection down, e.g.
+                            // because the MC server is off) - wait before retrying so a persistently-failing
+                            // upstream doesn't turn into a tight, zero-delay reconnect loop
+                            pushMeta("WARN", "Server closed the connection! This may be to refresh sudo-mode.");
+                            setTimeout(() => connectRef.current(), RECONNECT_DELAY_MS);
+                        }
                     });
                 })();
             });
@@ -137,12 +200,13 @@ export default function Console({ mccwss_port }: { mccwss_port: number }) {
         };
     }, [mccwss_port]);
 
-    // Close the connection when sudo expires (the reconnect will re-prompt);
-    // reconnect if sudo becomes active while we are disconnected (e.g. entered from the account page)
+    // Close the connection when sudo expires, but only if this connection actually needed it
+    // (the reconnect will re-prompt); reconnect if sudo becomes active while we are disconnected
+    // (e.g. entered from the account page)
     useEffect(() => {
-        if (sudoVerifiedAt === null && socketRef.current !== null) {
+        if (sudoVerifiedAt === null && socketRef.current !== null && connectionSudoGatedRef.current) {
             intentionalCloseRef.current = true;
-            pushConsoleContent("INFO: Refreshing sudo mode, disconnecting...");
+            pushMeta("WARN", "Refreshing sudo mode, disconnecting...");
             socketRef.current.close();
             socketRef.current = null;
         } else if (sudoVerifiedAt !== null && socketRef.current === null && !connectingRef.current) {
@@ -159,7 +223,11 @@ export default function Console({ mccwss_port }: { mccwss_port: number }) {
         const command = commandBoxRef.current.value.trim();
         if (command === "") return;
 
-        // If not connected, attempt to reconnect (which will re-check sudo if needed)
+        // Sending requires admin, checked (and sudo-gated) independently of the viewer-level connection check
+        const { ok } = await ensureSudo("admin");
+        if (!ok) return;
+
+        // If not connected, attempt to reconnect (which will re-check viewer-level sudo if needed)
         if (socketRef.current === null) {
             const connected = await connectRef.current();
             if (!connected) return;
@@ -168,43 +236,63 @@ export default function Console({ mccwss_port }: { mccwss_port: number }) {
         const socket = socketRef.current;
         if (socket === null) return;  // Connection closed between reconnect and send
         commandBoxRef.current.value = "";
-        socket.send(command);
+        socket.send(JSON.stringify({ type: "command", command } satisfies ConsoleCommand));
     }
 
-    // If the console is scrolled to the bottom, then stay there when we add new conent
+    // Always keep the console scrolled to the bottom as new content arrives, or when toggling debug
+    // visibility changes what's rendered
     const consoleDivRef = useRef<HTMLDivElement>(null);
     useEffect(() => {
         const cd = consoleDivRef.current;
         if (cd === null) throw new Error("Exception, consoleDivRef.current is null");
-        if (cd.lastChild === null) return;
-        const lastChild = cd.lastChild as unknown as { clientHeight: number };  // So typescript is happy
-        if (cd.scrollHeight - cd.scrollTop - cd.clientHeight < lastChild.clientHeight + 10) {  // Is at bottom?
-            cd.scrollTop = cd.scrollHeight;  // Scroll to bottom
-        }
-    }, [consoleContent]);
-
+        cd.scrollTop = cd.scrollHeight;
+    }, [entries, showDebug]);
 
     return (
-        <div className="flex max-h-[30dvh] flex-col gap-1">
+        <div className="flex h-[calc(100dvh-10rem)] flex-col gap-1">
+            <div className="flex justify-end">
+                <ToggleButton checked={showDebug} setter={setShowDebug} label="Show debug logs" className="text-sm" />
+            </div>
             <div
                 className="w-full flex-1 overflow-scroll rounded-md bg-gray-950 p-1"
                 ref={consoleDivRef}
             >
                 {
-                    consoleContent.map((text, i) => (
-                        <span key={i} className="block">
-                            {text}
-                        </span>
-                    ))
+                    entries
+                        .filter(entry => entry.kind === "note" || showDebug || (entryLevel(entry) !== "DEBUG" && entryLevel(entry) !== "TRACE"))
+                        .slice(-MAX_DISPLAYED_ENTRIES)
+                        .map((entry, i) => {
+                            if (entry.kind === "note") {
+                                return (
+                                    <span key={i} className="block text-gray-500 italic">
+                                        * History may not be entirely accurate.{showDebug ? " History omits debug logs." : ""}
+                                    </span>
+                                );
+                            }
+                            if (entry.kind === "meta") {
+                                // Notices from mcc/the client itself - not timestamped or attributed to a thread, so rendered as just the message
+                                return (
+                                    <span key={i} className={`block ${LEVEL_COLOR[entry.meta.level]}`}>
+                                        {entry.meta.message}
+                                    </span>
+                                );
+                            }
+                            return (
+                                <span key={i} className={`block whitespace-pre-wrap ${LEVEL_COLOR[entry.line.level]}`}>
+                                    {formatConsoleLine(entry.line)}
+                                </span>
+                            );
+                        })
                 }
             </div>
             <div className="flex gap-1">
                 <TextInput
                     placeholder="Message or /command to run..."
                     ref={commandBoxRef}
+                    disabled={!isAdmin}
                     onKeyDown={event => {if (event.code === "Enter") sendCommand();}}  // Run command when enter pressed
                 />
-                <SimpleButton callback={sendCommand} color={BUTTON_GREEN}>Run</SimpleButton>
+                <SimpleButton callback={sendCommand} color={BUTTON_GREEN} disabled={{ area: "panel", minLevel: "admin" }}>Run</SimpleButton>
             </div>
         </div>
     );

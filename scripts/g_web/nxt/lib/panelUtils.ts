@@ -139,51 +139,6 @@ export async function loadLogContent(logName: string): Promise<string | undefine
     return content;
 }
 
-/**
- * Gets the last n lines from latest.log.
- * If latest.log has less lines then extra lines will be padded at the top.
- * If latest.log does not exist then an array of empty strings will be returned.
- */
-export async function tailLatest(n: number) {
-    await requirePermission("panel", "viewer");
-
-    // Check file exists
-    const full_path = path.join(C().MC_LOG_FOLDER, "latest.log");
-    if (!existsSync(full_path)) return { contents: Array(n).fill(""), timestamp: Date.now() };
-
-    // The file may be quite large, so scan from the back to find all the newlines
-    // We will first load the file in 1024 byte chunks from the end until we have at least n newlines
-    const stats = await fs.stat(full_path);  // Data about the file we're reading
-    const file = await fs.open(full_path);  // The file we're reading
-    const buffer = Buffer.alloc(1024);  // The buffer we will read from the file into
-    const contents = [];  // The loaded strings
-    let newlinesFound = 0;  // The count of newlines found so far
-
-    let start = stats.size;  // Index of first byte to read
-
-    while (start > 0 && newlinesFound < n) {
-        start -= 1024;
-        const length = 1024 + Math.min(0, start);  // If start < 0 then read less bytes
-        // Load data
-        const { bytesRead } = await file.read(buffer, 0, length, Math.max(0, start));
-        const str = buffer.subarray(0, bytesRead).toString("utf-8");
-        // Save loaded and count new newlines
-        contents.unshift(str);  // Insert str at start of array
-        newlinesFound += [0, ...Array.from(str).filter(x => x === "\n").map(() => 1)].reduce((a, b) => a + b);
-    }
-
-    file.close();
-
-    // Join strings then split into lines
-    const lines = contents.join("").split("\n");
-    const cropped_lines = lines.slice(-n);  // Get last n lines
-    if (cropped_lines.length > 0 && cropped_lines[cropped_lines.length - 1] === "") cropped_lines.pop();  // Remove trailing newline
-    const padded_lines = [...Array(n - cropped_lines.length).fill(""), ...cropped_lines];
-
-    // Return joined content
-    return { contents: padded_lines };
-}
-
 // Monitor data ----------------------------------------------------------------------------------
 // Define schema for a record:
 const zNatural = z.number().nonnegative().multipleOf(1);  // 0, 1, ...

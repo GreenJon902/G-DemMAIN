@@ -1,7 +1,7 @@
 // TODO: Logic for this file should go in lib
 "use server";
 
-import { getUnitStatus, loadMonitorRecords, tailLatest, UnitStatus, UnitType, unitAction as libUnitAction } from "@/lib/panelUtils";
+import { getUnitStatus, loadMonitorRecords, UnitStatus, UnitType, unitAction as libUnitAction } from "@/lib/panelUtils";
 import { loadGraphDataAction } from "./graphs/actions";
 
 /**
@@ -81,11 +81,4 @@ export async function unitAction(unit: Unit, status: "start"|"stop"|"restart") {
     if (TRACKED_UNITS.filter(tu => tu.name === unit.name && tu.type === unit.type).length === 0) throw new Error("This unit is not in TRACKED_UNITS");
 
     await libUnitAction(unit.name, unit.type, status);
-}
-
-/**
- * Returns the last ten lines from latest.log
- */
-export async function tailLatestAction() {
-    return tailLatest(50);
 }
