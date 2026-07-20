@@ -67,12 +67,13 @@ a client that can reach the console socket can't use that key to authenticate to
 
 In production, don't hand-edit this file: it's generated from
 [`static-config/g_mc/config/g_mc_monitor.json.template`](../static-config/g_mc/config/g_mc_monitor.json.template)
-by `utils/sync-static-config.py`, which substitutes `MINECRAFT_MONITOR_CONSOLE_AUTH_KEY`,
-`MINECRAFT_MONITOR_CHAT_AUTH_KEY`, `MINECRAFT_MONITOR_CONSOLE_PORT` and `MINECRAFT_MONITOR_CHAT_PORT`
-from `environ/g_mc_g_web_minecraft` (see [Environment Variables.md](Environment%20Variables.md))
-into the JSON's four required fields. Run the sync script (or set those environ variables and
-rerun it) before first starting the server with this mod installed. The mod itself never writes
-to this file - that's left entirely to the sync tooling, so the two don't fight over ownership.
+by `utils/sync-static-config.py`, which substitutes `MINECRAFT_MONITOR_CONSOLE_AUTH_KEY` and
+`MINECRAFT_MONITOR_CONSOLE_PORT` from `environ/g_mc_g_web_minecraft`, and `MINECRAFT_MONITOR_CHAT_AUTH_KEY`
+and `MINECRAFT_MONITOR_CHAT_PORT` from `environ/g_mc_g_discord_minecraft` (see
+[Environment Variables.md](Environment%20Variables.md)) into the JSON's four required fields. Run
+the sync script (or set those environ variables and rerun it) before first starting the server with
+this mod installed. The mod itself never writes to this file - that's left entirely to the sync
+tooling, so the two don't fight over ownership.
 
 `socketBindAddress`/`consolePort`/`chatPort` are loopback-only by default. There is deliberately
 no firewall rule needed for them (unlike RCON's port 25575) since nothing outside the machine
