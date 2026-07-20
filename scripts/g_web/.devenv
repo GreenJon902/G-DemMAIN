@@ -6,6 +6,7 @@ MC_LOG_FOLDER=./logs
 MINECRAFT_RCON_PORT=100
 MINECRAFT_RCON_PASSWORD=
 G_MONITOR_FOLDER=/home/greenjon902/Desktop/G-DemMAIN/scripts/g_monitor
+G_WEBHOOKS_FILE=/home/greenjon902/Desktop/G-DemMAIN/scripts/webhooks.py
 G_WEB_DATABASE_USER=g_web
 G_WEB_DATABASE_PASSWORD=password
 G_WEB_DATABASE_HOST=localhost

@@ -6,7 +6,7 @@ import { spawn } from "child_process";
 import { existsSync } from "fs";
 import { C } from "./environ";
 
-const WEBHOOKS_FILE = "/opt/infra/scripts/webhooks.py";  // Path to the webhooks python file
+const WEBHOOKS_FILE = (process.env.NODE_ENV === "development" && process.env.G_WEBHOOKS_FILE) || "/opt/infra/scripts/webhooks.py";
 
 /**
  * Send a notifation that the given user has logged into the website.
