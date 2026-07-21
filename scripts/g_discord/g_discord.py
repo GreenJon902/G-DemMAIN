@@ -14,7 +14,7 @@ RECONNECT_DELAY = 5  # seconds to wait between chat socket reconnect attempts
 # g_mc_monitor's FUSE mount - matches the mod's default fuseMountPath (see
 # static-config/g_mc/config/g_mc_monitor.json.template), hardcoded since it's not exposed as an
 # env var and g_discord has no reason to read the mod's own config to get it
-PLAYERS_DIR = "/home/greenjon902/Desktop/G-DemMAIN/.claude/worktrees/fluttering-greeting-zephyr/scripts/g_mc/g_mc_monitor/fuse/players"#"/var/lib/g_mc/monitor/players"
+PLAYERS_DIR = "/var/lib/g_mc/monitor/players"
 
 # Both g_mc_monitor sockets are loopback-only (see doc/G-DemMAIN Monitor Mod.md), so g_discord must
 # run on the same host as g_mc
