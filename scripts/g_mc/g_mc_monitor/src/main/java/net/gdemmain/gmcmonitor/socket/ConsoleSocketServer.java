@@ -64,6 +64,10 @@ public class ConsoleSocketServer extends SocketServer {
 		if (server == null) {
 			return;
 		}
+		// Logged (not just at debug level) so it's visible in console/journalctl and, via
+		// ConsoleCapture being attached to the root logger, broadcast to every connected
+		// console-socket client the same way real console output is
+		GMcMonitor.LOGGER.info("Command received via console socket ({}): {}", connection.getRemoteSocketAddress(), command);
 		// Command execution must happen on the main server thread, like any other command source
 		server.execute(() -> {
 			try {
