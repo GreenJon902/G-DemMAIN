@@ -7,7 +7,7 @@ import "server-only";
 import fs from "fs/promises";
 import * as path from "node:path";
 import * as z from "zod";
-import { C } from "@g/com/lib/config";
+import { C, type UnitType } from "@g/com/lib/config";
 import { requirePermission } from "./session";
 import { existsSync } from "fs";
 import * as zlib from "zlib";
@@ -330,7 +330,6 @@ export async function loadLiveCgroupProcs(): Promise<Map<string, Map<string, str
 }
 
 // SystemD unit control ---------------------------------------------------------
-export type UnitType = "service" | "timer" | "target" ;
 export const UNIT_STATUS_VALUES = ["active", "inactive", "activating", "deactivating", "failed", "reloading"] as const;
 export type UnitStatus = typeof UNIT_STATUS_VALUES[number];
 /**

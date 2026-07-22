@@ -1,41 +1,15 @@
 // TODO: Logic for this file should go in lib
 "use server";
 
-import { getUnitStatus, loadMonitorRecords, UnitStatus, UnitType, unitAction as libUnitAction } from "@/lib/panelUtils";
+import { C, type Unit } from "@g/com/lib/config";
+import { getUnitStatus, loadMonitorRecords, UnitStatus, unitAction as libUnitAction } from "@/lib/panelUtils";
 import { loadGraphDataAction } from "./graphs/actions";
 
 /**
- * The js representation of a systemd unit.
+ * Gets the status of the units specified in g_web/config.json's trackedUnits.
  */
-export type Unit = {
-    name: string,  // E.g. "g_mc"
-    type: UnitType,  // E.g. "service" or "timer"
-    controllable: boolean,  // Should the user be able to start or stop this from the dashboard?
-    expectActive: boolean,  // Is normal behavior that this is running? E.g. g_mc.service being stopped is abnormal, but g_nightly_restart.service we don't expect to be running all the time
-    impactsPanel: boolean  // True if changes to this unit may affect the user's ability to continue using the panel, or may be irreversible without SSH access
-}
-/** A utility function to create a {@link Unit}. */
-const _mkUnit = (name: string, type: UnitType, controllable: boolean, expectActive: boolean, impactsPanel: boolean): Unit => ({ name, type, controllable, expectActive, impactsPanel });
-
-/**
- * A list of all the units we want to keep track of and display to the user.
- * Note: this is not an exhaustive list of all units running on the system.
- */
-const TRACKED_UNITS = [
-    _mkUnit("g_mc",               "service", true,  true,  false),
-    _mkUnit("g_web_nxt",          "service", true,  true,  true),
-    _mkUnit("g_web_mcc",          "service", true,  true,  false),
-    _mkUnit("g_nightly_restart",  "service", false, false, false),
-    _mkUnit("g_nightly_restart",  "timer",   true,  true,  false),
-    _mkUnit("g_monitor",          "service", true,  true,  false),
-    _mkUnit("mysql",              "service", true,  true,  true)
-]; // TODO: DOn't hardcode these
-
-/**
- * Gets the status of the units specified in {@link TRACKED_UNITS}.
- */ 
 async function getUnitsStatuses() {
-    return await Promise.all(TRACKED_UNITS.map(async unit => ({
+    return await Promise.all(C().TRACKED_UNITS.map(async unit => ({
         unit,
         status: await getUnitStatus(unit.name, unit.type)
     })));
@@ -78,7 +52,7 @@ export async function unitAction(unit: Unit, status: "start"|"stop"|"restart") {
     console.log(`UnitAction: ${status}ing ${unit.name}.${unit.type}`);
 
     // Ensure that is a unit that we track:
-    if (TRACKED_UNITS.filter(tu => tu.name === unit.name && tu.type === unit.type).length === 0) throw new Error("This unit is not in TRACKED_UNITS");
+    if (C().TRACKED_UNITS.filter(tu => tu.name === unit.name && tu.type === unit.type).length === 0) throw new Error("This unit is not in TRACKED_UNITS");
 
     await libUnitAction(unit.name, unit.type, status);
 }

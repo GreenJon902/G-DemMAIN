@@ -4,5 +4,10 @@
   "monitorFolder": "scripts/g_monitor",
   "minecraftCacheFile": "scripts/g_web/devData/minecraft-cache.json",
   "mccwssPort": 8001,
-  "gWebDatabasePort": 3306
+  "gWebDatabasePort": 3306,
+  "trackedUnits": [
+    { "name": "dbus",      "type": "service", "controllable": false, "expectActive": true, "impactsPanel": false },
+    { "name": "bluetooth", "type": "service", "controllable": true,  "expectActive": true, "impactsPanel": true },
+    { "name": "g_mc",      "type": "service", "controllable": true,  "expectActive": false, "impactsPanel": false }
+  ]
 }

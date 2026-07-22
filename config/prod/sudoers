@@ -13,6 +13,9 @@ g_web ALL=(root) NOPASSWD: \
     /usr/bin/systemctl stop g_web_nxt.service, \
     /usr/bin/systemctl start g_web_mcc.service, \
     /usr/bin/systemctl restart g_web_mcc.service, \
+    /usr/bin/systemctl stop g_discord.service, \
+    /usr/bin/systemctl start g_discord.service, \
+    /usr/bin/systemctl restart g_discord.service, \
     /usr/bin/systemctl stop g_web_mcc.service, \
     /usr/bin/systemctl start g_monitor.service, \
     /usr/bin/systemctl restart g_monitor.service, \

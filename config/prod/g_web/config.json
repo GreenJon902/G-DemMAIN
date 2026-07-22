@@ -4,5 +4,15 @@
   "monitorFolder": "/var/lib/g_monitor",
   "minecraftCacheFile": "/var/lib/g_web/minecraft-cache.json",
   "mccwssPort": 3001,
-  "gWebDatabasePort": 3306
+  "gWebDatabasePort": 3306,
+  "trackedUnits": [
+    { "name": "g_mc",              "type": "service", "controllable": true,  "expectActive": true,  "impactsPanel": false },
+    { "name": "g_web_nxt",         "type": "service", "controllable": true,  "expectActive": true,  "impactsPanel": true },
+    { "name": "g_web_mcc",         "type": "service", "controllable": true,  "expectActive": true,  "impactsPanel": false },
+    { "name": "g_nightly_restart", "type": "service", "controllable": false, "expectActive": false, "impactsPanel": false },
+    { "name": "g_nightly_restart", "type": "timer",   "controllable": true,  "expectActive": true,  "impactsPanel": false },
+    { "name": "g_monitor",         "type": "service", "controllable": true,  "expectActive": true,  "impactsPanel": false },
+    { "name": "g_discord",         "type": "service", "controllable": true,  "expectActive": true,  "impactsPanel": false },
+    { "name": "mysql",             "type": "service", "controllable": true,  "expectActive": true,  "impactsPanel": true }
+  ]
 }

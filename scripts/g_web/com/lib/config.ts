@@ -24,6 +24,19 @@ function readConfigFile(relpath: string): any {
     return JSON.parse(fs.readFileSync(fullPath, "utf-8"));
 }
 
+// The js representation of a systemd unit - lives here (rather than in the panel code that
+// consumes it) since it doubles as the shape of g_web/config.json's trackedUnits
+export const zUnitType = zod.enum(["service", "timer", "target"]);
+export type UnitType = zod.infer<typeof zUnitType>;
+const zUnit = zod.object({
+    name: zod.string().trim().nonempty(),  // E.g. "g_mc"
+    type: zUnitType,
+    controllable: zod.boolean(),  // Should the user be able to start or stop this from the dashboard?
+    expectActive: zod.boolean(),  // Is normal behavior that this is running? E.g. g_mc.service being stopped is abnormal, but g_nightly_restart.service we don't expect to be running all the time
+    impactsPanel: zod.boolean()  // True if changes to this unit may affect the user's ability to continue using the panel, or may be irreversible without SSH access
+});
+export type Unit = zod.infer<typeof zUnit>;
+
 
 const generate = () => {
     const zTNe = zod.string().trim().nonempty();  // Trimmed non-empty string
@@ -49,8 +62,10 @@ const generate = () => {
     const G_WEB_DATABASE_HOST = zTNe.parse(process.env.G_WEB_DATABASE_HOST);
     const G_WEB_DATABASE_PORT = zJsonPort.parse(gWeb.gWebDatabasePort);
 
+    const TRACKED_UNITS = zod.array(zUnit).parse(gWeb.trackedUnits);
+
     return {
-        MCCWSS_PORT, SESSION_PASSWORD, LIST_FOLDER, MC_LOG_FOLDER, MONITOR_FOLDER, MINECRAFT_CACHE_FILE, MINECRAFT_MONITOR_CONSOLE_PORT, MINECRAFT_MONITOR_CONSOLE_HOST, MINECRAFT_MONITOR_CONSOLE_AUTH_KEY, G_WEB_DATABASE_USER, G_WEB_DATABASE_PASSWORD, G_WEB_DATABASE_HOST, G_WEB_DATABASE_PORT
+        MCCWSS_PORT, SESSION_PASSWORD, LIST_FOLDER, MC_LOG_FOLDER, MONITOR_FOLDER, MINECRAFT_CACHE_FILE, MINECRAFT_MONITOR_CONSOLE_PORT, MINECRAFT_MONITOR_CONSOLE_HOST, MINECRAFT_MONITOR_CONSOLE_AUTH_KEY, G_WEB_DATABASE_USER, G_WEB_DATABASE_PASSWORD, G_WEB_DATABASE_HOST, G_WEB_DATABASE_PORT, TRACKED_UNITS
     };
 };
 

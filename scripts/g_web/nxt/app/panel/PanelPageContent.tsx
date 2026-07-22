@@ -2,7 +2,8 @@
 
 import { ActionButton, BUTTON_GREEN, BUTTON_RED, BUTTON_YELLOW } from "./../ui/Button";
 import PageSection from "../ui/PageSection";
-import { loadPanelDataAction, Unit, unitAction } from "./actions";
+import type { Unit } from "@g/com/lib/config";
+import { loadPanelDataAction, unitAction } from "./actions";
 import { CpuRamGraph, TpsHeapGraph } from "./ui/Graphs";
 import { UnitStatus } from "@/lib/panelUtils";
 import { makeAreaSudoGuard, useAuthContext } from "@/app/AuthContext";
@@ -144,6 +145,6 @@ type _BtnProps = { unit: Unit, className: string, guard: () => Promise<boolean>,
 const _Stop = ({ unit, ...props }: _BtnProps) =>
     <ActionButton action={async () => await unitAction(unit, "stop")} color={BUTTON_RED} {...props}>Stop</ActionButton>;
 const _Restart = ({ unit, ...props }: _BtnProps) =>
-    <ActionButton action={async () => await unitAction(unit, "start")} color={BUTTON_YELLOW} {...props}>Restart</ActionButton>;
+    <ActionButton action={async () => await unitAction(unit, "restart")} color={BUTTON_YELLOW} {...props}>Restart</ActionButton>;
 const _Start = ({ unit, ...props }: _BtnProps) =>
-    <ActionButton action={async () => await unitAction(unit, "restart")} color={BUTTON_GREEN} {...props}>Start</ActionButton>;
+    <ActionButton action={async () => await unitAction(unit, "start")} color={BUTTON_GREEN} {...props}>Start</ActionButton>;
