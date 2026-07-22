@@ -156,10 +156,14 @@ async def on_ready():
         # send_callback for ChatSocket - handle_chat_line with channel/webhook already supplied
         async def relay_to_discord(data):
             if data["type"] == "message":
+                username = data["username"]
+                source = data["source"]
                 # Drop the "[source]" prefix for real in-game chat, keep it for other bridges
-                name = data["username"] if data["source"] == "Minecraft" else f"[{data['source']}] {data['username']}"
-                # TODO: set avatar_url to the player's Minecraft head (e.g. via https://mc-heads.net/avatar/{username}) instead of the default webhook avatar
-                await webhook.send(content=data["message"], username=name)
+                name = username if source == "Minecraft" else f"[{source}] {data['username']}"
+                # For minecraft users, set the avatar URL
+                avatar_url = f"https://mc-heads.net/avatar/{username}" if source == "Minecraft" else None
+                # Send webhook:
+                await webhook.send(content=data["message"], username=name, avatar_url=avatar_url)
             elif data["type"] == "event":
                 emoji = EVENT_EMOJI.get(data["event"], ":question:")
                 await channel.send(f"{emoji} {data['message']}")
