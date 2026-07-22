@@ -71,40 +71,37 @@ export default function GraphPageContent({
                     <table className="w-full">
                         <tbody>
                             {
-                                data.disk_usage ? 
-                                    [...data.disk_usage.entries()].map(([mountpoint, metrics]) => (
-                                        <tr key={mountpoint}>
-                                            <td>
-                                                <span className="text-nowrap">
-                                                    {mountpoint}
-                                                </span>
-                                            </td>
-                                            <td className="w-full px-2">
-                                                <div className="h-2 flex-1 rounded-full bg-gray-700">
-                                                    <div className="h-2 rounded-full bg-green-500" style={{width: `${metrics.used / metrics.total * 100}%`}} />
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <span className="text-nowrap">
-                                                    {(metrics.used / metrics.total * 100).toFixed(0)}%  
-                                                </span> 
-                                            </td>
-                                            <td className="px-2"><span>-</span></td>
-                                            <td className="text-right">
-                                                <span className="text-nowrap">
-                                                    {(metrics.used / 1_000_000_000).toFixed(2)}
-                                                </span>
-                                            </td>
-                                            <td className="px-1"><span>/</span></td>
-                                            <td className="text-right">
-                                                <span className="text-nowrap">
-                                                    {(metrics.total / 1_000_000_000).toFixed(2)}GB 
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))
-                                    : 
-                                    <span className="italic">Disk usage data not available!</span>
+                                [...data.diskUsage.entries()].map(([mountpoint, metrics]) => (
+                                    <tr key={mountpoint}>
+                                        <td>
+                                            <span className="text-nowrap">
+                                                {mountpoint}
+                                            </span>
+                                        </td>
+                                        <td className="w-full px-2">
+                                            <div className="h-2 flex-1 rounded-full bg-gray-700">
+                                                <div className="h-2 rounded-full bg-green-500" style={{width: `${metrics.used / metrics.total * 100}%`}} />
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span className="text-nowrap">
+                                                {(metrics.used / metrics.total * 100).toFixed(0)}%
+                                            </span>
+                                        </td>
+                                        <td className="px-2"><span>-</span></td>
+                                        <td className="text-right">
+                                            <span className="text-nowrap">
+                                                {(metrics.used / 1_000_000_000).toFixed(2)}
+                                            </span>
+                                        </td>
+                                        <td className="px-1"><span>/</span></td>
+                                        <td className="text-right">
+                                            <span className="text-nowrap">
+                                                {(metrics.total / 1_000_000_000).toFixed(2)}GB
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))
                             }
                         </tbody>
                     </table>
@@ -139,7 +136,7 @@ export default function GraphPageContent({
                                     />
                                 </div>
                                 {
-                                    data.cgroup_procs.get(cgname)
+                                    data.cgroupProcs.get(cgname)
                                         ?
                                         <table>
                                             <thead>
@@ -150,7 +147,7 @@ export default function GraphPageContent({
                                             </thead>
                                             <tbody>
                                                 {
-                                                    [...data.cgroup_procs.get(cgname)!.entries().map(([pid, cmd]) => (
+                                                    [...data.cgroupProcs.get(cgname)!.entries().map(([pid, cmd]) => (
                                                         <tr key={pid}>
                                                             <td className="border-r p-1">{pid}</td>
                                                             <td className="w-full p-1">
