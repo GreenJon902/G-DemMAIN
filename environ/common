@@ -11,5 +11,13 @@ WEBCOMMAND_WEBHOOK
 # This should be formatted something like https://discord.com/api/webhooks/___/___.
 
 HISDOC_WEBHOOK
-# The webhook url for sending notifications when a user does a hisdoc action. 
+# The webhook url for sending notifications when a user does a hisdoc action.
 # This should be formatted something like https://discord.com/api/webhooks/___/___.
+
+G_DEMMAIN_ROOT prod="/opt/infra" !dev
+# The absolute path to the repo checkout in use.
+# Forced to /opt/infra in prod. Never set in dev - devUtils/prepDevEnv.sh computes and exports it directly from the current worktree instead.
+
+G_DEMMAIN_MODE prod="prod" dev="dev"
+# The mode this environment runs in, either prod or dev.
+# Forced to a different literal value per mode.

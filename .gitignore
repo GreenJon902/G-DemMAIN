@@ -1,2 +1,5 @@
 .venv/
 __pycache__/
+devConfig/
+scripts/g_monitor/*/
+scripts/g_mc/g_mc_monitor/fuse/
