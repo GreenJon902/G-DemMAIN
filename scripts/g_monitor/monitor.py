@@ -3,42 +3,34 @@
 # This file has a mainloop, rather than being ran by a systemd timer, as it needs to run frequently and I feel this is more efficient?
 
 import re
-from argparse import ArgumentParser
 import time
-import sys
 import json
 import traceback
 import subprocess
 import os
 
-# TODO: Read MC TPS and memory usage
-
-# Parse arguments
-parser = ArgumentParser(description="See README.md")
-parser.add_argument("configfolder",
-                    nargs   = "?",  # Declare this argument as optional
-                    default = "/opt/infra/static-config/g_monitor",
-                    help    = "The path of the folder that contains the config files, default /opt/infra/static-config/g_monitor")
-parser.add_argument("recordfolder",
-                    nargs   = "?",  # Declare this argument as optional
-                    default = "/var/lib/g_monitor",
-                    help    = "The path of the folder that contains the records created by the program, defaults to /var/lib/g_monitor")
-args = parser.parse_args()
+from libs.config import readConfigList, readConfigRaw, readConfig, resolvePath
 
 # Log run-info
 print("Executing in", os.getcwd())
-print("Ran with args", sys.argv, "which parsed to", args)
 
 # Load cgroups
-CGROUPS = [cg.strip() for cg in open(os.path.join(args.configfolder, "cgroups"), "r").read().split("\n") if not cg.isspace() and cg != ""]
+CGROUPS = readConfigList("g_monitor/config.json", str, "cgroups")
 print("Trackin CGroups:", CGROUPS)
 
 # Load retention rules
-RETENTION_RULES = {
-    (int(vs[0]), None) if len(vs) == 1 else (int(vs[0]), int(vs[1].strip())) for vs in 
-        [cg.strip().split(" ", 1) for cg in open(os.path.join(args.configfolder, "retention"), "r").read().split("\n") if not cg.isspace() and cg != ""]
-}
+RETENTION_RULES = {tuple(pair) for pair in readConfigRaw("g_monitor/config.json", "retention")}
+# readConfigRaw does not type-check nested list contents, so verify the shape ourselves - each rule
+# must be an (interval, max-count) pair, where max-count is either an int or None (keep forever)
+for rule in RETENTION_RULES:
+    assert len(rule) == 2, f"Retention rule {rule!r} is not a (interval, max-count) pair"
+    interval, maxCount = rule
+    assert type(interval) is int, f"Retention rule {rule!r} has a non-int interval"
+    assert maxCount is None or type(maxCount) is int, f"Retention rule {rule!r} has a max-count that is neither int nor null"
 print("Retention Rules:", RETENTION_RULES)
+
+# Load the folder that records are written to
+RECORD_FOLDER = resolvePath(readConfig("g_monitor/config.json", str, "recordFolder"))
 
 # Constants ---
 SYS_CPU = "/proc/stat"
@@ -99,7 +91,7 @@ def get_record_subfolder(interval: int, number: int):
     """
     Returns the path of the subfolder for the retention rule with the given argumenets
     """
-    return os.path.join(args.recordfolder, str(interval) if number is None else f"{interval}_{number}")
+    return os.path.join(RECORD_FOLDER, str(interval) if number is None else f"{interval}_{number}")
 
 # Data extraction functions ---
 def read_sys_cpu():
@@ -290,7 +282,7 @@ def read_data():
 # Mainloop ---
 while True:
     # Create record subfolders if necessary
-    assert os.path.exists(args.recordfolder), f"Record folder - '{args.recordfolder}' - does not exist"
+    assert os.path.exists(RECORD_FOLDER), f"Record folder - '{RECORD_FOLDER}' - does not exist"
     for interval, number in RETENTION_RULES:
         path = get_record_subfolder(interval, number)
         if not os.path.exists(path):

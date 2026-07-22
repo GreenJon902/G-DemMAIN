@@ -1,0 +1,9 @@
+{
+  "cgroups": [
+    "system.slice/g_mc.service",
+    "system.slice/dbus.service",   
+    "system.slice/bluetooth.service"
+  ],
+  "retention": [[2, 50], [10, 5], [20, null], [5, 20]],
+  "recordFolder": "scripts/g_monitor"
+}

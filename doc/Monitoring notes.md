@@ -60,17 +60,17 @@ The monitoring script tracks the resource usage by the system, and indiviudal cg
 This script assumes that no extra files will be present in the output folder. If there are then errors may occur.
 
 ## Monitoring Configuration
-In `/opt/infra/static-config/g_monitor` (or another folder if given as an argument to the script) are the configuration files.  
+In `config/{mode}/g_monitor/config.json` are the configuration files, read via `libs.config` - the file is located strictly via the `G_DEMMAIN_ROOT`/`G_DEMMAIN_MODE` environment variables, there is no CLI override.  
 ### CGroups
-In `cgroups` you should specify the cgroups to track (e.g. `system.slice/g_mc.service`). These should separated by newlines and contain no extra data.  
+The `cgroups` key is a JSON array of the cgroups to track (e.g. `"system.slice/g_mc.service"`).  
 ### Retention
-In `retention` you should specify how old records should be retained. Each line should be formatted as `(\d+) (\d+)?`. The first number is the interval between records. The second is how many of those records should be stored, if not given then we will store them forever.  
-E.g. if we have a line that is `5 20`, then we will keep 20 logs for the last 100 seconds, each of which is 5 seconds apart.  
+The `retention` key is a JSON array of `[interval, maxCount]` pairs specifying how old records should be retained. The first number is the interval between records. The second is how many of those records should be stored, given as `null` if they should be stored forever.  
+E.g. if we have a pair that is `[5, 20]`, then we will keep 20 logs for the last 100 seconds, each of which is 5 seconds apart.  
 Older logs are automatically removed.  
 There should not be identical rules.
 
 ## Historical records
-In `/var/lib/g_monitor` (or another folder if given as an argument to the script) are the records.   
+In whatever folder the config's `recordFolder` resolves to (prod `/var/lib/g_monitor`, dev `scripts/g_monitor` relative to the repo root) are the records.   
 Inside a subfolder is made for each retention rule (in the format `<interval>_<number>`). When the number of items in a subfolder goes over the maximum allowed by the rule, the oldest is removed. There is no garuntee that all records will be equally spaced (as if the program stops then the timing may change).  
 The names of the records themselves are in seconds since the unix-epoch.  
 
