@@ -4,6 +4,7 @@
     "system.slice/g_web_nxt.service",
     "system.slice/g_web_mcc.service",
     "system.slice/g_monitor.service",
+    "system.slice/g_discord.service",
     "system.slice/mariadb.service"
   ],
   "retention": [[5, 20], [360, 20], [86400, null]],

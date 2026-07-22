@@ -51,7 +51,7 @@ RE_CGROUP_CPU = re.compile(r"^\s*usage_usec\s+(\d+)\s*$", re.MULTILINE)
 RE_CGROUP_DISK_IO = re.compile(r"^\s*\d+:\d+\s+rbytes=(?P<bytes_read>\d+)\s+wbytes=(?P<bytes_written>\d+)\s+rios=\d+\s+wios=\d+\s+dbytes=\d+\s+dios=\d+\s*$", re.MULTILINE)
 PROC_CMD_A = "/proc"
 PROC_CMD_B = "cmdline"
-MC_FUSE_MOUNT = "../g_mc/g_mc_monitor/fuse"#"/var/lib/g_mc/monitor"
+MC_FUSE_MOUNT = resolvePath(readConfig("g_mc_monitor/config.json", str, "fuseMountPath"))
 MC_TPS = "tps"
 MC_HEAP_USED = "heap_used_bytes"
 MC_HEAP_ALLOCATED = "heap_allocated_bytes"
@@ -162,7 +162,7 @@ def read_sys_disk_io():
         groupdict = match.groupdict()
         bytes_read = int(groupdict["sectors_read"]) * 512  # All sectors are 512 bytes
         bytes_written = int(groupdict["sectors_written"]) * 512
-        ret["ind"][name] = {"read": bytes_read, "written": bytes_read}
+        ret["ind"][name] = {"read": bytes_read, "written": bytes_written}
         ret["agg"]["read"] += bytes_read
         ret["agg"]["written"] += bytes_written
     return ret
