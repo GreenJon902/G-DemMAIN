@@ -42,7 +42,7 @@ PrivateTmp=true
 # Blocks write access to certain folders
 ProtectSystem=full 
 
-# Allow monitoring of disk read/write
+# Enable monitoring of disk io by other processes (g_monitor)
 IOAccounting=yes
 
 [Install]

@@ -10,7 +10,7 @@ ExecStart=/usr/bin/systemctl try-restart g_mc.service
 
 EnvironmentFile=/etc/g-demmain/common.env
 
-# Allow monitoring of disk read/write
+# Enable monitoring of disk io by other processes (g_monitor)
 IOAccounting=yes 
 
 [Install]

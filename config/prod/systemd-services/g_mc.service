@@ -45,11 +45,12 @@ TimeoutStopSec=90
 UMask=0002
 
 # Security hardening:
-PrivateTmp=true
+#PrivateTmp=true
 # Blocks write access to certain folders
-ProtectSystem=full   
+#ProtectSystem=full   
+# TODO: Find a way to retain hardening while allowing fuse, or otherwise find an alternative for exposing the data that currently uses fuse
 
-# Allow monitoring of disk read/write
+# Enable monitoring of disk io by other processes (g_monitor)
 IOAccounting=yes 
 
 [Install]

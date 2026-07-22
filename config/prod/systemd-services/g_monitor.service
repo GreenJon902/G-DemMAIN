@@ -32,7 +32,7 @@ RestartSec=10
 # Any files created will be read/writable by the user g_monitor and the group g_monitor
 UMask=0002
 
-# Allow monitoring of disk read/write
+# Enable monitoring of disk io by other processes (g_monitor)
 IOAccounting=yes 
 
 [Install]
