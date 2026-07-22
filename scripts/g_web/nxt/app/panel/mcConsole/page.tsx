@@ -1,6 +1,6 @@
 import "server-only";
 import type { Metadata } from "next";
-import { C } from "@g/com/lib/environ";
+import { C } from "@g/com/lib/config";
 import Console from "./Console";
 import PageSection from "../../ui/PageSection";
 import TextLink, { TEXT_LINK_GRAY } from "../../ui/TextLink";

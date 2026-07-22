@@ -7,7 +7,7 @@ import "server-only";
 import fs from "fs/promises";
 import * as path from "node:path";
 import * as z from "zod";
-import { C } from "@g/com/lib/environ";
+import { C } from "@g/com/lib/config";
 import { requirePermission } from "./session";
 import { existsSync } from "fs";
 import * as zlib from "zlib";
@@ -196,8 +196,6 @@ const MonitorRecord = z.strictObject({
 });
 export type MonitorRecord = z.infer<typeof MonitorRecord>;
 
-const MONITOR_FOLDER = (process.env.NODE_ENV === "development" && process.env.G_MONITOR_FOLDER) || "/var/lib/g_monitor";
-
 export type MonitorOption = { interval: number, number?: number | undefined }
 /**
  * Lists all the types of monitor records that it can find.
@@ -205,7 +203,7 @@ export type MonitorOption = { interval: number, number?: number | undefined }
 export async function listMonitorOptions(): Promise<MonitorOption[]> {
     await requirePermission("panel", "viewer");
 
-    return (await fs.readdir(MONITOR_FOLDER))
+    return (await fs.readdir(C().MONITOR_FOLDER))
         .map(name => name.match(/^(\d+)(?:_(\d+))?$/))  // Parse name
         .filter(match => match !== null)  // Remove non-matches
         .map(match => ({ interval: parseInt(match[1]), number: (match[2] !== undefined) ? parseInt(match[2]) : undefined }));  // Convert to a usable object
@@ -222,7 +220,7 @@ export async function loadMonitorRecords(interval: number, number?: number | und
     const monitorName = (number === undefined) ? `${interval}` : `${interval}_${number}`;
 
     // Load data
-    const subfolder = path.join(MONITOR_FOLDER, monitorName);
+    const subfolder = path.join(C().MONITOR_FOLDER, monitorName);
     const recordNames = (await fs.readdir(subfolder))
         .filter(name => /^\d+\.json$/.test(name));  // Only load files of the correct format
     const records = await Promise.all(recordNames.map(async record => ({

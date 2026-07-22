@@ -1,10 +1,7 @@
 import "server-only";
 import fs from "node:fs/promises";
 import path from "node:path";
-
-// Sibling to the other g_web state directories (/var/lib/g_mc, /var/lib/g_monitor), and outside
-// nxt/ so it survives code redeploys. Overridable in dev the same way MONITOR_FOLDER is.
-const CACHE_FILE = (process.env.NODE_ENV === "development" && process.env.MINECRAFT_CACHE_FILE) || "/var/lib/g_web/minecraft-cache.json";
+import { C } from "@g/com/lib/config";
 
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -17,8 +14,9 @@ let loadPromise: Promise<Map<string, CacheEntry>> | undefined;
 function loadCache(): Promise<Map<string, CacheEntry>> {
     if (cacheMap !== undefined) return Promise.resolve(cacheMap);
     if (loadPromise === undefined) {
-        console.log(`Loading minecraft playername cache from ${CACHE_FILE}...`);
-        loadPromise = fs.readFile(CACHE_FILE, "utf8")
+        const cacheFile = C().MINECRAFT_CACHE_FILE;
+        console.log(`Loading minecraft playername cache from ${cacheFile}...`);
+        loadPromise = fs.readFile(cacheFile, "utf8")
             .then(raw => new Map(Object.entries(JSON.parse(raw) as Record<string, CacheEntry>)))
             .catch(() => new Map<string, CacheEntry>())
             .then(loaded => (cacheMap = loaded));
@@ -32,9 +30,10 @@ let writeQueue: Promise<void> = Promise.resolve();
 /** Persists the current in-memory cache to disk. */
 function persistCache(): void {
     const snapshot = JSON.stringify(Object.fromEntries(cacheMap!));
+    const cacheFile = C().MINECRAFT_CACHE_FILE;
     writeQueue = writeQueue
-        .then(() => fs.mkdir(path.dirname(CACHE_FILE), { recursive: true }))
-        .then(() => fs.writeFile(CACHE_FILE, snapshot))
+        .then(() => fs.mkdir(path.dirname(cacheFile), { recursive: true }))
+        .then(() => fs.writeFile(cacheFile, snapshot))
         .catch(console.error);
 }
 

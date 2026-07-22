@@ -1,6 +1,6 @@
 import net from "node:net";
 import WebSocket, { WebSocketServer } from "ws";
-import { C } from "@g/com/lib/environ";
+import { C } from "@g/com/lib/config";
 import { SessionAccessor } from "@g/com/lib/auth";
 import { sendWebcommandWebhook } from "@g/com/lib/webhook";
 import { zConsoleCommand, zConsoleServerMessage, type ConsoleMeta } from "@g/com/lib/mcConsoleProtocol";
@@ -39,7 +39,7 @@ wss.on("connection", async (ws: WebSocket, req: Request) => {
     console.log(`WSS: 'Authenticated with name "${username}"'`);
 
     // Connect to the monitor mod's console socket (TCP, newline-delimited JSON - see doc/G-DemMAIN Monitor Mod.md)
-    const monitorSocket = net.createConnection({ host: "localhost", port: C().MINECRAFT_MONITOR_CONSOLE_PORT });
+    const monitorSocket = net.createConnection({ host: C().MINECRAFT_MONITOR_CONSOLE_HOST, port: C().MINECRAFT_MONITOR_CONSOLE_PORT });
     let buffer = "";
 
     monitorSocket.on("connect", () => {
