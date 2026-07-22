@@ -1,0 +1,2 @@
+A flat demo file proving template substitution.
+demoValue=${fakeComponent/FAKE_VAR}

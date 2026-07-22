@@ -3,7 +3,7 @@ This file contains the utility scripts that are used for managing the server.
 
 ## Syncing Configs - `sync-static-config.py`
 This module manages the contents and deployments of the synced static-config files.
-This script should be executed in the `<repo_root>/static-config` folder.
+This script should be executed in the `<repo_root>/config/prod` folder (or `<repo_root>/config/dev/syncDemo` when running the demo mechanism, see Testing below).
 Note, some copied config files have environment variables hardcoded, so this should be ran whenever environ-files are updated.
 
 ### Deployment
@@ -22,7 +22,7 @@ Any occurances of `${<file>/<var>}` found will be replaced with the correspondin
 Template files will have a note appended underneath the header when copied over.
 
 ### Testing
-Running `sync-static-config.py test-map.ini` will map the folders to `./test/...`. You may need to create the destination folders beforehand. Then mess around whith files in the test folder to see that everything is working.
+`config/dev/syncDemo/sync-map.ini` is a self-contained demo of this mechanism, using fake source trees unrelated to any real component (see `config/dev/syncDemo/`). `devUtils/syncDemoFixture/` holds a "prior destination state" fixture that, copied to a scratch destination before running the demo, exercises every discrepancy branch (untouched exact copies, conflicts, updates, orphans, and the flat/recursive subfolder distinction).
 
 You can also use the `-d`/`--dry-run` flag to test the program without making any changes.
 

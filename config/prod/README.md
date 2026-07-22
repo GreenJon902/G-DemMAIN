@@ -2,7 +2,7 @@
 
 An item not stored in sync-map.ini will not be synced.
 
-`g_monitor` and `g_discord` are kept stored locally, as that config is only accessed by my purpose-written tooling.
+`g_monitor` and `g_mc_monitor` are kept stored locally, as that config is only accessed by my purpose-written tooling.
 `sudoers` is synced by `utils/sync-sudoers.py` rather than `utils/sync-static-config.py`. This is copied to `/etc/sudoers.d/g-demMain`.
 
 ### Requirements

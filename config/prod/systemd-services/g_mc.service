@@ -27,6 +27,7 @@ ExecStop=/opt/infra/scripts/g_mc/service_stop.sh
 # Get environment variables (we need this to get the github web url)
 EnvironmentFile=/etc/g-demmain/common.env
 EnvironmentFile=/etc/g-demmain/g_mc_g_web_minecraft.env
+EnvironmentFile=/etc/g-demmain/g_mc_g_discord_minecraft.env
 
 # Status logging
 ExecStartPost=/opt/infra/.venv/bin/python3 /opt/infra/scripts/webhooks.py status Minecraft g_mc starting

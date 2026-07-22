@@ -1,0 +1,1 @@
+This file lives inside a subfolder of a flat destination and must never be inspected, because flat mode does not descend into subfolders.

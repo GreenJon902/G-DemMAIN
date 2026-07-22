@@ -37,7 +37,7 @@ sudo usermod -aG g_mc jon    # You may need to relog for this to take effect
 ```
 cd /opt/infra/environ && \
 sudo python3 ../utils/sync-environ.py && \
-cd /opt/infra/static-config && \
+cd /opt/infra/config/prod && \
 sudo python3 ../utils/sync-static-config.py && \
 sudo python3 ../utils/sync-sudoers.py && \
 sudo systemctl daemon-reload

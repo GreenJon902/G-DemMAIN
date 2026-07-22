@@ -1,0 +1,1 @@
+This destination file exists but was never created by the sync script (no header), so the sync script must treat it as a conflict rather than silently overwrite it.
