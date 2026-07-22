@@ -2,5 +2,5 @@
   "consolePort": 25585,
   "chatPort": 25586,
   "socketBindAddress": "127.0.0.1",
-  "fuseMountPath": "/var/lib/g_mc/monitor"
+  "fuseMountPath": "scripts/g_mc/g_mc_monitor/fuse"
 }

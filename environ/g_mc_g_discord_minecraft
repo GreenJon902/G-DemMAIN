@@ -1,5 +1,2 @@
 MINECRAFT_MONITOR_CHAT_AUTH_KEY dev="World"
 # The shared key g_mc_monitor's chat socket requires clients to present.
-
-MINECRAFT_MONITOR_CHAT_PORT
-# The port g_mc_monitor's chat socket listens on (see doc/G-DemMAIN Monitor Mod.md). Loopback-only, so no firewall rule is needed.

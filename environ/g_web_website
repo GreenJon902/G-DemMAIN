@@ -2,9 +2,6 @@ SESSION_PASSWORD dev="testingtestingtestingtestingtestingtestingtestingtestingte
 # The password used to encrypt the ironsession cookie.
 # It has to be at least 32 characters long. Use https://1password.com/password-generator/ to generate strong passwords.
 
-MCCWSS_PORT
-# The port that the minecraft console webserver socket should be opened on.
-
 G_WEB_DATABASE_USER
 # The username that is used to connect to the g_web database
 
@@ -13,7 +10,4 @@ G_WEB_DATABASE_PASSWORD
 
 G_WEB_DATABASE_HOST
 # The host that is running the g_web database. Likely just "localhost".
-
-G_WEB_DATABASE_PORT
-# The port on the host machine through which to connect to the g_web database. Likely just 3306.
 

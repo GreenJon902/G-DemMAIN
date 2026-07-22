@@ -1,0 +1,8 @@
+{
+  "listFolder": "scripts/g_web/devData",
+  "mcLogFolder": "scripts/g_web/devData/logs",
+  "monitorFolder": "scripts/g_monitor",
+  "minecraftCacheFile": "scripts/g_web/devData/minecraft-cache.json",
+  "mccwssPort": 8001,
+  "gWebDatabasePort": 3306
+}

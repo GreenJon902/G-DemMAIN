@@ -1,0 +1,8 @@
+{
+  "listFolder": "/var/lib/g_mc",
+  "mcLogFolder": "/var/lib/g_mc/logs",
+  "monitorFolder": "/var/lib/g_monitor",
+  "minecraftCacheFile": "/var/lib/g_web/minecraft-cache.json",
+  "mccwssPort": 3001,
+  "gWebDatabasePort": 3306
+}

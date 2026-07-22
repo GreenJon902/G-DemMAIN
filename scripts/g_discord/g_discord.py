@@ -6,16 +6,17 @@ import discord
 import json
 import os
 
+from libs.config import readConfig, readEnviron, resolvePath
+
 RECONNECT_DELAY = 5  # seconds to wait between chat socket reconnect attempts
 
-# g_mc_monitor's FUSE mount - matches the mod's default fuseMountPath (see
-# static-config/g_mc/config/g_mc_monitor.json.template), hardcoded since it's not exposed as an
-# env var and g_discord has no reason to read the mod's own config to get it
-PLAYERS_DIR = "/home/greenjon902/Desktop/G-DemMAIN/.claude/worktrees/fluttering-greeting-zephyr/scripts/g_mc/g_mc_monitor/fuse/players"#"/var/lib/g_mc/monitor/players"
+# g_mc_monitor's FUSE mount - read from the mod's own config so it stays in sync with whatever the
+# mod is actually using
+PLAYERS_DIR = os.path.join(resolvePath(readConfig("g_mc_monitor/config.json", str, "fuseMountPath")), "players")
 
 # Both g_mc_monitor sockets are loopback-only (see doc/G-DemMAIN Monitor Mod.md), so g_discord must
 # run on the same host as g_mc
-MC_MONITOR_HOST = "127.0.0.1"
+MC_MONITOR_HOST = readConfig("g_mc_monitor/config.json", str, "socketBindAddress")
 
 # Name of the webhook g_discord creates in the chat channel, used to post chat messages under the
 # sending player's own name instead of the bot's
@@ -31,17 +32,10 @@ EVENT_EMOJI = {
     "player_advancement": ":trophy:",
 }
 
-# Get required environment variables
-class MissingEnvironVar(Exception): pass
-def _require_env(name):
-    # Returns the given environment variable, or raises with a clear message if it's unset
-    if (value := os.environ.get(name)) is None:
-        raise MissingEnvironVar(f"Needs environment variable {name}=...")
-    return value
-BOT_TOKEN = _require_env("DISCORD_BOT_TOKEN")
-CHAT_AUTH_KEY = _require_env("MINECRAFT_MONITOR_CHAT_AUTH_KEY")
-CHAT_PORT = int(_require_env("MINECRAFT_MONITOR_CHAT_PORT"))
-CHAT_CHANNEL_ID = int(_require_env("DISCORD_CHAT_CHANNEL_ID"))
+BOT_TOKEN = readEnviron("DISCORD_BOT_TOKEN", str)
+CHAT_AUTH_KEY = readEnviron("MINECRAFT_MONITOR_CHAT_AUTH_KEY", str)
+CHAT_PORT = readConfig("g_mc_monitor/config.json", int, "chatPort")
+CHAT_CHANNEL_ID = readEnviron("DISCORD_CHAT_CHANNEL_ID", int)
 
 intents = discord.Intents.default()
 intents.message_content = True  # Needed to read the text of messages sent in the chat channel

@@ -4,6 +4,8 @@ import requests
 import os
 from argparse import ArgumentParser
 
+from libs.config import readEnviron, ConfigError
+
 # Functions
 def generate_status(name, service_name, status, service_result, exit_code, exit_status, invocation_id):
     # Generate the json for a message about the status of the server changing.
@@ -99,18 +101,12 @@ def send(webhook, json):
 
 
 # Get webhooks
-class NoWebhookInEnviron(Exception): pass
-def _get_webhook(name):
-    # Gets the webhook url for the given name, otherwise crashes.
-    # We load these late so that we can test the file even if we don't have all webhooks installed
-    if (hook_url := os.environ.get(name)) is None:
-        raise NoWebhookInEnviron(f"Needs environment variable {name}=...")
-    return hook_url
+# We load these late (lambdas) so that we can test the file even if we don't have all webhooks installed
 webhook_getters = {
-    "STATUS": lambda: _get_webhook("STATUS_WEBHOOK"),
-    "WEBLOGIN": lambda: _get_webhook("WEBLOGIN_WEBHOOK"),
-    "WEBCOMMAND": lambda: _get_webhook("WEBCOMMAND_WEBHOOK"),
-    "HISDOC": lambda: _get_webhook("HISDOC_WEBHOOK")
+    "STATUS": lambda: readEnviron("STATUS_WEBHOOK", str),
+    "WEBLOGIN": lambda: readEnviron("WEBLOGIN_WEBHOOK", str),
+    "WEBCOMMAND": lambda: readEnviron("WEBCOMMAND_WEBHOOK", str),
+    "HISDOC": lambda: readEnviron("HISDOC_WEBHOOK", str)
 }
 
 # Parse arguments
@@ -142,7 +138,7 @@ if args.action == "status":
     name = args.name
     service_name = args.service
     status = args.status
-    # Try and get systemd exit information
+    # Try and get systemd exit information - use os.environ rather than readEnviron as these aren't config values and may not be present
     service_result = os.environ.get("SERVICE_RESULT")
     exit_code = os.environ.get("EXIT_CODE")
     exit_status = os.environ.get("EXIT_STATUS")
@@ -170,7 +166,7 @@ elif args.action == "test":
     for (name, func) in webhook_getters.items():
         try:
             send(func(), generate_test(name))
-        except NoWebhookInEnviron as e:
+        except ConfigError as e:
             print(f"Failed, got \"{str(e)}\"")
 
 else:

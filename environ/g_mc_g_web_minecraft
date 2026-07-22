@@ -1,6 +1,3 @@
-MINECRAFT_PORT
-# The port to open the actual minecraft "server" on. So the one that we expose to the internet and players connect to.
-
 MINECRAFT_RCON_PORT
 # The port we open internally for management via RCON.
 
@@ -9,8 +6,3 @@ MINECRAFT_RCON_PASSWORD
 
 MINECRAFT_MONITOR_CONSOLE_AUTH_KEY dev="Hello"
 # The shared key g_mc_monitor's console socket requires clients to present.
-
-MINECRAFT_MONITOR_CONSOLE_PORT
-# The port g_mc_monitor's console socket listens on (see doc/G-DemMAIN Monitor Mod.md). Loopback-only, so no firewall rule is needed.
-
-
