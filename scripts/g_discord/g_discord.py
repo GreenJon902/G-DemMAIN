@@ -1,14 +1,11 @@
 # Discord bot bridging Minecraft chat and exposing /list. See doc/G-DemMAIN Monitor Mod.md for the
 # protocol this talks to, and scripts/README.md for setup.
 
-from argparse import ArgumentParser
-from dotenv import load_dotenv
 import asyncio
 import discord
 import json
 import os
 
-DEFAULT_CONFIG_PATH = "/opt/infra/static-config/g_discord/config.json"
 RECONNECT_DELAY = 5  # seconds to wait between chat socket reconnect attempts
 
 # g_mc_monitor's FUSE mount - matches the mod's default fuseMountPath (see
@@ -34,22 +31,6 @@ EVENT_EMOJI = {
     "player_advancement": ":trophy:",
 }
 
-# Load .devenv for local development. This is a no-op in production, where systemd's
-# EnvironmentFile= has already populated everything, since load_dotenv never overrides variables
-# that are already set
-load_dotenv(os.path.join(os.path.dirname(__file__), ".devenv"))
-
-# Parse arguments
-parser = ArgumentParser(description="See scripts/README.md")
-parser.add_argument("config",
-                    nargs   = "?",  # Declare this argument as optional
-                    default = DEFAULT_CONFIG_PATH,
-                    help    = f"Path to the static config JSON (default: \"{DEFAULT_CONFIG_PATH}\")")
-args = parser.parse_args()
-assert os.path.exists(args.config), f"Config path - '{args.config}' - does not exist"
-config = json.load(open(args.config, "r"))
-CHAT_CHANNEL_ID = int(config["chatChannelId"])
-
 # Get required environment variables
 class MissingEnvironVar(Exception): pass
 def _require_env(name):
@@ -60,6 +41,7 @@ def _require_env(name):
 BOT_TOKEN = _require_env("DISCORD_BOT_TOKEN")
 CHAT_AUTH_KEY = _require_env("MINECRAFT_MONITOR_CHAT_AUTH_KEY")
 CHAT_PORT = int(_require_env("MINECRAFT_MONITOR_CHAT_PORT"))
+CHAT_CHANNEL_ID = int(_require_env("DISCORD_CHAT_CHANNEL_ID"))
 
 intents = discord.Intents.default()
 intents.message_content = True  # Needed to read the text of messages sent in the chat channel

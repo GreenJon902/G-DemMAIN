@@ -1,4 +1,4 @@
-SESSION_PASSWORD
+SESSION_PASSWORD dev="testingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtesting"
 # The password used to encrypt the ironsession cookie.
 # It has to be at least 32 characters long. Use https://1password.com/password-generator/ to generate strong passwords.
 

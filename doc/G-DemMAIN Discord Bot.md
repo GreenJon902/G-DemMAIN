@@ -21,7 +21,7 @@ the server.
 ## Permissions
 
 The bot needs, in the Discord server (and specifically in the channel used for
-`chatChannelId` - see Config below):
+`DISCORD_CHAT_CHANNEL_ID` - see Config below):
 - **Send Messages** - to relay Minecraft chat/events into Discord.
 - **Use Slash Commands** - to make `/list` invocable.
 - **Manage Webhooks** - chat messages are relayed via a webhook (created automatically the first
@@ -47,7 +47,6 @@ time, so don't be surprised if `/list` doesn't show up immediately after invitin
 - `environ/g_discord_bot`: `DISCORD_BOT_TOKEN` (see [Discord Developer Portal setup](#discord-developer-portal-setup)).
 - `environ/g_mc_g_discord_minecraft`: `MINECRAFT_MONITOR_CHAT_AUTH_KEY`/`MINECRAFT_MONITOR_CHAT_PORT`,
   shared with `g_mc` - see [G-DemMAIN Monitor Mod.md](G-DemMAIN%20Monitor%20Mod.md).
-- `static-config/g_discord/config.json`: `chatChannelId` - the Discord channel the bridge posts to
+- `environ/g_discord_bot`: `DISCORD_CHAT_CHANNEL_ID` - the Discord channel the bridge posts to
   and reads from. To get a channel's ID, enable Developer Mode (User Settings → Advanced), then
-  right-click the channel → Copy Channel ID. Kept in the repo rather than synced to `/var/lib` (see
-  `static-config/README.md`).
+  right-click the channel → Copy Channel ID. Supplied per-install, not committed to the repo.

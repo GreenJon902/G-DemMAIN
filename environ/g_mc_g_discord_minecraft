@@ -1,4 +1,4 @@
-MINECRAFT_MONITOR_CHAT_AUTH_KEY
+MINECRAFT_MONITOR_CHAT_AUTH_KEY dev="World"
 # The shared key g_mc_monitor's chat socket requires clients to present.
 
 MINECRAFT_MONITOR_CHAT_PORT

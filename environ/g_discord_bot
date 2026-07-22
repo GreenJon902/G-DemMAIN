@@ -1,2 +1,6 @@
 DISCORD_BOT_TOKEN
 # The token used to log the bot into Discord, from the Discord Developer Portal.
+
+DISCORD_CHAT_CHANNEL_ID
+# The Discord channel the chat bridge posts to and reads from.
+# To get a channel's ID, enable Developer Mode (User Settings → Advanced), then right-click the channel → Copy Channel ID.
