@@ -1,24 +1,24 @@
 package net.gdemmain.gmcmonitor;
 
 /**
- * Persisted mod configuration, serialized as JSON to config/g_mc_monitor.json.
- * Most fields keep their default values below when absent from an existing config file, so the
- * file can be edited by hand and new fields introduced later fill themselves in. consoleAuthKey,
- * chatAuthKey, consolePort and chatPort are the exception - they have no default and
- * {@link ConfigManager#load()} refuses to start the mod if any of them is missing, since a
- * silently-defaulted secret or port is worse than a loud failure. In production these four are
- * meant to come from static-config/g_mc/config/g_mc_monitor.json.template, populated from the
- * environ variables by utils/sync-static-config.py.
+ * Persisted mod configuration. The JSON file backing this,
+ * {@code ${G_DEMMAIN_ROOT}/config/${G_DEMMAIN_MODE}/g_mc_monitor/config.json}, has exactly four
+ * possible keys: consolePort, chatPort, socketBindAddress and fuseMountPath - all required, with
+ * no defaults, since {@link ConfigManager#load()} refuses to start the mod if any of them is
+ * missing (a silently-defaulted port/address/path is worse than a loud failure). consoleAuthKey,
+ * chatAuthKey and unsafe are populated by {@link ConfigManager#load()} from environment variables
+ * instead - not from this file at all. messageTemplates keeps its Java-side defaults below and is
+ * optional if present in the file - unaffected by any of the above.
  */
 public class MonitorConfig {
-	/** Secret the console socket requires clients to present before anything else. Required, no default. */
+	/** Secret the console socket requires clients to present before anything else. Populated by {@link ConfigManager#load()} from the MINECRAFT_MONITOR_CONSOLE_AUTH_KEY environment variable. Required, no default. */
 	public String consoleAuthKey;
 
-	/** Secret the chat socket requires clients to present before anything else. Separate from consoleAuthKey so the two sockets don't share a key. Required, no default. */
+	/** Secret the chat socket requires clients to present before anything else. Separate from consoleAuthKey so the two sockets don't share a key. Populated by {@link ConfigManager#load()} from the MINECRAFT_MONITOR_CHAT_AUTH_KEY environment variable. Required, no default. */
 	public String chatAuthKey;
 
-	/** Address the console/chat sockets bind to - defaults to loopback-only since there's no need for remote access. */
-	public String socketBindAddress = "127.0.0.1";
+	/** Address the console/chat sockets bind to. Required, no default. */
+	public String socketBindAddress;
 
 	/** TCP port for the console socket (see doc/G-DemMAIN Monitor Mod.md). Required, no default. */
 	public Integer consolePort;
@@ -26,10 +26,10 @@ public class MonitorConfig {
 	/** TCP port for the chat socket (see doc/G-DemMAIN Monitor Mod.md). Required, no default. */
 	public Integer chatPort;
 
-	/** Where to mount the FUSE filesystem exposing tps/heap/players. Relative paths resolve against the server run directory. */
-	public String fuseMountPath = "monitor-mount";
+	/** Where to mount the FUSE filesystem exposing tps/heap/players. Relative paths resolve against G_DEMMAIN_ROOT (see ConfigManager#resolvePath). Required, no default. */
+	public String fuseMountPath;
 
-	/** If false (default), a failure to mount the FUSE filesystem or bind the console/chat sockets crashes startup. If true, such failures are only logged and the mod continues in a degraded state. */
+	/** If false (default), a failure to mount the FUSE filesystem or bind the console/chat sockets crashes startup. If true, such failures are only logged and the mod continues in a degraded state. Populated by {@link ConfigManager#load()} from the G_MC_MONITOR_UNSAFE environment variable (optional, default false) - not read from the JSON file. */
 	public boolean unsafe = false;
 
 	public MessageTemplates messageTemplates = new MessageTemplates();

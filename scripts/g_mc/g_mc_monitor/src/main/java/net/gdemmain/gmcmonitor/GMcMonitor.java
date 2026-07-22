@@ -2,7 +2,6 @@ package net.gdemmain.gmcmonitor;
 
 import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.loader.api.FabricLoader;
 import net.gdemmain.gmcmonitor.socket.ChatSocketServer;
 import net.gdemmain.gmcmonitor.socket.ConsoleSocketServer;
 import org.slf4j.Logger;
@@ -33,10 +32,7 @@ public class GMcMonitor implements DedicatedServerModInitializer {
 		consoleCapture.register();
 
 		fuseFS = new MonitorFuseFS(tickStats);
-		Path mountPath = Path.of(config.fuseMountPath);
-		if (!mountPath.isAbsolute()) {
-			mountPath = FabricLoader.getInstance().getGameDir().resolve(mountPath);
-		}
+		Path mountPath = ConfigManager.resolvePath(config.fuseMountPath);
 		try {
 			fuseFS.mountAt(mountPath);
 		} catch (RuntimeException e) {
@@ -80,7 +76,7 @@ public class GMcMonitor implements DedicatedServerModInitializer {
 		if (config.unsafe) {
 			LOGGER.error(message, cause);
 		} else {
-			throw new IllegalStateException(message + " (set \"unsafe\": true in config/g_mc_monitor.json to continue without it)", cause);
+			throw new IllegalStateException(message + " (set G_MC_MONITOR_UNSAFE=true to continue without it)", cause);
 		}
 	}
 }

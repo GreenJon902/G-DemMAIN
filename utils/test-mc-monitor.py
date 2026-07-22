@@ -7,7 +7,9 @@ import os
 import socket
 import threading
 
-DEFAULT_CONFIG_PATH = "/var/lib/g_mc/config/g_mc_monitor.json"
+import libs.config
+
+DEFAULT_CONFIG_PATH = os.path.join(libs.config.ROOT, "config", libs.config.MODE, "g_mc_monitor", "config.json")
 
 # Parse arguments
 parser = ArgumentParser(description="Interactively test g_mc_monitor's FUSE filesystem, console socket, or chat socket")
