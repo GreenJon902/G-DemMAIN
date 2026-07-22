@@ -29,8 +29,8 @@ EnvironmentFile=/etc/g-demmain/common.env
 EnvironmentFile=/etc/g-demmain/g_mc_g_web_minecraft.env
 
 # Status logging
-ExecStartPost=/bin/python3 /opt/infra/scripts/webhooks.py status Minecraft g_mc starting
-ExecStopPost=/bin/python3 /opt/infra/scripts/webhooks.py status Minecraft g_mc stopped
+ExecStartPost=/opt/infra/.venv/bin/python3 /opt/infra/scripts/webhooks.py status Minecraft g_mc starting
+ExecStopPost=/opt/infra/.venv/bin/python3 /opt/infra/scripts/webhooks.py status Minecraft g_mc stopped
 
 # Restart only when it crashes, not on /stop
 Restart=on-failure

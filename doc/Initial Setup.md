@@ -21,9 +21,7 @@ And add `jon ALL=(ALL) NOPASSWD: ALL` to the end of `visudo`.
 4. Login as jon and copy the SSH key. Use `scp` to copy the G-DemMAIN repo to the infra folder and apply SSH configurations. Use `sudo chmod 2755 -R *` to fix the permissions. Reload the SSH config on the server.
 
 5. `apt install mariadb-server mariadb-client openjdk-25-jdk-headless python3-pip`
-```
-pip install discord.py python-dotenv requests
-```
+See `Python.md` for setting up the venv.
 
 6. Create service users (run all lines that are necessary): 
 ```

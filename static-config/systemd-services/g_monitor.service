@@ -13,7 +13,7 @@ OnFailure=g_service_failed@Monitor-g_monitor.service
 User=g_monitor
 Group=g_monitor
 WorkingDirectory=/var/lib/g_monitor
-ExecStart=python3 /opt/infra/scripts/g_monitor/monitor.py  
+ExecStart=/opt/infra/.venv/bin/python3 /opt/infra/scripts/g_monitor/monitor.py
 
 # Get environment variables (we need this to get the github web url)
 EnvironmentFile=/etc/g-demmain/common.env
@@ -22,8 +22,8 @@ EnvironmentFile=/etc/g-demmain/common.env
 Environment=PYTHONUNBUFFERED=1
 
 # Status logging
-ExecStartPost=/bin/python3 /opt/infra/scripts/webhooks.py status Monitor g_monitor starting
-ExecStopPost=/bin/python3 /opt/infra/scripts/webhooks.py status Monitor g_monitor stopped
+ExecStartPost=/opt/infra/.venv/bin/python3 /opt/infra/scripts/webhooks.py status Monitor g_monitor starting
+ExecStopPost=/opt/infra/.venv/bin/python3 /opt/infra/scripts/webhooks.py status Monitor g_monitor stopped
 
 # Restart only when it crashes, not on /stop
 Restart=on-failure

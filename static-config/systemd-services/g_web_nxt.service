@@ -34,8 +34,8 @@ ExecStartPre=/usr/bin/node /var/lib/g_web/node_modules/prisma/build/index.js mig
 ExecStartPre=/bin/echo "Database schema check passed!"
 
 # Status logging
-ExecStartPost=/bin/python3 /opt/infra/scripts/webhooks.py status "Website - NextJS" g_web_nxt starting
-ExecStopPost=/bin/python3 /opt/infra/scripts/webhooks.py status "Website - NextJS" g_web_nxt stopped
+ExecStartPost=/opt/infra/.venv/bin/python3 /opt/infra/scripts/webhooks.py status "Website - NextJS" g_web_nxt starting
+ExecStopPost=/opt/infra/.venv/bin/python3 /opt/infra/scripts/webhooks.py status "Website - NextJS" g_web_nxt stopped
 
 # Security hardening:
 PrivateTmp=true

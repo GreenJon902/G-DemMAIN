@@ -16,7 +16,7 @@ User=g_discord
 Group=g_discord
 # TODO: Will we need a working directory?
 #WorkingDirectory=/var/lib/g_discord
-ExecStart=/usr/bin/python3 /opt/infra/scripts/g_discord/g_discord.py
+ExecStart=/opt/infra/.venv/bin/python3 /opt/infra/scripts/g_discord/g_discord.py
 
 EnvironmentFile=/etc/g-demmain/common.env
 EnvironmentFile=/etc/g-demmain/g_mc_g_discord_minecraft.env
@@ -26,8 +26,8 @@ EnvironmentFile=/etc/g-demmain/g_discord_bot.env
 Environment=PYTHONUNBUFFERED=1
 
 # Status logging
-ExecStartPost=/bin/python3 /opt/infra/scripts/webhooks.py status Discord g_discord starting
-ExecStopPost=/bin/python3 /opt/infra/scripts/webhooks.py status Discord g_discord stopped
+ExecStartPost=/opt/infra/.venv/bin/python3 /opt/infra/scripts/webhooks.py status Discord g_discord starting
+ExecStopPost=/opt/infra/.venv/bin/python3 /opt/infra/scripts/webhooks.py status Discord g_discord stopped
 
 # Restart only when it crashes, not on /stop
 Restart=on-failure
