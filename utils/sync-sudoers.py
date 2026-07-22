@@ -11,7 +11,7 @@ def checkSudoers():
     # Checks if the syntax of the currently installed sudoers file is correct.
     # The processes stdout and stderr is piped to python's stdout and stderr
     # Returns the error code
-    proc = subprocess.run(['visudo', '-c'])
+    proc = subprocess.run(['/usr/sbin/visudo', '-c'])
     return proc.returncode
 
 

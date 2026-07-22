@@ -51,7 +51,7 @@ RE_SYS_NET_IO = re.compile(r"^\s*(?P<interface>\S+)\s*:\s*(?P<recieved_bytes>\d+
 SYS_DISK_IO_A = "/sys/block"
 SYS_DISK_IO_B = "stat"
 RE_SYS_DISK_IO = re.compile(r"^\s*(?:\d+\s+){2}(?P<sectors_read>\S+)\s+(?:\d+\s+){3}(?P<sectors_written>\S+)(?:\s+\d+){4}(?:(?:\s+\d+){4})?(?:(?:\s+\d+){2})?\s*$")
-SYS_DISK_USAGE = ["df", "-B1", "--output=source,target,size,avail"]
+SYS_DISK_USAGE = ["/usr/bin/df", "-B1", "--output=source,target,size,avail"]
 RE_SYS_DISK_USAGE_HEADERS = re.compile(r"^\s*Filesystem\s+Mounted on\s+1B-blocks\s+Avail\s*$", flags=re.MULTILINE)
 RE_SYS_DISK_USAGE = re.compile(r"^\s*(?P<filesystem>\S+)\s+(?P<mountpoint>\S+)\s+(?P<total>\d+)\s+(?P<available>\d+)\s*$", flags=re.MULTILINE)
 CGROUP_A = "/sys/fs/cgroup"

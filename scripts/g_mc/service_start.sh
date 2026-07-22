@@ -4,7 +4,7 @@
 echo "eula=true" > /var/lib/g_mc/eula.txt
 
 # Start server
-java -Xms1G -Xmx3G \
+/usr/bin/java -Xms1G -Xmx3G \
 -XX:+UseG1GC \
 -XX:+ParallelRefProcEnabled \
 -XX:MaxGCPauseMillis=200 \

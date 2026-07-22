@@ -334,8 +334,8 @@ export async function unitAction(name: string, type: UnitType, action: "start"|"
     // We want to wait for the process to finish
     await new Promise((resolve, reject) => {
         const proc = spawn(
-            "sudo",
-            ["-n", "systemctl", action, `${name}.${type}`]  // -n means it won't ever prompt for a password. Passwordless sudo should be allowed for this command
+            "/usr/bin/sudo",
+            ["-n", "/usr/bin/systemctl", action, `${name}.${type}`]  // -n means it won't ever prompt for a password. Passwordless sudo should be allowed for this command
         );
 
         proc.stdout.on("data", (data) => console.log(`SYSTEMCTL-STDOUT: ${data}`));

@@ -55,7 +55,7 @@ export function sendHisDocWebhook(
  */
 function executeCommand(...args: Array<string>) {
     if (!C().DONT_REQUIRE_WEBHOOKS_FILE && !existsSync(WEBHOOKS_FILE)) throw new Error("Webhooks file does not exist");  // Ensure that it exists
-    const proc = spawn("python3", [WEBHOOKS_FILE, ...args]);
+    const proc = spawn(`${process.env.G_DEMMAIN_ROOT}/.venv/bin/python3`, [WEBHOOKS_FILE, ...args]);
 
     proc.stdout.on("data", (data) => console.log(`WEBHOOKS-STDOUT: ${data}`));
     proc.stderr.on("data", (data) => console.error(`WEBHOOKS-STDERR: ${data}`));
