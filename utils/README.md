@@ -37,8 +37,15 @@ When changing destination folders, it might be a good idea to leave the destinat
 
 ## Syncing environment variable names - `sync-environ.py`
 While some settings are always the same, some variables cannot/should not be set in the git repo. So we store these with environment variable files.
-This script ensures that all the keys defined in /environ/** are defined in the environment folder. It will also check for extraneous keys, and unset values.
+This script ensures that all the keys defined in /environ/** are defined in the destination environment folder for the given mode (`prod`/`dev`). It will also check for extraneous keys, and unset values.
 This script should be executed in the `<repo_root>/environ` folder. Only the `README.md` file will be ignored.
+
+### Usage
+```
+sync-environ.py prod                 # syncs to /etc/g-demmain
+sync-environ.py dev path/to/dest     # syncs to the given dev destination (e.g. devConfig)
+```
+The `mode` positional (`prod` or `dev`) is required, and selects which per-variable spec (see Format below) is applied. The destination positional defaults to `/etc/g-demmain` when `mode` is `prod`, but must be given explicitly when `mode` is `dev` - there's no sensible shared default for it, so the script errors out rather than guessing.
 
 ### Format
 The source files should have no extension, they will have `.env` appended when copied.
@@ -48,3 +55,22 @@ ENVIRONMENT_VARIABLE_NAME
 # Comment line 1
 # Comment line 2
 ```
+The `NAME` line may optionally be followed by a space-separated list of per-mode tokens, each either `mode="preset value"` or `!mode`:
+```
+ENVIRONMENT_VARIABLE_NAME (mode="preset value" | !mode)...
+# Comment line 1
+# Comment line 2
+```
+- `mode="value"` forces `NAME` to `value` whenever syncing for `mode`. If `NAME` is missing from the destination it's written with that value; if present with a different value the script warns and prompts you to overwrite or keep it; if present with the same value nothing happens.
+- `!mode` marks `NAME` as one that must **not** be set when syncing for `mode`. If it's present in the destination anyway, the script warns (it won't remove or edit it for you).
+- A `NAME` with no tokens at all, or with tokens only for other modes, is unspecified for the current mode: this is today's original behaviour - if missing, an empty `NAME=` is added (plus the doc comment) for you to fill in by hand.
+
+For example (illustrating the format only - these two variables don't exist in `environ/common` yet):
+```
+G_DEMMAIN_ROOT prod="/opt/infra" !dev
+# The absolute path to the repo checkout in use
+
+G_DEMMAIN_MODE prod="prod" dev="dev"
+# The mode this environment runs in
+```
+Here `G_DEMMAIN_ROOT` is forced to `/opt/infra` in prod and must never be set in dev, while `G_DEMMAIN_MODE` is forced to a different literal value in each mode.
