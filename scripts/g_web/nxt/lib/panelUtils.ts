@@ -164,9 +164,15 @@ const zMem = z.strictObject({
 const zMinecraft = z.strictObject({
     tps: z.number().nonnegative().nullable(),  // Ticks per second, rolling average capped at 20
     mem: zMem.nullable(),  // Heap usage, in kilobytes
-    players: z.array(z.string()).nullable()  // Usernames of currently online players
-});
+    players: z.array(z.string()).nullable().optional()  // @deprecated - see Schema Changelog, kept optional so old records still parse
+}).transform(({ players, ...rest }) => rest);  // Strip the deprecated field from the parsed type
 const zCoercedMap = <T extends z.ZodTypeAny> (zValue: T) => z.record(z.string().nonempty(), zValue).transform(obj => new Map(Object.entries(obj)));
+const zCgroup = z.strictObject({
+    cpu: zNatural.nullable(),  // Microseconds, absolute, sum of ms on each core
+    mem: zMem.nullable(),
+    disk_io: zDiskIO.nullable(),
+    procs: zCoercedMap(z.string()).nullable().optional()  // @deprecated - see Schema Changelog, kept optional so old records still parse
+}).transform(({ procs, ...rest }) => rest);  // Strip the deprecated field from the parsed type
 const MonitorRecord = z.strictObject({
     sys_cpu: z.strictObject({
         agg: zArbCpu,
@@ -185,15 +191,10 @@ const MonitorRecord = z.strictObject({
         filesystem: z.string().nonempty(),
         total: zNatural,  // Bytes
         used: zNatural
-    })).nullable(),
+    })).nullable().optional(),  // @deprecated - see Schema Changelog, kept optional so old records still parse
     minecraft: zMinecraft.nullable().default(null),  // Absent entirely in records predating this field
-    cgroups: zCoercedMap(z.strictObject({
-        cpu: zNatural.nullable(),  // Microseconds, absolute, sum of ms on each core
-        mem: zMem.nullable(),
-        disk_io: zDiskIO.nullable(),
-        procs: zCoercedMap(z.string()).nullable()  // PID maps to terminal command that started it
-    }))
-});
+    cgroups: zCoercedMap(zCgroup)
+}).transform(({ sys_disk_usage, ...rest }) => rest);  // Strip the deprecated field from the parsed type
 export type MonitorRecord = z.infer<typeof MonitorRecord>;
 
 export type MonitorOption = { interval: number, number?: number | undefined }
@@ -283,24 +284,49 @@ export async function loadMonitorRecords(interval: number, number?: number | und
         };
     });
 
-    // Extract data
-    //     Some data isn't really time dependent
-    // Disk usage:
-    const diskUsage = records.at(-1)?.data.sys_disk_usage ?? null;  // Take newest found value
-    // Minecraft players:
-    const minecraftPlayers = records.at(-1)?.data.minecraft?.players ?? null;  // Take newest found value
-    // CGroup procs:
-    const cgroupsProcs = (records.length > 0) ? new Map([...records.at(-1)!.data.cgroups.keys()].map(k => [k,
-        records.at(-1)!.data.cgroups.get(k)?.procs ?? null
-    ])) : (new Map() as Map<string, Map<string, string> | null>); // Default to empty map if no data
-
     return {
         timestamp: latestTime * 1000,  // Timestamp is in ms
-        timed: graphData,
-        disk_usage: diskUsage,
-        minecraft_players: minecraftPlayers,
-        cgroup_procs: cgroupsProcs
+        timed: graphData
     };
+}
+
+// Live data ---------------------------------------------------------------------
+// These aren't part of the historical records above - they always reflect the current value, see "Live Data" in the documentation
+const RE_DISK_USAGE_HEADERS = /^\s*Filesystem\s+Mounted on\s+1B-blocks\s+Avail\s*$/m;
+const RE_DISK_USAGE = /^\s*(?<filesystem>\S+)\s+(?<mountpoint>\S+)\s+(?<total>\d+)\s+(?<available>\d+)\s*$/gm;
+export type DiskUsage = Map<string, { filesystem: string, total: number, used: number }>;
+/**
+ * Gets the current disk usage for every mounted filesystem, by shelling out to `df`.
+ * This is queried live rather than through monitor.py, as it needs no special permissions and would otherwise show data up to a whole retention interval stale.
+ */
+export async function getDiskUsage(): Promise<DiskUsage> {
+    await requirePermission("panel", "viewer");
+
+    const execFileAsync = promisify(execFile);
+    const { stdout } = await execFileAsync("/usr/bin/df", ["-B1", "--output=source,target,size,avail"]);
+    if (!RE_DISK_USAGE_HEADERS.test(stdout)) throw new Error(`Header of df output is incorrect: \n${stdout}`);
+
+    const usage: DiskUsage = new Map();
+    for (const match of stdout.matchAll(RE_DISK_USAGE)) {
+        const { filesystem, mountpoint, total, available } = match.groups!;
+        usage.set(mountpoint, { filesystem, total: Number(total), used: Number(total) - Number(available) });
+    }
+    return usage;
+}
+
+const LiveCgroupProcs = z.strictObject({
+    timestamp: zNatural,  // Unix epoch seconds, when this file was generated
+    cgroups: zCoercedMap(zCoercedMap(z.string()).nullable())  // [cgroup]: {[pid]: command} | null, null entries are cgroups that failed to be read
+});
+/**
+ * Loads the current processes for each tracked cgroup, from the live_cgroup_procs.json file monitor.py publishes.
+ * This isn't queried directly by g_web, as it needs read access to cgroup and /proc files owned by other services' users.
+ */
+export async function loadLiveCgroupProcs(): Promise<Map<string, Map<string, string> | null>> {
+    await requirePermission("panel", "viewer");
+
+    const raw = await fs.readFile(path.join(C().MONITOR_FOLDER, "live_cgroup_procs.json"), "utf-8");
+    return LiveCgroupProcs.parse(JSON.parse(raw)).cgroups;
 }
 
 // SystemD unit control ---------------------------------------------------------

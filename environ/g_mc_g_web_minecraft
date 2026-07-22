@@ -1,8 +1,2 @@
-MINECRAFT_RCON_PORT
-# The port we open internally for management via RCON.
-
-MINECRAFT_RCON_PASSWORD
-# The password used to authenticate with RCON.
-
 MINECRAFT_MONITOR_CONSOLE_AUTH_KEY dev="Hello"
 # The shared key g_mc_monitor's console socket requires clients to present.

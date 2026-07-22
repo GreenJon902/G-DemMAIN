@@ -57,7 +57,7 @@ done < "$CG/cgroup.procs"
 
 # Monitoring
 The monitoring script tracks the resource usage by the system, and indiviudal cgroups (our services).  
-This script assumes that no extra files will be present in the output folder. If there are then errors may occur.
+This script assumes that no extra files will be present in the output folder, other than the live data files it manages itself (see [Live Data](#live-data) below). If there are then errors may occur.
 
 ## Monitoring Configuration
 In `config/{mode}/g_monitor/config.json` are the configuration files, read via `libs.config` - the file is located strictly via the `G_DEMMAIN_ROOT`/`G_DEMMAIN_MODE` environment variables, there is no CLI override.  
@@ -119,7 +119,7 @@ The names of the records themselves are in seconds since the unix-epoch.
             }
         }
     } | null,
-    "sys_disk_usage": {
+    "sys_disk_usage": {                  # @deprecated - see Schema Changelog. Current value only, now queried live (getDiskUsage in panelUtils.ts) instead
         [mount_point]: {
             "filesystem": str,
             "total": int,                Bytes
@@ -132,7 +132,7 @@ The names of the records themselves are in seconds since the unix-epoch.
             "total": int,                Kilobytes                                # The heap's -Xmx ceiling
             "used": int                  Kilobytes                                # The heap currently in use
         } | null,
-        "players": [str, ...] | null     Usernames of currently online players
+        "players": [str, ...] | null     @deprecated - see Schema Changelog. Usernames of currently online players, unused and no longer written
     } | null,                            # Absent entirely in records predating this field
     "cgroups": {
         [cgroup_name]: {                     # Keys not necessarily constant
@@ -145,11 +145,32 @@ The names of the records themselves are in seconds since the unix-epoch.
                 "read": int,             Bytes, Absolute
                 "written": int           Bytes, Absolute
             } | null,
-            "procs": {
+            "procs": {                    # @deprecated - see Schema Changelog. Current value only, now published live (see live_cgroup_procs.json below) instead
                 [process_id: int]: str       # Value is terminal command used to start the process
                                              # Keys not necessarily constant
             } | null
         }
+    }
+}
+```
+
+## Schema Changelog
+Changes to the `Monitor Format` JSON schema above. Deprecated fields are still accepted when parsing old records, but are no longer written and shouldn't be relied on.
+
+- **2026-07-22** - Deprecated `sys_disk_usage`, `minecraft.players` and `cgroups.*.procs`. Fields are still parsed if present in old records, but are no longer written.
+- **2026-07-20** - Added `minecraft` field: `tps`, `mem` (`total`, `used`), `players`. Both `minecraft` and direct children are optional (parent: null or not-present, children: null).
+
+## Live Data
+Some data should always reflect its current value rather than a historical sample, but is either too expensive to compute on every panel page load, or requires filesystem access `g_web` doesn't have (e.g. reading `cgroup.procs` and `/proc/<pid>/cmdline` for cgroups owned by other services). For this, `monitor.py` publishes small "live" files directly in the record folder root (a sibling of the retention subfolders), overwriting them in place every mainloop iteration. Unlike the historical records, only the latest value is kept - there is no history and no retention rule.
+
+### `live_cgroup_procs.json`
+```
+{
+    "timestamp": int,                    Unix epoch seconds, when this file was generated
+    "cgroups": {
+        [cgroup_name]: {                     # Keys not necessarily constant, one entry per tracked cgroup
+            [process_id: int]: str           # Value is terminal command used to start the process
+        } | null                             # null if this cgroup's procs failed to be read
     }
 }
 ```

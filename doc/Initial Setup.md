@@ -6,7 +6,7 @@ May be missing details!
 2. ```
 ufw allow 25565
 ufw allow 80
-ufw allow 25575
+ufw allow 25575  # TODO: Why was this port ever open (was RCON before, but that shouldn't have been open either)
 ufw allow 31415
 ufw enable
 systemctl enable fail2ban

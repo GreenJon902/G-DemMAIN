@@ -42,6 +42,7 @@ type LookupResult = { name: string } | { notFound: true } | { error: true };
 /** Looks up the current username for a uuid via the Mojang API. */
 async function lookupUsername(uuid: string): Promise<LookupResult> {
     try {
+        console.log(`Fetching unkown or expired username for ${uuid}`);
         const res = await fetch(`https://api.minecraftservices.com/minecraft/profile/lookup/${uuid}`);
         if (res.status === 404) return { notFound: true };
         if (!res.ok) return { error: true };

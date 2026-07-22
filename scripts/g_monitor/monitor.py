@@ -6,7 +6,6 @@ import re
 import time
 import json
 import traceback
-import subprocess
 import os
 
 from libs.config import readConfigList, readConfigRaw, readConfig, resolvePath
@@ -43,9 +42,6 @@ RE_SYS_NET_IO = re.compile(r"^\s*(?P<interface>\S+)\s*:\s*(?P<recieved_bytes>\d+
 SYS_DISK_IO_A = "/sys/block"
 SYS_DISK_IO_B = "stat"
 RE_SYS_DISK_IO = re.compile(r"^\s*(?:\d+\s+){2}(?P<sectors_read>\S+)\s+(?:\d+\s+){3}(?P<sectors_written>\S+)(?:\s+\d+){4}(?:(?:\s+\d+){4})?(?:(?:\s+\d+){2})?\s*$")
-SYS_DISK_USAGE = ["/usr/bin/df", "-B1", "--output=source,target,size,avail"]
-RE_SYS_DISK_USAGE_HEADERS = re.compile(r"^\s*Filesystem\s+Mounted on\s+1B-blocks\s+Avail\s*$", flags=re.MULTILINE)
-RE_SYS_DISK_USAGE = re.compile(r"^\s*(?P<filesystem>\S+)\s+(?P<mountpoint>\S+)\s+(?P<total>\d+)\s+(?P<available>\d+)\s*$", flags=re.MULTILINE)
 CGROUP_A = "/sys/fs/cgroup"
 CGROUP_B_CPU = "cpu.stat"
 CGROUP_B_MEM = "memory.current"
@@ -59,8 +55,8 @@ MC_FUSE_MOUNT = "../g_mc/g_mc_monitor/fuse"#"/var/lib/g_mc/monitor"
 MC_TPS = "tps"
 MC_HEAP_USED = "heap_used_bytes"
 MC_HEAP_ALLOCATED = "heap_allocated_bytes"
-MC_PLAYERS = "players"
 RE_FILENAME = re.compile(r"^(\d+).json$")
+LIVE_CGROUP_PROCS_FILENAME = "live_cgroup_procs.json"
 
 # Utils ---
 def extractsum(data: dict[str, str], *properties: list[str]):
@@ -171,27 +167,6 @@ def read_sys_disk_io():
         ret["agg"]["written"] += bytes_written
     return ret
 
-def read_sys_disk_usage():
-    """
-    Returns {[mountpoint: str]: {"filesystem": str, "total": int, "used": int}}.
-    All integer values are in bytes.
-    "total" is the total space that can be used, "used" is the space that is already used.
-    """
-    ret = {}
-    raw = subprocess.check_output(SYS_DISK_USAGE).decode()
-    assert RE_SYS_DISK_USAGE_HEADERS.match(raw), f"Header of data is incorrect: \n{raw}"
-    matches = RE_SYS_DISK_USAGE.finditer(raw)
-    for match in matches:
-        groupdict = match.groupdict()
-        filesystem = groupdict["filesystem"]
-        mountpoint = groupdict["mountpoint"]
-        total = int(groupdict["total"])
-        available = int(groupdict["available"])
-        if mountpoint in ret:
-            raise Exception(f"Multiple records with mountpoint '{mountpoint}'")
-        ret[mountpoint] = {"filesystem": filesystem, "total": total, "used": total - available}
-    return ret
-
 def read_cgroup_cpu(cgroup):
     """
     Returns int - sum of microseconds of each core used by the cgroup.
@@ -245,38 +220,36 @@ def read_mc_mem():
         "total": int(int(open(os.path.join(MC_FUSE_MOUNT, MC_HEAP_ALLOCATED), "r").read()) / 1024)
     }
 
-def read_mc_players():
-    """
-    Returns [str, ...] - the usernames of currently online players.
-    """
-    return os.listdir(os.path.join(MC_FUSE_MOUNT, MC_PLAYERS))
-
-
 def read_data():
     """
     Reads all the data from the system and CGROUPS and returns it as seriazable object that folows the format defined in the documentation.
     """
     return attempt_build_dict({
-        "sys_cpu": read_sys_cpu, 
+        "sys_cpu": read_sys_cpu,
         "sys_mem": read_sys_mem,
         "sys_net_io": read_sys_net_io,
         "sys_disk_io": read_sys_disk_io,
-        "sys_disk_usage": read_sys_disk_usage,
         "minecraft": lambda: attempt_build_dict({
             "tps": read_mc_tps,
-            "mem": read_mc_mem,
-            "players": read_mc_players
+            "mem": read_mc_mem
         }),
         "cgroups": lambda: {
             cgroup: attempt_build_dict({
                 "cpu": read_cgroup_cpu,
                 "mem": read_cgroup_mem,
-                "disk_io": read_cgroup_disk_io,
-                "procs": read_cgroup_procs
+                "disk_io": read_cgroup_disk_io
             }, cgroup)
             for cgroup in CGROUPS
         }
     })
+
+def read_live_cgroup_procs():
+    """
+    Reads the current processes for each tracked cgroup, for the live_cgroup_procs.json file.
+    Returns {[cgroup: str]: {[proc_id: int]: str} | None}, see documentation for live_cgroup_procs.json.
+    """
+    # Bind cgroup as a default arg so each lambda captures its own value rather than the loop variable
+    return attempt_build_dict({cgroup: (lambda cg=cgroup: read_cgroup_procs(cg)) for cgroup in CGROUPS})
 
 
 # Mainloop ---
@@ -292,6 +265,10 @@ while True:
     data = read_data()
     current_time = int(time.time())
     string_data = json.dumps(data)
+
+    # Write live data - unconditionally overwritten every iteration, no history retained (see documentation)
+    live_cgroup_procs = {"timestamp": current_time, "cgroups": read_live_cgroup_procs()}
+    open(os.path.join(RECORD_FOLDER, LIVE_CGROUP_PROCS_FILENAME), "w").write(json.dumps(live_cgroup_procs))
 
     # Find subfolders where a new record needs creation, and calculate how long to sleep for
     needs_new = []  # Paths of subfolders where the new record needs to be put
