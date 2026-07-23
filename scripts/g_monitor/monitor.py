@@ -125,10 +125,13 @@ def check_warn_threshold(resource: str, used_fraction: float, threshold: float, 
     """
     if used_fraction >= threshold:
         if resource not in warned_resources:
+            print(f"Resource \"{resource}\" has crossed over the threshold - used: {used_fraction}, thresh: {threshold}")
             warned_resources.add(resource)
             send_syswarn(resource, used_fraction, threshold)
     else:
-        warned_resources.discard(resource)
+        if resource in warned_resources:
+            print(f"Resource \"{resource}\" has crossed back under the threshold, discarding...")
+            warned_resources.remove(resource)
 
 # Data extraction functions ---
 def read_sys_cpu():
