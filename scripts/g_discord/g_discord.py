@@ -5,6 +5,7 @@ import asyncio
 import discord
 import json
 import os
+import traceback
 
 from libs.config import readConfig, readEnviron, resolvePath
 
@@ -91,7 +92,13 @@ class ChatSocket:
             line = await reader.readline()
             if not line:
                 break  # Connection closed by the server
-            await self._handle_from_socket(line)
+            try:
+                await self._handle_from_socket(line)
+            except Exception as e:
+                # Don't let a malformed line or a failed relay (e.g. a Discord API error in
+                # send_callback) kill this connection - log it and keep listening
+                print("Failed to handle chat socket line:")
+                print(*["\t" + l for l in traceback.format_exc().split("\n")], sep="\n")
 
     async def run(self):
         """Connects and listens forever, reconnecting every RECONNECT_DELAY seconds while disconnected."""
@@ -125,9 +132,11 @@ async def on_ready():
     global chat_bridge_started, chat_socket
     await tree.sync()
     if not chat_bridge_started:  # on_ready can fire again on reconnect, only start this once
-        chat_bridge_started = True
         channel = await client.fetch_channel(CHAT_CHANNEL_ID)
         webhook = await _get_or_create_webhook(channel)
+        # Only mark started once setup above has actually succeeded, so a failure here (e.g. a
+        # transient fetch error) lets the next on_ready retry instead of disabling the bridge forever
+        chat_bridge_started = True
 
         # send_callback for ChatSocket - handle_chat_line with channel/webhook already supplied
         async def relay_to_discord(data):
@@ -172,6 +181,11 @@ async def on_message(message: discord.Message):
         return
     # clean_content resolves mentions/channels/roles to their readable form (e.g. "@Notch") instead
     # of raw IDs (e.g. "<@123456789012345678>"), which is what content would otherwise contain
-    await chat_socket.send_to_socket(message.author.display_name, message.clean_content)
+    try:
+        await chat_socket.send_to_socket(message.author.display_name, message.clean_content)
+    except Exception as e:
+        print("Failed to relay message to Minecraft:")
+        print(*["\t" + l for l in traceback.format_exc().split("\n")], sep="\n")
+        await message.channel.send("Failed to relay your message to Minecraft.")
 
 client.run(BOT_TOKEN)
