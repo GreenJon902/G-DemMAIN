@@ -5,6 +5,7 @@ import { loadGraphDataAction } from "./actions";
 import RadioButtons from "@/app/ui/RadioButtons";
 import { MonitorOption } from "@/lib/panelUtils";
 import { BYTES, rebase } from "@/lib/unitUtils";
+import { latestDefined } from "@/lib/graphUtils";
 
 export default function GraphPageContent({
     data, setParam
@@ -46,8 +47,8 @@ export default function GraphPageContent({
                     <div className="grid w-full gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4">  
                         <CpuRamGraph
                             data={gd.map(d => ({ time: d.time, cpu: d.sys_cpu?.agg, mem: d.sys_mem?.used }))}
-                            totMem={gd[0]?.sys_mem?.total ?? null}
-                            noCores={gd[0]?.sys_cpu?.ind.size ?? null}
+                            totMem={latestDefined(gd, d => d.sys_mem?.total)}
+                            noCores={latestDefined(gd, d => d.sys_cpu?.ind.size)}
                             what="System"
                         />
                         <MultiCPUGraph
@@ -111,7 +112,7 @@ export default function GraphPageContent({
                 <div className="flex w-full flex-wrap gap-4">
                     <TpsHeapGraph
                         data={gd.map(d => ({ time: d.time, tps: d.minecraft.tps, mem: d.minecraft.mem?.used }))}
-                        allocatedMem={gd[0]?.minecraft.mem?.total ?? null}
+                        allocatedMem={latestDefined(gd, d => d.minecraft.mem?.total)}
                     />
                 </div>
             </PageSection>
@@ -123,8 +124,8 @@ export default function GraphPageContent({
                                 <div className="grid w-full gap-4 sm:grid-cols-1 md:grid-cols-2">  
                                     <CpuRamGraph
                                         data={gd.map(d => ({ time: d.time, cpu: d.cgroups.get(cgname)?.cpu, mem: d.cgroups.get(cgname)?.mem?.used}))}
-                                        totMem={gd[0]?.cgroups.get(cgname)?.mem?.total ?? null}
-                                        noCores={gd[0]?.sys_cpu?.ind.size ?? null}
+                                        totMem={latestDefined(gd, d => d.cgroups.get(cgname)?.mem?.total)}
+                                        noCores={latestDefined(gd, d => d.sys_cpu?.ind.size)}
                                         what="CGroup"
                                     />
                                     <TransferGraph
