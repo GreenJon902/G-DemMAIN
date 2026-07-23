@@ -5,6 +5,7 @@ import asyncio
 import discord
 import json
 import os
+import sys
 import traceback
 
 from libs.config import readConfig, readEnviron, resolvePath
@@ -21,7 +22,7 @@ MC_MONITOR_HOST = readConfig("g_mc_monitor/config.json", str, "socketBindAddress
 
 # Name of the webhook g_discord creates in the chat channel, used to post chat messages under the
 # sending player's own name instead of the bot's
-WEBHOOK_NAME = "G-DemMAIN g_d*sc*rd"  # It blocks calling it discord
+WEBHOOK_NAME = "G-DemMAIN g_d*sc*rd test"  # It blocks calling it discord
 
 # Emoji shown for each chat-socket event type
 EVENT_EMOJI = {
@@ -132,11 +133,19 @@ async def on_ready():
     global chat_bridge_started, chat_socket
     await tree.sync()
     if not chat_bridge_started:  # on_ready can fire again on reconnect, only start this once
-        channel = await client.fetch_channel(CHAT_CHANNEL_ID)
-        webhook = await _get_or_create_webhook(channel)
-        # Only mark started once setup above has actually succeeded, so a failure here (e.g. a
-        # transient fetch error) lets the next on_ready retry instead of disabling the bridge forever
-        chat_bridge_started = True
+        try:
+            channel = await client.fetch_channel(CHAT_CHANNEL_ID)
+            webhook = await _get_or_create_webhook(channel)
+        except Exception:
+            # A broken channel ID/webhook means the bridge can never work - fail loudly and take
+            # the whole process down (os._exit, not sys.exit/raise: this runs as a discord.py-
+            # scheduled task, so a normal exception would just be logged by its default on_error
+            # and the client would carry on running without a working bridge)
+            print("Failed to set up chat bridge (channel fetch or webhook get/create):")
+            print(*["\t" + l for l in traceback.format_exc().split("\n")], sep="\n")
+            sys.stdout.flush()
+            os._exit(1)
+        chat_bridge_started = True  # Only mark started once setup above has actually succeeded
 
         # send_callback for ChatSocket - handle_chat_line with channel/webhook already supplied
         async def relay_to_discord(data):
