@@ -107,7 +107,7 @@ export async function loadListItems(list: List) {
  */
 export async function listLogs() {
     await requirePermission("panel", "viewer");
-    return await fs.readdir(C().MC_LOG_FOLDER);
+    return existsSync(C().MC_LOG_FOLDER) ? await fs.readdir(C().MC_LOG_FOLDER) : [];
 }
 
 /**
@@ -204,15 +204,12 @@ export type MonitorOption = { interval: number, number?: number | undefined }
 export async function listMonitorOptions(): Promise<MonitorOption[]> {
     await requirePermission("panel", "viewer");
 
-    return (await fs.readdir(C().MONITOR_FOLDER))
-        .map(name => name.match(/^(\d+)(?:_(\d+))?$/))  // Parse name
-        .filter(match => match !== null)  // Remove non-matches
-        .map(match => ({ interval: parseInt(match[1]), number: (match[2] !== undefined) ? parseInt(match[2]) : undefined }));  // Convert to a usable object
+    return C().MONITOR_RETENTION_RULES.map(([interval, maxCount]) => ({ interval, number: maxCount ?? undefined }));
 }
 
 /**
  * Load all the records for the given monitor retainment rule.
- * This expects a subfolder to exist for the given rule.
+ * If no subfolder exists yet for the given rule (e.g. monitor.py hasn't created it yet), this returns no records.
  * Returns a sorted array of objects with a timestamp (in seconds) and graphdata at that point. The oldest record is first and has a negative value. The newest record is last and has a positive value.
  */
 export async function loadMonitorRecords(interval: number, number?: number | undefined) {
@@ -222,14 +219,15 @@ export async function loadMonitorRecords(interval: number, number?: number | und
 
     // Load data
     const subfolder = path.join(C().MONITOR_FOLDER, monitorName);
-    const recordNames = (await fs.readdir(subfolder))
-        .filter(name => /^\d+\.json$/.test(name));  // Only load files of the correct format
+    const recordNames = existsSync(subfolder)
+        ? (await fs.readdir(subfolder)).filter(name => /^\d+\.json$/.test(name))  // Only load files of the correct format
+        : [];
     const records = await Promise.all(recordNames.map(async record => ({
         time: parseInt(record),  // This will ignore the .json
         data: MonitorRecord.parse(JSON.parse(await fs.readFile(path.join(subfolder, record), "utf-8")))
     })));
     records.sort((a, b) => a.time - b.time);  // Sort based off time
-    const latestTime = Math.max(...records.map(record => record.time));  // The time of the newest record
+    const latestTime = records.length > 0 ? Math.max(...records.map(record => record.time)) : 0;  // The time of the newest record, unused below when there are no records
 
     // Data transformation functions
     //     We calculate the differences between records to get the actual rates. Hence we will have one less record after this
@@ -285,7 +283,7 @@ export async function loadMonitorRecords(interval: number, number?: number | und
     });
 
     return {
-        timestamp: latestTime * 1000,  // Timestamp is in ms
+        timestamp: records.length > 0 ? latestTime * 1000 : undefined,  // Timestamp is in ms
         timed: graphData
     };
 }
@@ -325,7 +323,10 @@ const LiveCgroupProcs = z.strictObject({
 export async function loadLiveCgroupProcs(): Promise<Map<string, Map<string, string> | null>> {
     await requirePermission("panel", "viewer");
 
-    const raw = await fs.readFile(path.join(C().MONITOR_FOLDER, "live_cgroup_procs.json"), "utf-8");
+    const filePath = path.join(C().MONITOR_FOLDER, "live_cgroup_procs.json");
+    if (!existsSync(filePath)) return new Map();
+
+    const raw = await fs.readFile(filePath, "utf-8");
     return LiveCgroupProcs.parse(JSON.parse(raw)).cgroups;
 }
 

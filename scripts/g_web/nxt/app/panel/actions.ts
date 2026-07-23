@@ -23,7 +23,7 @@ export type PanelData = {
         status: UnitStatus | undefined
     }[],
     graphData: Awaited<ReturnType<typeof loadMonitorRecords>>,
-    timestamp: number,  // The time that this record was created, in ms since the epoch
+    timestamp?: number,  // The time that this record was created, in ms since the epoch. Absent if there are no records yet
     refreshRate: number  // How ofter the (graph) data refreshes
 }
 
