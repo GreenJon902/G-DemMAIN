@@ -3,6 +3,7 @@
  */
 
 import { BaseUnit, BYTES, humanize, PERCENTAGE, rebase, SECONDS, TPS } from "@/lib/unitUtils";
+import { latestDefined } from "@/lib/graphUtils";
 import { Graph, LINE_COLORS, LINE_CYAN, LINE_FUCHSIA, LINE_GRAY, LINE_LIME, LINE_ROSE, LINE_VIOLET } from "./Graph";
 
 type nunumber = null | undefined | number;
@@ -80,7 +81,7 @@ export function MultiCPUGraph({
         time: d.time,
         ...((d.cpus) ? Object.fromEntries(d.cpus.entries()) : {}) as {[cpuno: string]: number}
     }));
-    const keys = Array.from(data[data.length - 1]?.cpus?.keys() ?? []).sort().reverse();
+    const keys = Array.from(latestDefined(data, d => d.cpus)?.keys() ?? []).sort().reverse();
     const prepped = prepareData(flattened, 1, true, undefined, "", ...keys);
 
     return (

@@ -6,6 +6,7 @@ import RadioButtons from "@/app/ui/RadioButtons";
 import { MonitorOption } from "@/lib/panelUtils";
 import { BYTES, rebase } from "@/lib/unitUtils";
 import LabelDataMissing from "@/app/ui/LabelDataMissing";
+import { latestDefined } from "@/lib/graphUtils";
 
 export default function GraphPageContent({
     data, setParam
@@ -17,7 +18,7 @@ export default function GraphPageContent({
     return (
         <>
             {/* Monitor option selector: */}
-            {/* 
+            {/*
                 The value handling for this field is a bit weird.
                 The refreshing-page parameters stores the current option.
                 This is passed to the loadGraphDataAction, who returns it for this radio button to know what value to show.
@@ -41,7 +42,7 @@ export default function GraphPageContent({
                 />
             </div>
 
-            
+
             {data.timed === undefined && <LabelDataMissing prefix="Temporal" />}
             {data.cgroupProcs === null && <LabelDataMissing prefix="CGroup process" />}
             {data.timed !== undefined &&
@@ -49,11 +50,11 @@ export default function GraphPageContent({
                     {/* Actual graphs: */}
                     <PageSection title="System">
                         <div className="flex w-full flex-col gap-4">
-                            <div className="grid w-full gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4">  
+                            <div className="grid w-full gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
                                 <CpuRamGraph
                                     data={gd.map(d => ({ time: d.time, cpu: d.sys_cpu?.agg, mem: d.sys_mem?.used }))}
-                                    totMem={gd[0]?.sys_mem?.total ?? null}
-                                    noCores={gd[0]?.sys_cpu?.ind.size ?? null}
+                                    totMem={latestDefined(gd, d => d.sys_mem?.total)}
+                                    noCores={latestDefined(gd, d => d.sys_cpu?.ind.size)}
                                     what="System"
                                 />
                                 <MultiCPUGraph
@@ -117,7 +118,7 @@ export default function GraphPageContent({
                         <div className="flex w-full flex-wrap gap-4">
                             <TpsHeapGraph
                                 data={gd.map(d => ({ time: d.time, tps: d.minecraft.tps, mem: d.minecraft.mem?.used }))}
-                                allocatedMem={gd[0]?.minecraft.mem?.total ?? null}
+                                allocatedMem={latestDefined(gd, d => d.minecraft.mem?.total)}
                             />
                         </div>
                     </PageSection>
@@ -126,11 +127,11 @@ export default function GraphPageContent({
                             Array.from(gd[0]?.cgroups.keys().map(cgname => (
                                 <PageSection pretitle={"• "} title={`${cgname}`} key={cgname}>
                                     <div className="flex flex-col gap-4">
-                                        <div className="grid w-full gap-4 sm:grid-cols-1 md:grid-cols-2">  
+                                        <div className="grid w-full gap-4 sm:grid-cols-1 md:grid-cols-2">
                                             <CpuRamGraph
                                                 data={gd.map(d => ({ time: d.time, cpu: d.cgroups.get(cgname)?.cpu, mem: d.cgroups.get(cgname)?.mem?.used}))}
-                                                totMem={gd[0]?.cgroups.get(cgname)?.mem?.total ?? null}
-                                                noCores={gd[0]?.sys_cpu?.ind.size ?? null}
+                                                totMem={latestDefined(gd, d => d.cgroups.get(cgname)?.mem?.total)}
+                                                noCores={latestDefined(gd, d => d.sys_cpu?.ind.size)}
                                                 what="CGroup"
                                             />
                                             <TransferGraph
@@ -138,7 +139,7 @@ export default function GraphPageContent({
                                                 inDisplayName="CGroup Disk Reads" inShortName="read"
                                                 outDisplayName="CGroup Disk Writes" outShortName="write"
                                                 colorScheme={0}
-                                                units={rebase(BYTES, 10**3)}  // Data is in KB 
+                                                units={rebase(BYTES, 10**3)}  // Data is in KB
                                             />
                                         </div>
                                         {
@@ -180,4 +181,3 @@ export default function GraphPageContent({
         </>
     );
 }
-
