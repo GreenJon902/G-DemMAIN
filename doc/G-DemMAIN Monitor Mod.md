@@ -138,19 +138,20 @@ that happen first - this section covers what's exchanged after that.
 
 **Outgoing (server → client):**
 
-- From then on, every new line printed to console (log output, chat, command feedback - whatever
-  actually goes to stdout, at whatever level is enabled, including DEBUG/TRACE) is streamed as it
-  happens, as separate fields rather than one pre-formatted string:
+- From then on, every new line printed to console at INFO level or above (log output, chat, command
+  feedback - whatever actually goes to stdout) is streamed as it happens, as separate fields rather
+  than one pre-formatted string:
   ```json
   {"type": "line", "datetime": "2026-07-20T14:07:00.123Z", "level": "INFO", "thread": "Server thread", "message": "<Notch> hello"}
   ```
   `datetime` is ISO 8601/RFC 3339 in UTC with millisecond precision, and (being fixed-width) also
   sorts correctly as a plain string - useful for ordering lines from multiple sources. `level` is
-  one of Log4j2's standard level names (`TRACE`/`DEBUG`/`INFO`/`WARN`/`ERROR`/`FATAL`) - filter
-  client-side if you only want some of them. The last-10 history buffer (see
-  [Socket handshake](#socket-handshake)) is narrower though: only INFO and above is kept there, so
-  a burst of DEBUG noise can't push useful history out of the fixed-size buffer. History entries
-  otherwise use this same shape.
+  one of Log4j2's standard level names (`TRACE`/`DEBUG`/`INFO`/`WARN`/`ERROR`/`FATAL`), though in
+  practice only `INFO`/`WARN`/`ERROR`/`FATAL` are ever seen - DEBUG/TRACE are filtered out at the
+  appender before reaching this mod at all (dev's `gradlew runServer` allows them through its own
+  root logger level, but that's not something this mod exposes even there). The last-10 history
+  buffer (see [Socket handshake](#socket-handshake)) shares this same INFO+ floor and otherwise uses
+  this same shape.
 
 **Incoming (client → server):**
 
