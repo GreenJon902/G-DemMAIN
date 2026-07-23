@@ -21,13 +21,12 @@ import java.util.function.Consumer;
  * A Log4j2 appender attached to the root logger so it sees the same lines that appear on the
  * server's actual stdout - vanilla log output, chat, and command feedback all go through here,
  * which is what lets the console socket stream "everything printed to console" without needing
- * separate hooks for chat/commands.
+ * separate hooks for chat/commands. Capped at INFO and above (see register()) - DEBUG/TRACE are
+ * only enabled in dev (gradlew runServer uses a different root log level than production), so
+ * streaming them would mean the console socket behaves inconsistently between environments.
  */
 public class ConsoleCapture extends AbstractAppender {
 	private static final int HISTORY_SIZE = 10;
-	// Only INFO and above is kept in history - DEBUG/TRACE still stream live (see append()) so
-	// clients can filter them client-side, but they'd just be noise in the fixed-size replay buffer
-	private static final Level MIN_HISTORY_LEVEL = Level.INFO;
 	// ISO 8601/RFC 3339 in UTC with millisecond precision, e.g. "2026-07-20T14:07:00.123Z" - a fixed
 	// width so it also sorts correctly as a plain string, which matters since this is what lets
 	// clients order lines from multiple sources
@@ -49,7 +48,7 @@ public class ConsoleCapture extends AbstractAppender {
 	public void register() {
 		start();
 		LoggerContext context = (LoggerContext) LogManager.getContext(false);
-		context.getConfiguration().getRootLogger().addAppender(this, null, null);
+		context.getConfiguration().getRootLogger().addAppender(this, Level.INFO, null);
 	}
 
 	@Override
@@ -59,12 +58,10 @@ public class ConsoleCapture extends AbstractAppender {
 				event.getLevel().toString(),
 				event.getThreadName(),
 				event.getMessage().getFormattedMessage());
-		if (event.getLevel().isMoreSpecificThan(MIN_HISTORY_LEVEL)) {
-			synchronized (history) {
-				history.addLast(line);
-				while (history.size() > HISTORY_SIZE) {
-					history.removeFirst();
-				}
+		synchronized (history) {
+			history.addLast(line);
+			while (history.size() > HISTORY_SIZE) {
+				history.removeFirst();
 			}
 		}
 		for (Consumer<ConsoleLine> listener : listeners) {

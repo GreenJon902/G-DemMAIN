@@ -37,7 +37,6 @@
 import { useEffect, useRef, useState } from "react";
 import { BUTTON_GREEN, SimpleButton } from "../../ui/Button";
 import TextInput from "../../ui/TextInput";
-import ToggleButton from "../../ui/ToggleButton";
 import { useAuthContext } from "../../AuthContext";
 import { getAreaSudoStatusAction } from "../../actions";
 import { zConsoleServerMessage, type ConsoleLine, type ConsoleMeta, type ConsoleCommand } from "@g/com/lib/mcConsoleProtocol";
@@ -50,16 +49,7 @@ type Entry = { kind: "line", line: ConsoleLine } | { kind: "meta", meta: Console
 // cause a tight, zero-delay reconnect loop
 const RECONNECT_DELAY_MS = 3000;
 
-// We keep more entries stored than we display - most stored entries can be DEBUG/TRACE (hidden by
-// default), so capping storage to the same count as what's displayed would leave almost nothing to
-// show the moment "Show debug logs" is turned on
-const MAX_STORED_ENTRIES = 1000;
 const MAX_DISPLAYED_ENTRIES = 50;
-
-/** The level to filter this entry on, or null for "note" (which is never filtered). */
-function entryLevel(entry: Entry) {
-    return entry.kind === "note" ? null : entry.kind === "line" ? entry.line.level : entry.meta.level;
-}
 
 /** Parses a string as JSON, returning undefined (rather than throwing) if it isn't valid JSON. */
 function tryParseJson(text: string): unknown {
@@ -78,12 +68,9 @@ export default function Console({ mccwss_port }: { mccwss_port: number }) {
     // Store the entries received from MCCWSS (both real console lines and locally/mcc-synthesized notices)
     const [entries, setEntries] = useState<Array<Entry>>([]);
     const appendEntries = (newEntries: Array<Entry>) =>
-        setEntries(prev => [...prev, ...newEntries].slice(-MAX_STORED_ENTRIES));
+        setEntries(prev => [...prev, ...newEntries].slice(-MAX_DISPLAYED_ENTRIES));
     const pushMeta = (level: ConsoleMeta["level"], message: string) =>
         appendEntries([{ kind: "meta", meta: { type: "meta", level, source: "Client", message } }]);
-
-    // Whether to show DEBUG/TRACE lines - off by default since they're noisy
-    const [showDebug, setShowDebug] = useState(false);
 
     const { sudoVerifiedAt, requestSudo, showSudoUnavailable, checkPermission } = useAuthContext();
     const isAdmin = checkPermission("panel", "admin");
@@ -240,33 +227,27 @@ export default function Console({ mccwss_port }: { mccwss_port: number }) {
         socket.send(JSON.stringify({ type: "command", command } satisfies ConsoleCommand));
     }
 
-    // Always keep the console scrolled to the bottom as new content arrives, or when toggling debug
-    // visibility changes what's rendered
+    // Always keep the console scrolled to the bottom as new content arrives
     const consoleDivRef = useRef<HTMLDivElement>(null);
     useEffect(() => {
         const cd = consoleDivRef.current;
         if (cd === null) throw new Error("Exception, consoleDivRef.current is null");
         cd.scrollTop = cd.scrollHeight;
-    }, [entries, showDebug]);
+    }, [entries]);
 
     return (
         <div className="flex h-[calc(100dvh-10rem)] flex-col gap-1">
-            <div className="flex justify-end">
-                <ToggleButton checked={showDebug} setter={setShowDebug} label="Show debug logs" className="text-sm" />
-            </div>
             <div
                 className="w-full flex-1 overflow-scroll rounded-md bg-gray-950 p-1"
                 ref={consoleDivRef}
             >
                 {
                     entries
-                        .filter(entry => entry.kind === "note" || showDebug || (entryLevel(entry) !== "DEBUG" && entryLevel(entry) !== "TRACE"))
-                        .slice(-MAX_DISPLAYED_ENTRIES)
                         .map((entry, i) => {
                             if (entry.kind === "note") {
                                 return (
                                     <span key={i} className="block text-gray-500 italic">
-                                        * History may not be entirely accurate.{showDebug ? " History omits debug logs." : ""}
+                                        * History may not be entirely accurate.
                                     </span>
                                 );
                             }
