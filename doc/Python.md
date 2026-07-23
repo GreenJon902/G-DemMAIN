@@ -5,6 +5,8 @@ per-checkout virtual environment at `{ROOT}/.venv`, where `{ROOT}` is that check
 this is the same mechanism whether the checkout is the prod install, the main dev checkout, or a
 dev `git worktree`.
 
+This venv has the `{ROOT}` in path, so shared tools - `libs.config`, `scripts.webhooks`, etc - are accessible via simple imports.
+
 ## `utils/createVenv.sh`
 
 `utils/createVenv.sh` creates/updates that venv and wires up `libs/` import resolution:
