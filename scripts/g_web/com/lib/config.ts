@@ -37,6 +37,8 @@ const zUnit = zod.object({
 });
 export type Unit = zod.infer<typeof zUnit>;
 
+// A single [interval, maxCount] retention rule from g_monitor/config.json - see doc/Monitoring notes.md "Retention"
+const zRetentionRule = zod.tuple([zod.number().int().positive(), zod.number().int().positive().nullable()]);
 
 const generate = () => {
     const zTNe = zod.string().trim().nonempty();  // Trimmed non-empty string
@@ -44,6 +46,7 @@ const generate = () => {
 
     const gWeb = readConfigFile("g_web/config.json");
     const gMcMonitor = readConfigFile("g_mc_monitor/config.json");
+    const gMonitor = readConfigFile("g_monitor/config.json");
 
     const MCCWSS_PORT = zJsonPort.parse(gWeb.mccwssPort);
     const SESSION_PASSWORD = zTNe.min(32).parse(process.env.SESSION_PASSWORD);
@@ -64,8 +67,10 @@ const generate = () => {
 
     const TRACKED_UNITS = zod.array(zUnit).parse(gWeb.trackedUnits);
 
+    const MONITOR_RETENTION_RULES = zod.array(zRetentionRule).parse(gMonitor.retention);
+
     return {
-        MCCWSS_PORT, SESSION_PASSWORD, LIST_FOLDER, MC_LOG_FOLDER, MONITOR_FOLDER, MINECRAFT_CACHE_FILE, MINECRAFT_MONITOR_CONSOLE_PORT, MINECRAFT_MONITOR_CONSOLE_HOST, MINECRAFT_MONITOR_CONSOLE_AUTH_KEY, G_WEB_DATABASE_USER, G_WEB_DATABASE_PASSWORD, G_WEB_DATABASE_HOST, G_WEB_DATABASE_PORT, TRACKED_UNITS
+        MCCWSS_PORT, SESSION_PASSWORD, LIST_FOLDER, MC_LOG_FOLDER, MONITOR_FOLDER, MINECRAFT_CACHE_FILE, MINECRAFT_MONITOR_CONSOLE_PORT, MINECRAFT_MONITOR_CONSOLE_HOST, MINECRAFT_MONITOR_CONSOLE_AUTH_KEY, G_WEB_DATABASE_USER, G_WEB_DATABASE_PASSWORD, G_WEB_DATABASE_HOST, G_WEB_DATABASE_PORT, TRACKED_UNITS, MONITOR_RETENTION_RULES
     };
 };
 
