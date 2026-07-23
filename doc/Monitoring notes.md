@@ -68,6 +68,15 @@ The `retention` key is a JSON array of `[interval, maxCount]` pairs specifying h
 E.g. if we have a pair that is `[5, 20]`, then we will keep 20 logs for the last 100 seconds, each of which is 5 seconds apart.  
 Older logs are automatically removed.  
 There should not be identical rules.
+### Usage Warning Thresholds
+The `ramWarnThreshold` and `diskWarnThreshold` keys are floats in `[0, 1]` - the fraction of RAM/drive usage that triggers a `SYSWARN` webhook (see [Usage Warnings](#usage-warnings) below).
+### Disk Warn Mounts
+The `diskWarnMounts` key is a JSON array of mount points (e.g. `"/"`) checked against `diskWarnThreshold`.
+
+## Usage Warnings
+If system RAM usage, or the usage of any mount point listed in `diskWarnMounts`, goes over its configured threshold (`ramWarnThreshold`/`diskWarnThreshold`), the `SYSWARN` webhook (see `scripts/webhooks.py`) is fired.  
+This is edge-triggered - the alert fires once when usage crosses above the threshold, then stays silent while it remains over, and re-arms once usage drops back below the threshold. This means a resource stuck over threshold doesn't get a repeat warning every mainloop tick.  
+Disk usage is queried directly via `df` (see `read_disk_usage` in `monitor.py`) rather than through the historical record - it is not written to the `sys_disk_usage` field, which stays deprecated (see Schema Changelog).
 
 ## Historical records
 In whatever folder the config's `recordFolder` resolves to (prod `/var/lib/g_monitor`, dev `scripts/g_monitor` relative to the repo root) are the records.   
