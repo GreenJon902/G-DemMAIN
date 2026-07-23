@@ -20,7 +20,7 @@ And add `jon ALL=(ALL) NOPASSWD: ALL` to the end of `visudo`.
 
 4. Login as jon and copy the SSH key. Use `scp` to copy the G-DemMAIN repo to the infra folder and apply SSH configurations. Use `sudo chmod 2755 -R *` to fix the permissions. Reload the SSH config on the server.
 
-5. `apt install mariadb-server mariadb-client openjdk-25-jdk-headless python3-pip`
+5. `apt install mariadb-server mariadb-client openjdk-25-jdk-headless python3.13-venv fuse3 libfuse-dev`
 See `Python.md` for setting up the venv.
 
 6. Create service users (run all lines that are necessary): 
@@ -36,15 +36,16 @@ sudo usermod -aG g_mc jon    # You may need to relog for this to take effect
 7. Setup the environment and config files.
 ```
 cd /opt/infra/environ && \
-sudo python3 ../utils/sync-environ.py && \
+sudo python3 ../utils/sync-environ.py prod && \
 cd /opt/infra/config/prod && \
-sudo python3 ../utils/sync-static-config.py && \
-sudo python3 ../utils/sync-sudoers.py && \
+sudo python3 ../../utils/sync-static-config.py && \
+sudo python3 ../../utils/sync-sudoers.py && \
 sudo systemctl daemon-reload
 ```
 
 8. Set up the database 
-See `Databases.md`. We need database users created.
+See `Databases.md`. We need database users and tables created.
+You can use `/usr/bin/node /var/lib/g_web/node_modules/prisma/build/index.js migrate diff --config /var/lib/g_web/com/prisma.config.ts --from-schema /var/lib/g_web/com/prisma/schema.prisma --to-config-datasource --exit-code` to compare the current schema to what the repo holds.
 
 9. Build the website
 Ensure the g_web user is created.
@@ -70,9 +71,9 @@ So ownership is not important. g\_mc group gives read/write access for jon and g
 
 
 
-`sudo systemctl stop g_mc g_web_nxt g_web_mcc g_monitor`
-`sudo systemctl reset-failed g_mc g_web_nxt g_web_mcc g_monitor`
-`sudo systemctl restart g_mc g_web_nxt g_web_mcc g_monitor`
+`sudo systemctl stop g_mc g_web_nxt g_web_mcc g_monitor g_discord`
+`sudo systemctl reset-failed g_mc g_web_nxt g_web_mcc g_monitor g_discord`
+`sudo systemctl restart g_mc g_web_nxt g_web_mcc g_monitor g_discord`
 
 
 

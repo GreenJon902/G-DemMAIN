@@ -88,7 +88,7 @@ The mount is done in-process via [jnr-fuse](https://github.com/SerCeMan/jnr-fuse
 the mod jar) with the `allow_other` mount option, so that `g_web`/`g_monitor`/other users can read
 it even though `g_mc` is the process that mounted it. Two host-level things fall out of that:
 
-1. **`fuse3` (or `fuse`) must be installed** and `/dev/fuse` must be accessible to the `g_mc` user
+1. **`fuse3` (or `fuse`) and `libfuse-dev` must be installed** and `/dev/fuse` must be accessible to the `g_mc` user
    (usually already true - check the `fuse` group or device permissions if mounting fails).
 2. **`user_allow_other` must be uncommented in `/etc/fuse.conf`** - without it, a non-root mount
    with `-o allow_other` is rejected by libfuse itself, regardless of file permissions. This is
