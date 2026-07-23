@@ -2,5 +2,6 @@
 __pycache__/
 devConfig/
 scripts/g_monitor/*/
+scripts/g_monitor/live_cgroup_procs.json
 scripts/g_mc/g_mc_monitor/fuse/
 scripts/g_web/devData/
