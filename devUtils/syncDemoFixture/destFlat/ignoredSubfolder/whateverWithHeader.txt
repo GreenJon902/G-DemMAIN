@@ -1,0 +1,2 @@
+# This is a G-DemMAIN synced config file, and may be overwritten when sync is run. Please do not modify this line, and leave it as the first line of this file.
+This file lives inside a subfolder of a flat destination and must never be inspected, because flat mode does not descend into subfolders. This file has a header.

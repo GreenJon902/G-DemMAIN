@@ -211,7 +211,8 @@ for (source_folder, destination_folder, recursive) in sync_map:
                             print(f"Making parent folder {PATH_COL}{parent}{RESET}")
                             os.makedirs(parent)
                         # Add header to source file, then write to destination_file
-                        open(destination_file, "w").write(HEADER_LINE + "\n" + possible_template_open(source_file))
+                        possibly_templated = possible_template_open(source_file)  # Template the file before opening the destination, so if templating fails we don't leave an empty file
+                        open(destination_file, "w").write(HEADER_LINE + "\n" + possibly_templated)
                     break
                 elif action == "i":
                     print(f"Ignoring {PATH_COL}{source_file}{RESET}")
