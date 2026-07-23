@@ -7,6 +7,7 @@ import json
 import os
 
 from libs.config import readConfig, readEnviron, resolvePath
+from libs.wrappedCalls import exit_all_on_fail
 
 RECONNECT_DELAY = 5  # seconds to wait between chat socket reconnect attempts
 
@@ -20,7 +21,7 @@ MC_MONITOR_HOST = readConfig("g_mc_monitor/config.json", str, "socketBindAddress
 
 # Name of the webhook g_discord creates in the chat channel, used to post chat messages under the
 # sending player's own name instead of the bot's
-WEBHOOK_NAME = "G-DemMAIN g_d*sc*rd"  # It blocks calling it discord
+WEBHOOK_NAME = "G-DemMAIN g_d*sc*rd"  # It blocks calling it discord, so use asterisks
 
 # Emoji shown for each chat-socket event type
 EVENT_EMOJI = {
@@ -73,7 +74,6 @@ class ChatSocket:
         # TODO: the chat socket protocol has no `datetime` field on message/event objects (unlike
         # the console socket's `line` objects) - once it does, history could be replayed for
         # messages after the last one we relayed here, instead of being ignored entirely
-        print("Recieved:", line)
         data = json.loads(line)
         assert "type" in data, f"Chat socket line missing 'type': {data}"
         if data["type"] == "history":
@@ -89,9 +89,13 @@ class ChatSocket:
         # Reads lines until the server closes the connection
         while True:
             line = await reader.readline()
+            print("Recieved:", line)
             if not line:
                 break  # Connection closed by the server
-            await self._handle_from_socket(line)
+            try:
+                await self._handle_from_socket(line)
+            except Exception as e:
+                print("Failed to handle chat socket line:", e)
 
     async def run(self):
         """Connects and listens forever, reconnecting every RECONNECT_DELAY seconds while disconnected."""
@@ -110,10 +114,18 @@ class ChatSocket:
             await asyncio.sleep(RECONNECT_DELAY)
 
 async def _get_or_create_webhook(channel):
-    """Gets g_discord's webhook for channel, creating it if it doesn't already exist."""
+    """
+    Gets g_discord's webhook for channel, creating it if it doesn't already exist.
+    This ensures that the webhook is usable by the current bot, if it was created by another bot then it a new one is also created.
+    """
     for webhook in await channel.webhooks():
         if webhook.name == WEBHOOK_NAME:
+            if webhook.token is None:  # If webhook created by another bot then this is true, we cannot use a webhook from another bot
+                print(f"Webhook \"{WEBHOOK_NAME}\" exists but created by another bot...")
+                continue
+            print(f"Found existing webhook \"{WEBHOOK_NAME}\"")
             return webhook
+    print(f"Creating new webhook \"{WEBHOOK_NAME}\"")
     return await channel.create_webhook(name=WEBHOOK_NAME)
 
 chat_socket = None  # Created in on_ready, once the target Discord channel can be fetched
@@ -123,11 +135,14 @@ chat_bridge_started = False
 async def on_ready():
     """Called once the client has successfully connected to Discord."""
     global chat_bridge_started, chat_socket
+    print("on_ready...")
     await tree.sync()
     if not chat_bridge_started:  # on_ready can fire again on reconnect, only start this once
-        chat_bridge_started = True
-        channel = await client.fetch_channel(CHAT_CHANNEL_ID)
-        webhook = await _get_or_create_webhook(channel)
+        # A broken channel ID/webhook means the bridge can never work - exit_all_on_fail fails
+        # loudly and takes the whole process down instead of leaving the client running bridge-less
+        channel = await exit_all_on_fail(client.fetch_channel, CHAT_CHANNEL_ID, on_error_msg="Failed to fetch chat channel:")
+        webhook = await exit_all_on_fail(_get_or_create_webhook, channel, on_error_msg="Failed to get or create webhook:")
+        chat_bridge_started = True  # Only mark started once setup above has actually succeeded
 
         # send_callback for ChatSocket - handle_chat_line with channel/webhook already supplied
         async def relay_to_discord(data):
@@ -172,6 +187,10 @@ async def on_message(message: discord.Message):
         return
     # clean_content resolves mentions/channels/roles to their readable form (e.g. "@Notch") instead
     # of raw IDs (e.g. "<@123456789012345678>"), which is what content would otherwise contain
-    await chat_socket.send_to_socket(message.author.display_name, message.clean_content)
+    try:
+        await chat_socket.send_to_socket(message.author.display_name, message.clean_content)
+    except Exception as e:
+        print("Failed to relay message to Minecraft:", e)
+        await message.channel.send("Failed to relay your message to Minecraft.")
 
 client.run(BOT_TOKEN)
