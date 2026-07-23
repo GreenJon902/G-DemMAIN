@@ -22,7 +22,7 @@ MC_MONITOR_HOST = readConfig("g_mc_monitor/config.json", str, "socketBindAddress
 
 # Name of the webhook g_discord creates in the chat channel, used to post chat messages under the
 # sending player's own name instead of the bot's
-WEBHOOK_NAME = "G-DemMAIN g_d*sc*rd test"  # It blocks calling it discord
+WEBHOOK_NAME = "G-DemMAIN g_d*sc*rd"  # It blocks calling it discord, so use asterisks
 
 # Emoji shown for each chat-socket event type
 EVENT_EMOJI = {
@@ -118,10 +118,18 @@ class ChatSocket:
             await asyncio.sleep(RECONNECT_DELAY)
 
 async def _get_or_create_webhook(channel):
-    """Gets g_discord's webhook for channel, creating it if it doesn't already exist."""
+    """
+    Gets g_discord's webhook for channel, creating it if it doesn't already exist.
+    This ensures that the webhook is usable by the current bot, if it was created by another bot then it a new one is also created.
+    """
     for webhook in await channel.webhooks():
         if webhook.name == WEBHOOK_NAME:
+            if webhook.token is None:  # If webhook created by another bot then this is true, we cannot use a webhook from another bot
+                print(f"Webhook \"{WEBHOOK_NAME}\" exists but created by another bot...")
+                continue
+            print(f"Found existing webhook \"{WEBHOOK_NAME}\"")
             return webhook
+    print(f"Creating new webhook \"{WEBHOOK_NAME}\"")
     return await channel.create_webhook(name=WEBHOOK_NAME)
 
 chat_socket = None  # Created in on_ready, once the target Discord channel can be fetched
@@ -131,6 +139,7 @@ chat_bridge_started = False
 async def on_ready():
     """Called once the client has successfully connected to Discord."""
     global chat_bridge_started, chat_socket
+    print("on_ready...")
     await tree.sync()
     if not chat_bridge_started:  # on_ready can fire again on reconnect, only start this once
         try:
