@@ -9,15 +9,17 @@ import { UnitStatus } from "@/lib/panelUtils";
 import { makeAreaSudoGuard, useAuthContext } from "@/app/AuthContext";
 import { useConfirmContext } from "@/app/ConfirmContext";
 import { useErrorContext } from "@/app/ErrorContext";
+import LabelDataMissing from "../ui/LabelDataMissing";
 
 export default function PanelPageContent(
     { data }: { data: Awaited<ReturnType<typeof loadPanelDataAction>> }
 ) {
-    const gd = data.graphData.timed;
+    const gd = data.graphData.timed ?? [];
     return (
         <>
             { /* Resource monitors -------------------------------------------------- */ }
             <PageSection title="Important Graphs">
+                {data.graphData.timed === undefined && <LabelDataMissing />}
                 <div className="flex w-full flex-wrap gap-4">
                     <TpsHeapGraph
                         data={gd.map(d => ({ time: d.time, tps: d.minecraft.tps, mem: d.minecraft.mem?.used }))}

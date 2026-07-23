@@ -32,7 +32,7 @@ export default function LabelSinceLastRefresh({
     });
     
     return (
-        <span className="text-gray-600">
+        <span className="block text-gray-600">
             {text} {humanize(Math.round((currentTimestamp - timestamp) / 1000), SECONDS, { baseInteger: true })} seconds ago
         </span>
     );

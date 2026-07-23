@@ -7,6 +7,7 @@ import ItemRow from "./ItemRow";
 import PageSection from "../../ui/PageSection";
 import { BANNEDIP_LIST, BANNEDPLAYER_LIST, loadListItems, OPERATOR_LIST, List as PUList, WHITELIST_LIST } from "@/lib/panelUtils";
 import { AutoLabelSinceLastRefresh } from "../../ui/LabelSinceLastRefresh";
+import LabelDataMissing from "../../ui/LabelDataMissing";
 
 export const metadata: Metadata = { title: "Lists | Panel" };
 
@@ -35,7 +36,7 @@ export default function Page() {
                             <div> 
                                 {(await loadListItems(list.list))?.map(item => (
                                     <ItemRow key={item.uniquename} item={item} list={list} />
-                                )) ?? <span className="italic">Data missing!</span>}
+                                )) ?? <LabelDataMissing />}
                             </div>
                         </div>
                     </PageSection>

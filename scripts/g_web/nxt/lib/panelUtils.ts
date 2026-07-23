@@ -103,11 +103,11 @@ export async function loadListItems(list: List) {
 
 /**
  * Lists the minecraft logs which are available to view.
- * @returns A string[] of the file names formatted. These will include file-extensions.
+ * @returns A string[] of the file names formatted (these will include file-extensions), or null if the log folder doesn't exist.
  */
-export async function listLogs() {
+export async function listLogs(): Promise<string[] | null> {
     await requirePermission("panel", "viewer");
-    return existsSync(C().MC_LOG_FOLDER) ? await fs.readdir(C().MC_LOG_FOLDER) : [];
+    return existsSync(C().MC_LOG_FOLDER) ? await fs.readdir(C().MC_LOG_FOLDER) : null;
 }
 
 /**
@@ -165,6 +165,7 @@ const zMinecraft = z.strictObject({
     tps: z.number().nonnegative().nullable(),  // Ticks per second, rolling average capped at 20
     mem: zMem.nullable(),  // Heap usage, in kilobytes
     players: z.array(z.string()).nullable().optional()  // @deprecated - see Schema Changelog, kept optional so old records still parse
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 }).transform(({ players, ...rest }) => rest);  // Strip the deprecated field from the parsed type
 const zCoercedMap = <T extends z.ZodTypeAny> (zValue: T) => z.record(z.string().nonempty(), zValue).transform(obj => new Map(Object.entries(obj)));
 const zCgroup = z.strictObject({
@@ -172,6 +173,7 @@ const zCgroup = z.strictObject({
     mem: zMem.nullable(),
     disk_io: zDiskIO.nullable(),
     procs: zCoercedMap(z.string()).nullable().optional()  // @deprecated - see Schema Changelog, kept optional so old records still parse
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 }).transform(({ procs, ...rest }) => rest);  // Strip the deprecated field from the parsed type
 const MonitorRecord = z.strictObject({
     sys_cpu: z.strictObject({
@@ -194,6 +196,7 @@ const MonitorRecord = z.strictObject({
     })).nullable().optional(),  // @deprecated - see Schema Changelog, kept optional so old records still parse
     minecraft: zMinecraft.nullable().default(null),  // Absent entirely in records predating this field
     cgroups: zCoercedMap(zCgroup)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 }).transform(({ sys_disk_usage, ...rest }) => rest);  // Strip the deprecated field from the parsed type
 export type MonitorRecord = z.infer<typeof MonitorRecord>;
 
@@ -209,8 +212,8 @@ export async function listMonitorOptions(): Promise<MonitorOption[]> {
 
 /**
  * Load all the records for the given monitor retainment rule.
- * If no subfolder exists yet for the given rule (e.g. monitor.py hasn't created it yet), this returns no records.
- * Returns a sorted array of objects with a timestamp (in seconds) and graphdata at that point. The oldest record is first and has a negative value. The newest record is last and has a positive value.
+ * Returns null if no subfolder exists yet for the given rule (e.g. monitor.py hasn't created it yet).
+ * Otherwise returns a sorted array of objects with a timestamp (in seconds) and graphdata at that point. The oldest record is first and has a negative value. The newest record is last and has a positive value.
  */
 export async function loadMonitorRecords(interval: number, number?: number | undefined) {
     await requirePermission("panel", "viewer");
@@ -219,15 +222,15 @@ export async function loadMonitorRecords(interval: number, number?: number | und
 
     // Load data
     const subfolder = path.join(C().MONITOR_FOLDER, monitorName);
-    const recordNames = existsSync(subfolder)
-        ? (await fs.readdir(subfolder)).filter(name => /^\d+\.json$/.test(name))  // Only load files of the correct format
-        : [];
+    if (!existsSync(subfolder)) return null;
+    const recordNames = (await fs.readdir(subfolder))
+        .filter(name => /^\d+\.json$/.test(name));  // Only load files of the correct format
     const records = await Promise.all(recordNames.map(async record => ({
         time: parseInt(record),  // This will ignore the .json
         data: MonitorRecord.parse(JSON.parse(await fs.readFile(path.join(subfolder, record), "utf-8")))
     })));
     records.sort((a, b) => a.time - b.time);  // Sort based off time
-    const latestTime = records.length > 0 ? Math.max(...records.map(record => record.time)) : 0;  // The time of the newest record, unused below when there are no records
+    const latestTime = Math.max(...records.map(record => record.time));  // The time of the newest record, unused below when there are no records
 
     // Data transformation functions
     //     We calculate the differences between records to get the actual rates. Hence we will have one less record after this
@@ -283,7 +286,7 @@ export async function loadMonitorRecords(interval: number, number?: number | und
     });
 
     return {
-        timestamp: records.length > 0 ? latestTime * 1000 : undefined,  // Timestamp is in ms
+        timestamp: records.length > 0 ? latestTime * 1000 : undefined,  // Timestamp is in ms. Records.length > 0 iff latestTime is finite
         timed: graphData
     };
 }
@@ -319,12 +322,14 @@ const LiveCgroupProcs = z.strictObject({
 /**
  * Loads the current processes for each tracked cgroup, from the live_cgroup_procs.json file monitor.py publishes.
  * This isn't queried directly by g_web, as it needs read access to cgroup and /proc files owned by other services' users.
+ * Returns null if the file doesn't exist yet (e.g. monitor.py hasn't published its first live snapshot). An individual
+ * cgroup entry being null (rather than the whole map) means only that cgroup's procs failed to be read.
  */
-export async function loadLiveCgroupProcs(): Promise<Map<string, Map<string, string> | null>> {
+export async function loadLiveCgroupProcs(): Promise<Map<string, Map<string, string> | null> | null> {
     await requirePermission("panel", "viewer");
 
     const filePath = path.join(C().MONITOR_FOLDER, "live_cgroup_procs.json");
-    if (!existsSync(filePath)) return new Map();
+    if (!existsSync(filePath)) return null;
 
     const raw = await fs.readFile(filePath, "utf-8");
     return LiveCgroupProcs.parse(JSON.parse(raw)).cgroups;

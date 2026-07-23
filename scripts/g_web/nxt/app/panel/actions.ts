@@ -2,7 +2,7 @@
 "use server";
 
 import { C, type Unit } from "@g/com/lib/config";
-import { getUnitStatus, loadMonitorRecords, UnitStatus, unitAction as libUnitAction } from "@/lib/panelUtils";
+import { getUnitStatus, UnitStatus, unitAction as libUnitAction } from "@/lib/panelUtils";
 import { loadGraphDataAction } from "./graphs/actions";
 
 /**
@@ -22,7 +22,7 @@ export type PanelData = {
         unit: Unit,
         status: UnitStatus | undefined
     }[],
-    graphData: Awaited<ReturnType<typeof loadMonitorRecords>>,
+    graphData: Awaited<ReturnType<typeof loadGraphDataAction>>,
     timestamp?: number,  // The time that this record was created, in ms since the epoch. Absent if there are no records yet
     refreshRate: number  // How ofter the (graph) data refreshes
 }
@@ -39,7 +39,7 @@ export async function loadPanelDataAction(): Promise<PanelData> {
     ]);
     return {
         unitsStatuses,
-        graphData,  // TODO: This could be improved
+        graphData,  // TODO: This could be improved, as we don't need all this data for the panel home page
         timestamp: graphData.timestamp,
         refreshRate: graphData.refreshRate
     };
