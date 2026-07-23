@@ -5,10 +5,9 @@ import asyncio
 import discord
 import json
 import os
-import sys
-import traceback
 
 from libs.config import readConfig, readEnviron, resolvePath
+from libs.wrappedCalls import exit_all_on_fail
 
 RECONNECT_DELAY = 5  # seconds to wait between chat socket reconnect attempts
 
@@ -75,7 +74,6 @@ class ChatSocket:
         # TODO: the chat socket protocol has no `datetime` field on message/event objects (unlike
         # the console socket's `line` objects) - once it does, history could be replayed for
         # messages after the last one we relayed here, instead of being ignored entirely
-        print("Recieved:", line)
         data = json.loads(line)
         assert "type" in data, f"Chat socket line missing 'type': {data}"
         if data["type"] == "history":
@@ -91,15 +89,13 @@ class ChatSocket:
         # Reads lines until the server closes the connection
         while True:
             line = await reader.readline()
+            print("Recieved:", line)
             if not line:
                 break  # Connection closed by the server
             try:
                 await self._handle_from_socket(line)
             except Exception as e:
-                # Don't let a malformed line or a failed relay (e.g. a Discord API error in
-                # send_callback) kill this connection - log it and keep listening
-                print("Failed to handle chat socket line:")
-                print(*["\t" + l for l in traceback.format_exc().split("\n")], sep="\n")
+                print("Failed to handle chat socket line:", e)
 
     async def run(self):
         """Connects and listens forever, reconnecting every RECONNECT_DELAY seconds while disconnected."""
@@ -142,18 +138,10 @@ async def on_ready():
     print("on_ready...")
     await tree.sync()
     if not chat_bridge_started:  # on_ready can fire again on reconnect, only start this once
-        try:
-            channel = await client.fetch_channel(CHAT_CHANNEL_ID)
-            webhook = await _get_or_create_webhook(channel)
-        except Exception:
-            # A broken channel ID/webhook means the bridge can never work - fail loudly and take
-            # the whole process down (os._exit, not sys.exit/raise: this runs as a discord.py-
-            # scheduled task, so a normal exception would just be logged by its default on_error
-            # and the client would carry on running without a working bridge)
-            print("Failed to set up chat bridge (channel fetch or webhook get/create):")
-            print(*["\t" + l for l in traceback.format_exc().split("\n")], sep="\n")
-            sys.stdout.flush()
-            os._exit(1)
+        # A broken channel ID/webhook means the bridge can never work - exit_all_on_fail fails
+        # loudly and takes the whole process down instead of leaving the client running bridge-less
+        channel = await exit_all_on_fail(client.fetch_channel, CHAT_CHANNEL_ID, on_error_msg="Failed to fetch chat channel:")
+        webhook = await exit_all_on_fail(_get_or_create_webhook, channel, on_error_msg="Failed to get or create webhook:")
         chat_bridge_started = True  # Only mark started once setup above has actually succeeded
 
         # send_callback for ChatSocket - handle_chat_line with channel/webhook already supplied
@@ -202,8 +190,7 @@ async def on_message(message: discord.Message):
     try:
         await chat_socket.send_to_socket(message.author.display_name, message.clean_content)
     except Exception as e:
-        print("Failed to relay message to Minecraft:")
-        print(*["\t" + l for l in traceback.format_exc().split("\n")], sep="\n")
+        print("Failed to relay message to Minecraft:", e)
         await message.channel.send("Failed to relay your message to Minecraft.")
 
 client.run(BOT_TOKEN)

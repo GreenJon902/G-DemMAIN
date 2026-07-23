@@ -5,12 +5,12 @@
 import re
 import time
 import json
-import traceback
 import os
 import subprocess
 import sys
 
 from libs.config import readConfigList, readConfigRaw, readConfig, resolvePath, ROOT
+from libs.wrappedCalls import safe_call
 
 # Log run-info
 print("Executing in", os.getcwd())
@@ -77,19 +77,6 @@ def extractsum(data: dict[str, str], *properties: list[str]):
     Sums the values - for given properties - in data. Casts all values to integers.
     """
     return sum(int(v) for (k, v) in data.items() if k in properties)
-
-def safe_call(func: callable, *args: list[any], on_error_msg: str = None, **kwargs: dict[str, any]):
-    """
-    Calls func(*args, **kwargs), returning its return-value.
-    If it raises, the exception is logged to console (with a traceback) and None is returned instead.
-    on_error_msg, if given, is printed as the first line of the error log instead of the default message.
-    """
-    try:
-        return func(*args, **kwargs)
-    except Exception:
-        print(on_error_msg if on_error_msg is not None else f"Failed to call '{func}': ")
-        print(*["\t" + line for line in traceback.format_exc().split("\n")], sep="\n")
-        return None
 
 def attempt_build_dict(source: dict[str: callable], *args: list[any]):
     """
