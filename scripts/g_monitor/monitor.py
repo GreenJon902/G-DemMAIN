@@ -7,8 +7,10 @@ import time
 import json
 import traceback
 import os
+import subprocess
+import sys
 
-from libs.config import readConfigList, readConfigRaw, readConfig, resolvePath
+from libs.config import readConfigList, readConfigRaw, readConfig, resolvePath, ROOT
 
 # Log run-info
 print("Executing in", os.getcwd())
@@ -31,6 +33,13 @@ print("Retention Rules:", RETENTION_RULES)
 # Load the folder that records are written to
 RECORD_FOLDER = resolvePath(readConfig("g_monitor/config.json", str, "recordFolder"))
 
+# Load usage-warning thresholds and the drives to check them against
+RAM_WARN_THRESHOLD = readConfig("g_monitor/config.json", float, "ramWarnThreshold")
+DISK_WARN_THRESHOLD = readConfig("g_monitor/config.json", float, "diskWarnThreshold")
+DISK_WARN_MOUNTS = readConfigList("g_monitor/config.json", str, "diskWarnMounts")
+assert 0 <= RAM_WARN_THRESHOLD <= 1, f"ramWarnThreshold must be between 0 and 1, got {RAM_WARN_THRESHOLD!r}"
+assert 0 <= DISK_WARN_THRESHOLD <= 1, f"diskWarnThreshold must be between 0 and 1, got {DISK_WARN_THRESHOLD!r}"
+
 # Constants ---
 SYS_CPU = "/proc/stat"
 RE_SYS_CPU = re.compile(r"^cpu(?P<cpuno>\d*) +(?P<user>\d+) (?P<nice>\d+) (?P<system>\d+) (?P<idle>\d+) (?P<iowait>\d+) (?P<irq>\d+) (?P<softirq>\d+) (?P<steal>\d+) (?P<guest>\d+) (?P<guest_nice>\d+)$", flags=re.MULTILINE)
@@ -42,6 +51,9 @@ RE_SYS_NET_IO = re.compile(r"^\s*(?P<interface>\S+)\s*:\s*(?P<recieved_bytes>\d+
 SYS_DISK_IO_A = "/sys/block"
 SYS_DISK_IO_B = "stat"
 RE_SYS_DISK_IO = re.compile(r"^\s*(?:\d+\s+){2}(?P<sectors_read>\S+)\s+(?:\d+\s+){3}(?P<sectors_written>\S+)(?:\s+\d+){4}(?:(?:\s+\d+){4})?(?:(?:\s+\d+){2})?\s*$")
+SYS_DISK_USAGE = ["/usr/bin/df", "-B1", "--output=source,target,size,avail"]
+RE_SYS_DISK_USAGE_HEADERS = re.compile(r"^\s*Filesystem\s+Mounted on\s+1B-blocks\s+Avail\s*$", flags=re.MULTILINE)
+RE_SYS_DISK_USAGE = re.compile(r"^\s*(?P<filesystem>\S+)\s+(?P<mountpoint>\S+)\s+(?P<total>\d+)\s+(?P<available>\d+)\s*$", flags=re.MULTILINE)
 CGROUP_A = "/sys/fs/cgroup"
 CGROUP_B_CPU = "cpu.stat"
 CGROUP_B_MEM = "memory.current"
@@ -57,6 +69,7 @@ MC_HEAP_USED = "heap_used_bytes"
 MC_HEAP_ALLOCATED = "heap_allocated_bytes"
 RE_FILENAME = re.compile(r"^(\d+).json$")
 LIVE_CGROUP_PROCS_FILENAME = "live_cgroup_procs.json"
+WEBHOOKS_FILE = os.path.join(ROOT, "scripts", "webhooks.py")
 
 # Utils ---
 def extractsum(data: dict[str, str], *properties: list[str]):
@@ -65,29 +78,60 @@ def extractsum(data: dict[str, str], *properties: list[str]):
     """
     return sum(int(v) for (k, v) in data.items() if k in properties)
 
+def safe_call(func: callable, *args: list[any], on_error_msg: str = None, **kwargs: dict[str, any]):
+    """
+    Calls func(*args, **kwargs), returning its return-value.
+    If it raises, the exception is logged to console (with a traceback) and None is returned instead.
+    on_error_msg, if given, is printed as the first line of the error log instead of the default message.
+    """
+    try:
+        return func(*args, **kwargs)
+    except Exception:
+        print(on_error_msg if on_error_msg is not None else f"Failed to call '{func}': ")
+        print(*["\t" + line for line in traceback.format_exc().split("\n")], sep="\n")
+        return None
+
 def attempt_build_dict(source: dict[str: callable], *args: list[any]):
     """
     Attempts to create a dictionary of the same format as source, but with values replaced by the return-values of the functions.
-    If a function fails then it is logged to console and None is taken instead.
+    If a function fails then it is logged to console (via safe_call) and None is taken instead.
     The args array will be passed (with a star) to the compute function.
     """
-
-    output = {}
-    for (k, v) in source.items():
-        try:
-            computed_value = v(*args)
-        except Exception as e:
-            print(f"Failed to compute value for '{v}': ")
-            print(*["\t" + line for line in traceback.format_exc().split("\n")], sep="\n")
-            computed_value = None
-        output[k] = computed_value
-    return output
+    return {k: safe_call(v, *args, on_error_msg=f"Failed to compute value for '{v}': ") for (k, v) in source.items()}
 
 def get_record_subfolder(interval: int, number: int):
     """
     Returns the path of the subfolder for the retention rule with the given argumenets
     """
     return os.path.join(RECORD_FOLDER, str(interval) if number is None else f"{interval}_{number}")
+
+def send_syswarn(resource: str, used_fraction: float, threshold_fraction: float):
+    """
+    Fires the SYSWARN webhook for the given resource in a background process (fire-and-forget, same as
+    scripts/g_web/com/lib/webhook.ts does for its webhooks) - failures are logged rather than raised, so a
+    webhook launch failure can't crash the mainloop.
+    """
+    safe_call(
+        subprocess.Popen,
+        [sys.executable, WEBHOOKS_FILE, "syswarn", resource, str(used_fraction), str(threshold_fraction)],
+        on_error_msg=f"Failed to launch SYSWARN webhook for '{resource}': "
+    )
+
+def check_warn_threshold(resource: str, used_fraction: float, threshold: float, warned_resources: set[str]):
+    """
+    Edge-triggered threshold check: fires the SYSWARN webhook (via send_syswarn) the first time resource
+    crosses above threshold, then stays silent on subsequent calls until used_fraction drops back below it.
+    warned_resources is mutated in place to track which resources are currently over their threshold.
+    """
+    if used_fraction >= threshold:
+        if resource not in warned_resources:
+            print(f"Resource \"{resource}\" has crossed over the threshold - used: {used_fraction}, thresh: {threshold}")
+            warned_resources.add(resource)
+            send_syswarn(resource, used_fraction, threshold)
+    else:
+        if resource in warned_resources:
+            print(f"Resource \"{resource}\" has crossed back under the threshold, discarding...")
+            warned_resources.remove(resource)
 
 # Data extraction functions ---
 def read_sys_cpu():
@@ -165,6 +209,21 @@ def read_sys_disk_io():
         ret["ind"][name] = {"read": bytes_read, "written": bytes_written}
         ret["agg"]["read"] += bytes_read
         ret["agg"]["written"] += bytes_written
+    return ret
+
+def read_disk_usage():
+    """
+    Returns {[mount_point: str]: {"total": int, "used": int}} for every filesystem reported by df.
+    All values are in bytes.
+    """
+    output = subprocess.run(SYS_DISK_USAGE, capture_output=True, text=True, check=True).stdout
+    assert RE_SYS_DISK_USAGE_HEADERS.search(output), f"Header of df output is incorrect: \n{output}"
+    ret = {}
+    for match in RE_SYS_DISK_USAGE.finditer(output):
+        groupdict = match.groupdict()
+        total = int(groupdict["total"])
+        available = int(groupdict["available"])
+        ret[groupdict["mountpoint"]] = {"total": total, "used": total - available}
     return ret
 
 def read_cgroup_cpu(cgroup):
@@ -253,6 +312,7 @@ def read_live_cgroup_procs():
 
 
 # Mainloop ---
+warned_resources = set()  # Resources currently over their warn threshold - see check_warn_threshold
 while True:
     # Create record subfolders if necessary
     assert os.path.exists(RECORD_FOLDER), f"Record folder - '{RECORD_FOLDER}' - does not exist"
@@ -265,6 +325,19 @@ while True:
     data = read_data()
     current_time = int(time.time())
     string_data = json.dumps(data)
+
+    # Check RAM and the tracked drives against their warn thresholds, firing SYSWARN webhooks on
+    # threshold crossings (check_warn_threshold is edge-triggered, so this doesn't spam every tick)
+    if data["sys_mem"] is not None:
+        mem = data["sys_mem"]
+        check_warn_threshold("RAM", mem["used"] / mem["total"], RAM_WARN_THRESHOLD, warned_resources)
+    disk_usage = safe_call(read_disk_usage, on_error_msg="Failed to read disk usage: ") or {}
+    for mount in DISK_WARN_MOUNTS:
+        if mount not in disk_usage:
+            print(f"WARNING: diskWarnMounts entry {mount!r} not found in df output, skipping")
+            continue
+        usage = disk_usage[mount]
+        check_warn_threshold(f"Disk ({mount})", usage["used"] / usage["total"], DISK_WARN_THRESHOLD, warned_resources)
 
     # Write live data - unconditionally overwritten every iteration, no history retained (see documentation)
     live_cgroup_procs = {"timestamp": current_time, "cgroups": read_live_cgroup_procs()}

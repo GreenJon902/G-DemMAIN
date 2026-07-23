@@ -57,8 +57,12 @@ def readConfigRaw(relpath, *keys):
 
 
 def readConfig(relpath, type_, *keys):
-    # readConfigRaw, then assert the value is exactly type_ (expected, not cast)
+    # readConfigRaw, then assert the value is exactly type_ (expected, not cast) - except an int is
+    # accepted where a float is requested (coerced to float), since JSON doesn't distinguish "1" from
+    # "1.0" the way this function's callers want to
     value = readConfigRaw(relpath, *keys)
+    if type_ is float and type(value) is int:
+        value = float(value)
     if type(value) is not type_:
         raise ConfigError(f"Expected {type_.__name__} for {'.'.join(keys)!r} in {relpath}, got {type(value).__name__} ({value!r})")
     return value

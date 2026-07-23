@@ -89,6 +89,20 @@ def generate_hisdoc(entity_type, action, entity_id, entity_name, actor_id, actor
                 }]
     }
 
+SYSWARNCOLOR = 16753920
+def generate_syswarn(resource, used_fraction, threshold_fraction):
+    # Generate the json for a message about system RAM or a drive running low on space.
+    # resource should be human-readable, e.g. "RAM" or "Disk (/)".
+    # used_fraction and threshold_fraction are fractions in [0, 1].
+    return {
+            "username": "G-DemMAIN",
+            "embeds": [{
+                "title": f":warning: {resource} usage high :warning:",
+                "description": f"Currently at {used_fraction:.1%}, threshold is {threshold_fraction:.1%}",
+                "color": SYSWARNCOLOR
+                }]
+    }
+
 def generate_test(intended_recipient):
     # Content for a testing webhook.
     return {"username": "G-DemMAIN",
@@ -106,7 +120,8 @@ webhook_getters = {
     "STATUS": lambda: readEnviron("STATUS_WEBHOOK", str),
     "WEBLOGIN": lambda: readEnviron("WEBLOGIN_WEBHOOK", str),
     "WEBCOMMAND": lambda: readEnviron("WEBCOMMAND_WEBHOOK", str),
-    "HISDOC": lambda: readEnviron("HISDOC_WEBHOOK", str)
+    "HISDOC": lambda: readEnviron("HISDOC_WEBHOOK", str),
+    "SYSWARN": lambda: readEnviron("SYSWARN_WEBHOOK", str)
 }
 
 # Parse arguments
@@ -129,6 +144,10 @@ hisdoc_parser.add_argument("entity_name", help="Human-readable name for the enti
 hisdoc_parser.add_argument("actor_id", help="The database id of the user who made the change")
 hisdoc_parser.add_argument("actor_username", help="The username of the user who made the change")
 hisdoc_parser.add_argument("note", help="The changelog message for the change")
+syswarn_parser = subparsers.add_parser("syswarn", help="Send a notification that system RAM or a tracked drive is running low on space")
+syswarn_parser.add_argument("resource", help="Human-readable resource name, e.g. RAM or 'Disk (/)'")
+syswarn_parser.add_argument("used", type=float, help="Current usage as a fraction in [0, 1]")
+syswarn_parser.add_argument("threshold", type=float, help="The configured warn threshold as a fraction in [0, 1]")
 test_parser = subparsers.add_parser("test", help="Test that the webhooks are working")
 args = parser.parse_args()
 
@@ -160,6 +179,13 @@ elif args.action == "webcommand":
 elif args.action == "hisdoc":
     # Send webhook
     send(webhook_getters["HISDOC"](), generate_hisdoc(args.entity_type, args.hisdoc_action, args.entity_id, args.entity_name, args.actor_id, args.actor_username, args.note))
+elif args.action == "syswarn":
+    # Extract args
+    resource = args.resource
+    used = args.used
+    threshold = args.threshold
+    # Send webhook
+    send(webhook_getters["SYSWARN"](), generate_syswarn(resource, used, threshold))
 
 elif args.action == "test":
     # Just try and call all webhooks

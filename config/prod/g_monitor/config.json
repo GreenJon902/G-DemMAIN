@@ -8,5 +8,8 @@
     "system.slice/mariadb.service"
   ],
   "retention": [[5, 20], [360, 20], [86400, null]],
-  "recordFolder": "/var/lib/g_monitor"
+  "recordFolder": "/var/lib/g_monitor",
+  "ramWarnThreshold": 0.9,
+  "diskWarnThreshold": 0.9,
+  "diskWarnMounts": ["/"]
 }
