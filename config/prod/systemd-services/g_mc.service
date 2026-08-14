@@ -40,7 +40,7 @@ ExecStart=/usr/bin/java -Xms1G -Xmx3G \
 -jar /var/lib/g_mc/minecraft_server.jar nogui
 ExecStop=/opt/infra/.venv/bin/python3 /opt/infra/scripts/g_mc/service_stop.py
 
-# Get environment variables (g_mc_g_web_minecraft.env supplies ExecStop's console socket port/key)
+# Get environment variables (g_mc_g_web_minecraft.env supplies ExecStop's console auth key, the port/host come from g_mc_monitor's config.json)
 EnvironmentFile=/etc/g-demmain/common.env
 EnvironmentFile=/etc/g-demmain/g_mc_g_web_minecraft.env
 EnvironmentFile=/etc/g-demmain/g_mc_g_discord_minecraft.env

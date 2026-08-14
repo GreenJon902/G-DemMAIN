@@ -1,5 +1,5 @@
 # Discord bot bridging Minecraft chat and exposing /list. See doc/G-DemMAIN Monitor Mod.md for the
-# protocol this talks to, and scripts/README.md for setup.
+# protocol this talks to, and doc/G-DemMAIN Discord Bot.md for setup.
 
 import asyncio
 import discord
