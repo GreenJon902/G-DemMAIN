@@ -1,6 +1,8 @@
 # Monitoring
 
-The `g_monitor` service (`scripts/g_monitor/monitor.py`) tracks resource usage for the system as a whole, and for each configured cgroup (our services).
+The `g_monitor` service (`scripts/g_monitor/monitor.py`) 
+    - tracks resource usage (for datapoints that change with time) for the system as a whole - and for each configured cgroup (our services) - to be displayed on the panel.
+    - tracks resource usage so it can send warnings when required.
 It runs as a long-lived mainloop process, started directly by `g_monitor.service` rather than spawned periodically by a systemd timer.
 
 This script assumes no extra files are present in the output folder other than the live data files it manages itself (see [Live Data](#live-data) below). If there are, errors may occur.
@@ -17,6 +19,7 @@ The `retention` key is a JSON array of `[interval, maxCount]` pairs specifying h
 E.g. a pair of `[5, 20]` keeps 20 records spanning the last 100 seconds, each 5 seconds apart.
 Older records are automatically removed.
 There should not be identical rules.
+Every interval must be a multiple of the smallest interval among the rules - this is asserted at startup.
 
 ### Usage Warning Thresholds
 The `ramWarnThreshold` and `diskWarnThreshold` keys are floats in `[0, 1]` - the fraction of RAM/drive usage that triggers a `SYSWARN` webhook (see [Usage Warnings](#usage-warnings) below).

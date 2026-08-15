@@ -4,7 +4,7 @@
     "system.slice/dbus.service",   
     "system.slice/bluetooth.service"
   ],
-  "retention": [[2, 50], [10, 5], [20, null], [5, 20]],
+  "retention": [[2, 50], [10, 5], [20, null], [4, 20]],
   "recordFolder": "scripts/g_monitor",
   "ramWarnThreshold": 0.9,
   "diskWarnThreshold": 0.9,

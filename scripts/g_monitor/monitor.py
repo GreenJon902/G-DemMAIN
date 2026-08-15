@@ -30,6 +30,13 @@ for rule in RETENTION_RULES:
     assert maxCount is None or type(maxCount) is int, f"Retention rule {rule!r} has a max-count that is neither int nor null"
 print("Retention Rules:", RETENTION_RULES)
 
+# Find base interval (how long to wait between polls of the system)
+BASE_INTERVAL = min(interval for interval, _ in RETENTION_RULES)
+# Every interval must be a multiple of BASE_INTERVAL - for records to land on their expected times
+for interval, _ in RETENTION_RULES:
+    assert interval % BASE_INTERVAL == 0, f"Retention interval {interval} is not a multiple of the minimum interval {BASE_INTERVAL}"
+print(f"Found Base Interval: {BASE_INTERVAL}. Confirmed all intervals are multiples!")
+
 # Load the folder that records are written to
 RECORD_FOLDER = resolvePath(readConfig("g_monitor/config.json", str, "recordFolder"))
 
@@ -330,9 +337,8 @@ while True:
     live_cgroup_procs = {"timestamp": current_time, "cgroups": read_live_cgroup_procs()}
     open(os.path.join(RECORD_FOLDER, LIVE_CGROUP_PROCS_FILENAME), "w").write(json.dumps(live_cgroup_procs))
 
-    # Find subfolders where a new record needs creation, and calculate how long to sleep for
+    # Find subfolders where a new record needs creation
     needs_new = []  # Paths of subfolders where the new record needs to be put
-    time_of_next_record = None  # The next record that needs to be created
     for interval, number in RETENTION_RULES:
         path = get_record_subfolder(interval, number)
         items = os.listdir(path)
@@ -341,10 +347,6 @@ while True:
         # Does this subfolder need a new record
         if current_time - newest_time >= interval:
             needs_new.append(path)
-            newest_time = current_time  # newest record (will so be) is at the current time
-
-        # Calculate when the next record neeeds creation
-        time_of_next_record = min(time_of_next_record, newest_time + interval) if time_of_next_record is not None else newest_time + interval
 
     # Write the record to the disk
     for path in needs_new:
@@ -360,5 +362,5 @@ while True:
                 os.remove(record_path)
             
     # Sleep
-    time.sleep(time_of_next_record - time.time())
+    time.sleep(BASE_INTERVAL)
 
