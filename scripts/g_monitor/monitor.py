@@ -61,6 +61,7 @@ RE_SYS_DISK_IO = re.compile(r"^\s*(?:\d+\s+){2}(?P<sectors_read>\S+)\s+(?:\d+\s+
 SYS_DISK_USAGE = ["/usr/bin/df", "-B1", "--output=source,target,size,avail"]
 RE_SYS_DISK_USAGE_HEADERS = re.compile(r"^\s*Filesystem\s+Mounted on\s+1B-blocks\s+Avail\s*$", flags=re.MULTILINE)
 RE_SYS_DISK_USAGE = re.compile(r"^\s*(?P<filesystem>\S+)\s+(?P<mountpoint>\S+)\s+(?P<total>\d+)\s+(?P<available>\d+)\s*$", flags=re.MULTILINE)
+SYS_BOOT_ID = "/proc/sys/kernel/random/boot_id"
 CGROUP_A = "/sys/fs/cgroup"
 CGROUP_B_CPU = "cpu.stat"
 CGROUP_B_MEM = "memory.current"
@@ -76,6 +77,7 @@ MC_HEAP_USED = "heap_used_bytes"
 MC_HEAP_ALLOCATED = "heap_allocated_bytes"
 RE_FILENAME = re.compile(r"^(\d+).json$")
 LIVE_CGROUP_PROCS_FILENAME = "live_cgroup_procs.json"
+STATE_FILENAME = "state.json"
 WEBHOOKS_FILE = os.path.join(ROOT, "scripts", "webhooks.py")
 
 # Utils ---
@@ -93,11 +95,18 @@ def attempt_build_dict(source: dict[str: callable], *args: list[any]):
     """
     return {k: safe_call(v, *args, on_error_msg=f"Failed to compute value for '{v}': ") for (k, v) in source.items()}
 
+def get_rule_key(interval: int, number: int):
+    """
+    Returns the name used to identify this retention rule - both as its record subfolder's name, and as its key
+    in state.json's "intervals" (see documentation)
+    """
+    return str(interval) if number is None else f"{interval}_{number}"
+
 def get_record_subfolder(interval: int, number: int):
     """
     Returns the path of the subfolder for the retention rule with the given argumenets
     """
-    return os.path.join(RECORD_FOLDER, str(interval) if number is None else f"{interval}_{number}")
+    return os.path.join(RECORD_FOLDER, get_rule_key(interval, number))
 
 def send_syswarn(resource: str, used_fraction: float, threshold_fraction: float):
     """
@@ -130,7 +139,7 @@ def check_warn_threshold(resource: str, used_fraction: float, threshold: float, 
 # Data extraction functions ---
 def read_sys_cpu():
     """
-    Returns {"agg": {"total": int, "busy": int}, "ind": {[cpuno: str]: {"total": int, "busy": int}}}. 
+    Returns {"agg": {"total": int, "busy": int}, "ind": {[cpuno: str]: {"total": int, "busy": int}}}.
     The data is the cpu time in some arbitrary units.
     "total" is the time the cpu has been running for, and "busy" is the time spent actually doing something.
     """
@@ -220,6 +229,13 @@ def read_disk_usage():
         ret[groupdict["mountpoint"]] = {"total": total, "used": total - available}
     return ret
 
+def read_boot_id():
+    """
+    Returns str - the current boot id. This changes across reboots, which is used to detect resets of the
+    system-wide cumulative counters (sys_cpu, sys_net_io, sys_disk_io).
+    """
+    return open(SYS_BOOT_ID, "r").read().strip()
+
 def read_cgroup_cpu(cgroup):
     """
     Returns int - sum of microseconds of each core used by the cgroup.
@@ -230,7 +246,7 @@ def read_cgroup_mem(cgroup):
     """
     Returns {"total": int, "used": int}.
     The data is in kB.
-    "total" is the maximum amount of memory that could be used (by this cgroup) when ran on its own. 
+    "total" is the maximum amount of memory that could be used (by this cgroup) when ran on its own.
     """
     return {
         "used": int(int(open(os.path.join(CGROUP_A, cgroup, CGROUP_B_MEM), "r").read()) / 1024),  # We round this for consistency with sys_mem
@@ -256,6 +272,15 @@ def read_cgroup_procs(cgroup):
     procs = {int(id_): open(os.path.join(PROC_CMD_A, id_, PROC_CMD_B), "r").read().replace("\x00", " ").strip() for id_ in proc_ids if id_ != ""}
     return procs
 
+def read_cgroup_inode(cgroup):
+    """
+    Returns int - the inode of the cgroup's cgroupfs directory. This changes when the cgroup is recreated (e.g.
+    its service restarts), which is used to detect resets of that cgroup's cumulative counters (cpu, disk_io).
+    It's very unlikely, but not impossible, for a recreated cgroup to be reassigned the same inode it had
+    before - in that case the reset would go undetected.
+    """
+    return os.stat(os.path.join(CGROUP_A, cgroup)).st_ino
+
 def read_mc_tps():
     """
     Returns float - rolling average TPS (ticks per second) over the last 100 ticks, capped at 20.
@@ -276,6 +301,7 @@ def read_mc_mem():
 def read_data():
     """
     Reads all the data from the system and CGROUPS and returns it as seriazable object that folows the format defined in the documentation.
+    All values here are absolute readings - cumulative counters get turned into deltas separately, per retention rule, by compute_record.
     """
     return attempt_build_dict({
         "sys_cpu": read_sys_cpu,
@@ -304,9 +330,152 @@ def read_live_cgroup_procs():
     # Bind cgroup as a default arg so each lambda captures its own value rather than the loop variable
     return attempt_build_dict({cgroup: (lambda cg=cgroup: read_cgroup_procs(cg)) for cgroup in CGROUPS})
 
+# Cumulative counters ---
+# See "Cumulative Counters" and "State" in the documentation - monitor.py stores the delta of these counters
+# since each retention rule's own previous record, rather than an absolute value, diffing against (and then
+# updating) that rule's own baseline in state.json
+def diff_dict(current: dict | None, baseline: dict | None, fields: tuple[str, ...]):
+    """
+    Diffs a single {field: int, ...} reading (e.g. one arbCpu/netIO/diskIO value) against its baseline.
+    current and baseline are expected to already have exactly the keys in fields.
+    Returns (delta, new_baseline) - delta is None if either value is missing (no reading this tick, or no
+    baseline to diff against yet). new_baseline is what should replace baseline in state.json from now on.
+    """
+    if current is None:
+        return None, baseline
+    if baseline is None:
+        return None, current
+    return {field: current[field] - baseline[field] for field in fields}, current
+
+def diff_counter(current: int | None, baseline: int | None):
+    """
+    Same as diff_dict, but for a single bare int counter (e.g. a cgroup's cpu usage) rather than a {field: int} dict.
+    """
+    if current is None:
+        return None, baseline
+    if baseline is None:
+        return None, current
+    return current - baseline, current
+
+def diff_agg_ind(current: dict | None, baseline: dict | None, fields: tuple[str, ...]):
+    """
+    Diffs a {"agg": {...}, "ind": {key: {...}}} reading (sys_cpu/sys_net_io/sys_disk_io) against its baseline.
+    Returns (result, new_baseline). If current or baseline is entirely missing, result is None (see diff_dict).
+    Otherwise "agg" is diffed as a whole (we expect that keys are the same in current and baseline), and each 
+    "ind" key is diffed individually against baseline["ind"] - current["ind"] and baseline["ind"] are NOT 
+    expected to have the same keys, so a key with no baseline entry yet (e.g. a newly appeared network interface 
+    or disk) gets null rather than raising or dropping the whole reading. 
+    new_baseline is always set to current in full, so newly-appeared keys become
+    part of the baseline immediately, and keys that disappeared from current are naturally dropped from it.
+    """
+    if current is None:
+        return None, baseline
+    if baseline is None:
+        return None, current
+    agg, _ = diff_dict(current["agg"], baseline["agg"], fields)
+    ind = {key: diff_dict(value, baseline["ind"].get(key), fields)[0] for (key, value) in current["ind"].items()}
+    return {"agg": agg, "ind": ind}, current
+
+def diff_cgroups(cgroups: dict, baseline: dict):
+    """
+    Diffs the "cpu" and "disk_io" cumulative counters of every cgroup in cgroups (as read by read_data) against
+    baseline (state.json's per-rule "cgroups" entry - see documentation), leaving "mem" untouched since it's
+    a gauge rather than a cumulative counter. 
+    cgroups and baseline are NOT expected to have the same keys - a cgroup missing from baseline (never
+    recorded yet, or invalidated by an inode change) is handled the same as a missing baseline value.
+    Returns (result, new_baseline), see diff_dict/diff_counter.
+    """
+    result = {}
+    new_baseline = {}
+    for (cgroup, current) in cgroups.items():
+        cgroup_baseline = baseline.get(cgroup, {})
+        cpu, new_cpu_baseline = diff_counter(current["cpu"], cgroup_baseline.get("cpu"))
+        disk_io, new_disk_io_baseline = diff_dict(current["disk_io"], cgroup_baseline.get("disk_io"), ("read", "written"))
+        result[cgroup] = {"cpu": cpu, "mem": current["mem"], "disk_io": disk_io}
+        new_baseline[cgroup] = {"cpu": new_cpu_baseline, "disk_io": new_disk_io_baseline}
+    return result, new_baseline
+
+def compute_record(data: dict, interval_state: dict, current_time: float):
+    """
+    Turns data (an absolute reading from read_data) into a record for one retention rule, diffing its cumulative
+    counters against interval_state (that rule's entry in state.json's "intervals" - see documentation).
+    current_time is this write's precise time (time.time()), used to compute the record's "actualPeriod" - the
+    real time elapsed since this rule's previous record - which is None for the first record ever written for
+    this rule (interval_state["time"] is None), the same as a cumulative counter with no baseline yet.
+    Returns (record, new_interval_state) - new_interval_state must replace interval_state in state.json, so the
+    next record for this rule diffs against this tick's values.
+    """
+    actual_period = None if interval_state["time"] is None else current_time - interval_state["time"]
+    sys_cpu, new_sys_cpu = diff_agg_ind(data["sys_cpu"], interval_state["sys_cpu"], ("total", "busy"))
+    sys_net_io, new_sys_net_io = diff_agg_ind(data["sys_net_io"], interval_state["sys_net_io"], ("sent", "recieved"))
+    sys_disk_io, new_sys_disk_io = diff_agg_ind(data["sys_disk_io"], interval_state["sys_disk_io"], ("read", "written"))
+    cgroups, new_cgroups = diff_cgroups(data["cgroups"], interval_state["cgroups"])
+    record = {
+        "actualPeriod": actual_period,
+        "sys_cpu": sys_cpu,
+        "sys_mem": data["sys_mem"],
+        "sys_net_io": sys_net_io,
+        "sys_disk_io": sys_disk_io,
+        "minecraft": data["minecraft"],
+        "cgroups": cgroups
+    }
+    new_interval_state = {
+        "time": current_time,
+        "sys_cpu": new_sys_cpu,
+        "sys_net_io": new_sys_net_io,
+        "sys_disk_io": new_sys_disk_io,
+        "cgroups": new_cgroups
+    }
+    return record, new_interval_state
+
+def load_state():
+    """
+    Loads state.json (see documentation), or a fresh empty one if it doesn't exist yet (e.g. first ever run).
+    """
+    path = os.path.join(RECORD_FOLDER, STATE_FILENAME)
+    if not os.path.exists(path):
+        return {"boot_id": None, "cgroup_inodes": {}, "intervals": {}}
+    return json.loads(open(path, "r").read())
+
+def save_state(state: dict):
+    """
+    Persists state to state.json (see documentation).
+    """
+    open(os.path.join(RECORD_FOLDER, STATE_FILENAME), "w").write(json.dumps(state))
+
+def refresh_reset_detection(state: dict):
+    """
+    Re-reads the current boot id and each tracked cgroup's inode, and - if either has changed since state was
+    last updated - invalidates (in place, within state) the affected cumulative-counter baselines across every
+    retention rule's entry in state["intervals"]. This runs every mainloop tick, not just when a rule is due to
+    write, so a slower rule can't miss a reset that a faster rule already saw (see "Cumulative Counters" and
+    "State" in the documentation). Read failures are logged (via safe_call) and skipped for this tick, rather
+    than treated as a reset.
+    """
+    boot_id = safe_call(read_boot_id, on_error_msg="Failed to read boot id: ")
+    if boot_id is not None:
+        if state["boot_id"] is not None and boot_id != state["boot_id"]:
+            print("Boot id has changed - system has restarted, invalidating system-wide cumulative counters")
+            for interval_state in state["intervals"].values():
+                interval_state["sys_cpu"] = None
+                interval_state["sys_net_io"] = None
+                interval_state["sys_disk_io"] = None
+        state["boot_id"] = boot_id
+
+    for cgroup in CGROUPS:
+        inode = safe_call(read_cgroup_inode, cgroup, on_error_msg=f"Failed to read inode for cgroup '{cgroup}': ")
+        if inode is None:
+            continue
+        if cgroup in state["cgroup_inodes"] and inode != state["cgroup_inodes"][cgroup]:
+            print(f"CGroup '{cgroup}' inode has changed - it has restarted, invalidating its cumulative counters")
+            for interval_state in state["intervals"].values():
+                interval_state["cgroups"].pop(cgroup, None)
+        state["cgroup_inodes"][cgroup] = inode
+
 
 # Mainloop ---
 warned_resources = set()  # Resources currently over their warn threshold - see check_warn_threshold
+state = load_state()  # Tracks what's needed to detect resets and diff cumulative counters, persists across monitor.py restarts - see documentation
 while True:
     # Create record subfolders if necessary
     assert os.path.exists(RECORD_FOLDER), f"Record folder - '{RECORD_FOLDER}' - does not exist"
@@ -315,10 +484,14 @@ while True:
         if not os.path.exists(path):
             os.mkdir(path)
 
+    # Detect system/cgroup resets before computing any deltas below, so a rule that isn't due yet this tick
+    # still sees the invalidation once it is
+    refresh_reset_detection(state)
+
     # Sample data
     data = read_data()
-    current_time = int(time.time())
-    string_data = json.dumps(data)
+    current_time_exact = time.time()  # Higher precision than current_time - used for actualPeriod/state.json's "time" (see documentation)
+    current_time = int(current_time_exact)
 
     # Check RAM and the tracked drives against their warn thresholds, firing SYSWARN webhooks on
     # threshold crossings (check_warn_threshold is edge-triggered, so this doesn't spam every tick)
@@ -338,19 +511,25 @@ while True:
     open(os.path.join(RECORD_FOLDER, LIVE_CGROUP_PROCS_FILENAME), "w").write(json.dumps(live_cgroup_procs))
 
     # Find subfolders where a new record needs creation
-    needs_new = []  # Paths of subfolders where the new record needs to be put
+    needs_new = []  # (path, rule_key) of subfolders where a new record needs to be put
     for interval, number in RETENTION_RULES:
+        rule_key = get_rule_key(interval, number)
         path = get_record_subfolder(interval, number)
         items = os.listdir(path)
         newest_time = max([int(item.removesuffix(".json")) for item in items if RE_FILENAME.match(item)]) if len(items) > 0 else current_time - interval # The time of the most recent record. If no records exist then create one now
 
         # Does this subfolder need a new record
         if current_time - newest_time >= interval:
-            needs_new.append(path)
+            needs_new.append((path, rule_key))
 
-    # Write the record to the disk
-    for path in needs_new:
-        open(os.path.join(path, f"{current_time}.json"), "w").write(string_data)
+    # Write each due rule's record - every rule diffs data against (and then updates) its own baseline in state
+    for path, rule_key in needs_new:
+        interval_state = state["intervals"].setdefault(rule_key, {"time": None, "sys_cpu": None, "sys_net_io": None, "sys_disk_io": None, "cgroups": {}})
+        record, state["intervals"][rule_key] = compute_record(data, interval_state, current_time_exact)
+        open(os.path.join(path, f"{current_time}.json"), "w").write(json.dumps(record))
+
+    # Persist state so if g_monitor restarts then we don't have to start from a blank slate 
+    save_state(state)
 
     # Remove old records
     for interval, number in RETENTION_RULES:
@@ -360,7 +539,6 @@ while True:
                 oldest = min([int(item.removesuffix(".json")) for item in items if RE_FILENAME.match(item)])
                 record_path = os.path.join(path, f"{oldest}.json")
                 os.remove(record_path)
-            
+
     # Sleep
     time.sleep(BASE_INTERVAL)
-

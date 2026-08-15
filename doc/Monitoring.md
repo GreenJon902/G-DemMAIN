@@ -5,7 +5,7 @@ The `g_monitor` service (`scripts/g_monitor/monitor.py`)
     - tracks resource usage so it can send warnings when required.
 It runs as a long-lived mainloop process, started directly by `g_monitor.service` rather than spawned periodically by a systemd timer.
 
-This script assumes no extra files are present in the output folder other than the live data files it manages itself (see [Live Data](#live-data) below). If there are, errors may occur.
+This script assumes no extra files are present in the output folder other than the live data files and state file it manages itself (see [Live Data](#live-data) and [State](#state) below). If there are, errors may occur.
 
 ## Monitoring Configuration
 In `config/{mode}/g_monitor/config.json` is the configuration, read via `libs.config` - the file is located strictly via the `G_DEMMAIN_ROOT`/`G_DEMMAIN_MODE` environment variables, there is no CLI override.
@@ -45,19 +45,33 @@ In whatever folder the config's `recordFolder` resolves to (prod `/var/lib/g_mon
 A subfolder is made for each retention rule, named `<interval>_<maxCount>` (or just `<interval>` if `maxCount` is `null`, i.e. unlimited). When the number of items in a subfolder goes over the rule's `maxCount`, the oldest is removed. There is no guarantee that all records will be equally spaced (e.g. if the program stops, the timing may shift).
 The name of each record file is its timestamp in seconds since the Unix epoch, e.g. `1234567890.json`.
 
+## Cumulative Counters
+Some fields in the [Monitor Format](#monitor-format) below are cumulative counters (e.g. total bytes a disk has read since boot). For these, `monitor.py` writes the amount accumulated since that retention rule's *previous* record.
+
+These counters reset when their source does: the system-wide ones (`sys_cpu`, `sys_net_io`, `sys_disk_io`) reset on a reboot, detected via a change in `/proc/sys/kernel/random/boot_id`; the per-cgroup ones (`cgroups.*.cpu`, `cgroups.*.disk_io`) reset when that cgroup is recreated (e.g. its service restarts), detected via a change in the inode of `/sys/fs/cgroup/<cgroup>`. 
+Whenever this happens there is no valid previous reading to diff against, so the record immediately following it has `null` for the affected value(s); the record after that is the first with a valid delta again.
+The same applies to any individual `ind` map key monitor.py has never recorded before (e.g. a newly appeared network interface or disk).
+Note: If a `ind` item disapears from the source (e.g. fs unmounted) then there will be no item in the map for that key.
+So the semantic meaning of missing vs null: null means it exists but we cannot get a value, and missing means it does not exist.
+
+To tell which counters are still valid across a `monitor.py` restart (as opposed to a full reset), the boot id, each cgroup's inode, and the last-recorded absolute value of every cumulative counter - per retention rule, since each one records at its own cadence - are persisted to `state.json`, see [State](#state) below.
+
+Each record also carries `actualPeriod` - the real time elapsed since that retention rule's previous record - so a rate can be computed directly from a single record's delta and `actualPeriod`. It's `null` under the same circumstances as the cumulative counters above (no previous record for this rule to diff against), tracked via each rule's own `time` entry in `state.json`.
+
 ## Monitor Format
 ```
 {
+    "actualPeriod": float | null,         Seconds, real time elapsed since this retention rule's previous record - see Cumulative Counters. null for that rule's first record ever
     "sys_cpu": {
         "agg": {
-            "total": int,                Arbitary units, Absolute
-            "busy": int                  Arbitary units, Absolute
+            "total": int,                Arbitary units, Delta since last record
+            "busy": int                  Arbitary units, Delta since last record
         },
         "ind": {
             [cpuno]: {                       # Keys not necessarily constant
-                "total": int,            Arbitary units, Absolute
-                "busy": int              Arbitary units, Absolute
-            }
+                "total": int,            Arbitary units, Delta since last record
+                "busy": int              Arbitary units, Delta since last record
+            } | null                         # null if this key has no previous record to diff against - see Cumulative Counters
         }
     } | null,
     "sys_mem": {
@@ -66,27 +80,27 @@ The name of each record file is its timestamp in seconds since the Unix epoch, e
     } | null,
     "sys_net_io": {
         "agg": {                             # Does not include 'lo' interface
-            "sent": int,                 Bytes, Absolute
-            "recieved": int              Bytes, Absolute
+            "sent": int,                 Bytes, Delta since last record
+            "recieved": int              Bytes, Delta since last record
         },
         "ind": {
             [interface_name]: {              # The 'lo' interface is 'loopback' - data sent internally from one process to another
                                              # Keys not necessarily constant
-                "sent": int,             Bytes, Absolute
-                "recieved": int          Bytes, Absolute
-            }
+                "sent": int,             Bytes, Delta since last record
+                "recieved": int          Bytes, Delta since last record
+            } | null                         # null if this key has no previous record to diff against - see Cumulative Counters
         }
     } | null,
     "sys_disk_io": {
         "agg": {
-            "read": int,                 Bytes, Absolute
-            "written": int               Bytes, Absolute
+            "read": int,                 Bytes, Delta since last record
+            "written": int               Bytes, Delta since last record
         },
         "ind": {
             [name]: {                        # Keys not necessarily constant
-                "read": int,             Bytes, Absolute
-                "written": int           Bytes, Absolute
-            }
+                "read": int,             Bytes, Delta since last record
+                "written": int           Bytes, Delta since last record
+            } | null                         # null if this key has no previous record to diff against - see Cumulative Counters
         }
     } | null,
     "sys_disk_usage": {                  # @deprecated - see Schema Changelog. Current value only, now queried live (getDiskUsage in panelUtils.ts) instead
@@ -106,14 +120,14 @@ The name of each record file is its timestamp in seconds since the Unix epoch, e
     } | null,                            # Absent entirely in records predating this field
     "cgroups": {
         [cgroup_name]: {                     # Keys not necessarily constant
-            "cpu": int | null,           Microseconds, Absolute  # Value is sum of cpu time on each core
+            "cpu": int | null,           Microseconds, Delta since last record  # Value is sum of cpu time on each core
             "mem": {
                 "total": int,                    Kilobytes
                 "used": int                      Kilobytes
             } | null,
             "disk_io": {
-                "read": int,             Bytes, Absolute
-                "written": int           Bytes, Absolute
+                "read": int,             Bytes, Delta since last record
+                "written": int           Bytes, Delta since last record
             } | null,
             "procs": {                    # @deprecated - see Schema Changelog. Current value only, now published live (see live_cgroup_procs.json below) instead
                 [process_id: int]: str       # Value is terminal command used to start the process
@@ -127,6 +141,7 @@ The name of each record file is its timestamp in seconds since the Unix epoch, e
 ## Schema Changelog
 Changes to the `Monitor Format` JSON schema above. Deprecated fields are still accepted when parsing old records, but are no longer written and shouldn't be relied on.
 
+- **2026-08-15** - `sys_cpu`/`sys_net_io`/`sys_disk_io` (`agg` and `ind`), `cgroups.*.cpu` and `cgroups.*.disk_io` now hold the delta accumulated since that retention rule's previous record, rather than an absolute value. Individual `sys_cpu.ind`/`sys_net_io.ind`/`sys_disk_io.ind` entries may now be `null` (previously always present with a value). Added `actualPeriod`.
 - **2026-07-22** - Deprecated `sys_disk_usage`, `minecraft.players` and `cgroups.*.procs`. Fields are still parsed if present in old records, but are no longer written.
 - **2026-07-20** - Added `minecraft` field: `tps`, `mem` (`total`, `used`), `players`. Both `minecraft` and direct children are optional (parent: null or not-present, children: null).
 
@@ -144,3 +159,35 @@ Some data should always reflect its current value rather than a historical sampl
     }
 }
 ```
+
+## State
+`monitor.py` persists its own bookkeeping to `state.json`, in the record folder root (a sibling of the retention subfolders and `live_cgroup_procs.json`). 
+See [Cumulative Counters](##cumulative counters) for why we need this data.
+This is to be used internally only, so external programs should not not expect the format to stay constant.
+
+### `state.json`
+```
+{
+    "boot_id": str | null,                       Contents of /proc/sys/kernel/random/boot_id. null before the first successful read
+    "cgroup_inodes": {
+        [cgroup_name]: int                       Inode number of /sys/fs/cgroup/<cgroup_name>
+                                                  # Keys not necessarily constant, one entry per cgroup whose inode has been read at least once
+    },
+    "intervals": {
+        [rule_name]: {                           # One entry per retention rule, named the same as its subfolder (see Historical records above)
+            "time": float | null,                Unix epoch seconds (time.time() precision) when this rule's last record was written. null before its first record ever
+            "sys_cpu": {"agg": {"total": int, "busy": int}, "ind": {[cpuno]: {"total": int, "busy": int}}} | null,
+            "sys_net_io": {"agg": {"sent": int, "recieved": int}, "ind": {[interface_name]: {"sent": int, "recieved": int}}} | null,
+            "sys_disk_io": {"agg": {"read": int, "written": int}, "ind": {[name]: {"read": int, "written": int}}} | null,
+            "cgroups": {
+                [cgroup_name]: {                 # Keys not necessarily constant, only present once a baseline has been recorded
+                    "cpu": int | null,
+                    "disk_io": {"read": int, "written": int} | null
+                }
+            }
+        }
+    }
+}
+```
+Every value here is an absolute reading (as of that rule's last-written record).
+ `null`, a missing key, or a missing `ind`/`cgroups` entry all mean there is no valid baseline yet, either because it's never been recorded or because a reset was detected since.
