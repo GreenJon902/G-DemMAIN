@@ -292,7 +292,7 @@ export async function loadMonitorRecords(interval: number, number?: number | und
 
     // Transform data
     const graphData = records.map(({ time, data: current }) => {
-        const dt = current.actualPeriod;
+        const dt = current.actualPeriod ?? interval;  // TODO: the `?? interval` is for backwards compatibility
         return {
             time: time - latestTime,  // Normalise times
             sys_cpu: convNullAggInd(cpunoKeys, current.sys_cpu, arbCpuToUsage),  // Percentage utilisation
