@@ -209,18 +209,12 @@ This is to be used internally only, so external programs should not not expect t
     "intervals": {
         [rule_name]: {                           # One entry per retention rule, named the same as its subfolder (see Historical records above)
             "time": float | null,                Unix epoch seconds (time.time() precision) when this rule's last record was written. null before its first record ever
-            "sys_cpu": {"agg": {"total": int, "busy": int}, "ind": {[cpuno]: {"total": int, "busy": int}}} | null,
-            "sys_net_io": {"agg": {"sent": int, "recieved": int}, "ind": {[interface_name]: {"sent": int, "recieved": int}}} | null,
-            "sys_disk_io": {"agg": {"read": int, "written": int}, "ind": {[name]: {"read": int, "written": int}}} | null,
-            "cgroups": {
-                [cgroup_name]: {                 # Keys not necessarily constant, only present once a baseline has been recorded
-                    "cpu": int | null,
-                    "disk_io": {"read": int, "written": int} | null
-                }
-            }
+            "data": {...} | null                 The full raw reading gathered when the last record for this rule was written (same shape as Data Sources produces internally). null
+                                                  before its first record ever
         }
     }
 }
 ```
+
 Every value here is an absolute reading (as of that rule's last-written record).
- `null`, a missing key, or a missing `ind`/`cgroups` entry all mean there is no valid baseline yet, either because it's never been recorded or because a reset was detected since.
+`null`, or a missing `sys_cpu`/`sys_net_io`/`sys_disk_io`/ `cgroups.<cgroup_name>` entry within `data`, means there is no valid baseline yet for that piece, either because it's never been recorded or because a reset was detected since.

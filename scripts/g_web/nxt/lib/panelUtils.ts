@@ -249,7 +249,9 @@ export async function loadMonitorRecords(interval: number, number?: number | und
         .filter(name => /^\d+\.json$/.test(name));  // Only load files of the correct format
     const records = await Promise.all(recordNames.map(async record => ({
         time: parseInt(record),  // This will ignore the .json
-        data: MonitorRecord.parse(JSON.parse(await fs.readFile(path.join(subfolder, record), "utf-8")))
+        data: MonitorRecord.parse(JSON.parse(await fs.readFile(path.join(subfolder, record), "utf-8")), { 
+            error: () => { console.error(`Parse error in ${record}`); return undefined }  // Say where the error occured, then pass back to zod's error handler
+        })
     })));
     records.sort((a, b) => a.time - b.time);  // Sort based off time
     const latestTime = Math.max(...records.map(record => record.time));  // The time of the newest record, unused below when there are no records
