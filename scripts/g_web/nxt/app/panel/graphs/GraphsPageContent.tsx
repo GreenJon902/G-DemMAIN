@@ -52,7 +52,7 @@ export default function GraphPageContent({
                         <div className="flex w-full flex-col gap-4">
                             <div className="grid w-full gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
                                 <CpuRamGraph
-                                    data={gd.map(d => ({ time: d.time, cpu: d.sys_cpu?.agg, mem: d.sys_mem?.used }))}
+                                    data={gd.map(d => ({ time: d.time, cpu: d.sys_cpu?.agg, mem: d.sys_mem }))}
                                     totMem={latestDefined(gd, d => d.sys_mem?.total)}
                                     noCores={latestDefined(gd, d => d.sys_cpu?.ind.size)}
                                     what="System"
@@ -117,7 +117,7 @@ export default function GraphPageContent({
                     <PageSection title="Minecraft">
                         <div className="flex w-full flex-wrap gap-4">
                             <TpsHeapGraph
-                                data={gd.map(d => ({ time: d.time, tps: d.minecraft.tps, mem: d.minecraft.mem?.used }))}
+                                data={gd.map(d => ({ time: d.time, tps: d.minecraft.tps, mem: d.minecraft.mem }))}
                                 allocatedMem={latestDefined(gd, d => d.minecraft.mem?.total)}
                             />
                         </div>
@@ -129,7 +129,7 @@ export default function GraphPageContent({
                                     <div className="flex flex-col gap-4">
                                         <div className="grid w-full gap-4 sm:grid-cols-1 md:grid-cols-2">
                                             <CpuRamGraph
-                                                data={gd.map(d => ({ time: d.time, cpu: d.cgroups.get(cgname)?.cpu, mem: d.cgroups.get(cgname)?.mem?.used}))}
+                                                data={gd.map(d => ({ time: d.time, cpu: d.cgroups.get(cgname)?.cpu, mem: d.cgroups.get(cgname)?.mem}))}
                                                 totMem={latestDefined(gd, d => d.cgroups.get(cgname)?.mem?.total)}
                                                 noCores={latestDefined(gd, d => d.sys_cpu?.ind.size)}
                                                 what="CGroup"

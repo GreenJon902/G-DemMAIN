@@ -23,11 +23,11 @@ export default function PanelPageContent(
                 {data.graphData.timed === undefined && <LabelDataMissing />}
                 <div className="flex w-full flex-wrap gap-4">
                     <TpsHeapGraph
-                        data={gd.map(d => ({ time: d.time, tps: d.minecraft.tps, mem: d.minecraft.mem?.used }))}
+                        data={gd.map(d => ({ time: d.time, tps: d.minecraft.tps, mem: d.minecraft.mem }))}
                         allocatedMem={latestDefined(gd, d => d.minecraft.mem?.total)}
                     />
                     <CpuRamGraph
-                        data={gd.map(d => ({ time: d.time, cpu: d.sys_cpu?.agg, mem: d.sys_mem?.used }))}
+                        data={gd.map(d => ({ time: d.time, cpu: d.sys_cpu?.agg, mem: d.sys_mem }))}
                         totMem={latestDefined(gd, d => d.sys_mem?.total)}
                         noCores={latestDefined(gd, d => d.sys_cpu?.ind.size)}
                         what="System"

@@ -15,8 +15,8 @@ The `cgroups` key is a JSON array of the cgroups to track (e.g. `"system.slice/g
 In prod (`config/prod/g_monitor/config.json`) this is `system.slice/{g_mc,g_web_nxt,g_web_mcc,g_monitor,g_discord,mariadb}.service`.
 
 ### Retention
-The `retention` key is a JSON array of `[interval, maxCount]` pairs specifying how old records should be retained. The first number is the interval between records, in seconds. The second is how many of those records should be stored, given as `null` if they should be stored forever.
-E.g. a pair of `[5, 20]` keeps 20 records spanning the last 100 seconds, each 5 seconds apart.
+The `retention` key is a JSON array of `[interval, maxCount, mode]` triples specifying how old records should be retained. The first number is the interval between records, in seconds. The second is how many of those records should be stored, given as `null` if they should be stored forever. The third, `mode`, is either `"snapshot"` or `"aggregate"` - see [Aggregation](#aggregation) below.
+E.g. a triple of `[5, 20, "snapshot"]` keeps 20 records spanning the last 100 seconds, each 5 seconds apart.
 Older records are automatically removed.
 There should not be identical rules.
 Every interval must be a multiple of the smallest interval among the rules - this is asserted at startup.
@@ -58,7 +58,20 @@ To tell which counters are still valid across a `monitor.py` restart (as opposed
 
 Each record also carries `actualPeriod` - the real time elapsed since that retention rule's previous record - so a rate can be computed directly from a single record's delta and `actualPeriod`. It's `null` under the same circumstances as the cumulative counters above (no previous record for this rule to diff against), tracked via each rule's own `time` entry in `state.json`.
 
+## Snapshot vs. aggregate modes
+Certain fields (memory and tps) can store in two different ways:
+`snapshot`: for a short interval just storing the current value is fine.
+`aggregate`: for longer intervals, the current value at the end becomes meaningless, so instead we store min,mean,max (and total for memory).
+
+`mean` is time-weighted, using each tick's real (`time.time()`-precision.
+
+Unlike `state.json`'s cumulative-counter baselines, trackers are **not** persisted - a restart mid-window loses whatever was accumulated, and the next record just covers what's been seen since.
+
+The "mode" of a field in a record is independent of other fields in that record, other records, and the current config option for that interval type.
+
 ## Monitor Format
+This file can contain a mixture of `snapshot` and `aggregate` records, and each fields type is independent of previous records or the config.
+
 ```
 {
     "actualPeriod": float | null,         Seconds, real time elapsed since this retention rule's previous record - see Cumulative Counters. null for that rule's first record ever
@@ -77,6 +90,11 @@ Each record also carries `actualPeriod` - the real time elapsed since that reten
     "sys_mem": {
         "total": int,                    Kilobytes
         "used": int                      Kilobytes
+    } | {
+        "total": int,                    Kilobytes
+        "min": int,                      Kilobytes
+        "mean": int,                     Kilobytes
+        "max": int                       Kilobytes
     } | null,
     "sys_net_io": {
         "agg": {                             # Does not include 'lo' interface
@@ -111,10 +129,19 @@ Each record also carries `actualPeriod` - the real time elapsed since that reten
         } 
     } | null,
     "minecraft": {
-        "tps": float | null,             Ticks per second, rolling average over the last 100 ticks, capped at 20
+        "tps": float | {                 Ticks per second, rolling average over the last 100 ticks, capped at 20
+            "min": float,
+            "mean": float, 
+            "max": float
+        } | null,             
         "mem": {
             "total": int,                Kilobytes                                # The heap's -Xmx ceiling
             "used": int                  Kilobytes                                # The heap currently in use
+        } | {
+            "total": int,                Kilobytes                                # The heap's -Xmx ceiling
+            "min": int,                  Kilobytes                                # The heap currently in use
+            "mean": int,                 Kilobytes                                #  "
+            "max": int                   Kilobytes                                #  "
         } | null,
         "players": [str, ...] | null     @deprecated - see Schema Changelog. Usernames of currently online players, unused and no longer written
     } | null,                            # Absent entirely in records predating this field
@@ -124,6 +151,11 @@ Each record also carries `actualPeriod` - the real time elapsed since that reten
             "mem": {
                 "total": int,                    Kilobytes
                 "used": int                      Kilobytes
+            } | {
+                "total": int,                    Kilobytes
+                "min": int,                      Kilobytes
+                "mean": int,                     Kilobytes
+                "max": int                       Kilobytes
             } | null,
             "disk_io": {
                 "read": int,             Bytes, Delta since last record
@@ -141,6 +173,7 @@ Each record also carries `actualPeriod` - the real time elapsed since that reten
 ## Schema Changelog
 Changes to the `Monitor Format` JSON schema above. Deprecated fields are still accepted when parsing old records, but are no longer written and shouldn't be relied on.
 
+- **2026-08-16** - Retention rules gained a third `mode` element (`"snapshot"`/`"aggregate"`). `sys_mem`, `cgroups.*.mem`, `minecraft.mem` and `minecraft.tps` may now instead hold `{"min", "mean", "max"[, "total"]}` aggregate statistics - see Aggregation.
 - **2026-08-15** - `sys_cpu`/`sys_net_io`/`sys_disk_io` (`agg` and `ind`), `cgroups.*.cpu` and `cgroups.*.disk_io` now hold the delta accumulated since that retention rule's previous record, rather than an absolute value. Individual `sys_cpu.ind`/`sys_net_io.ind`/`sys_disk_io.ind` entries may now be `null` (previously always present with a value). Added `actualPeriod`.
 - **2026-07-22** - Deprecated `sys_disk_usage`, `minecraft.players` and `cgroups.*.procs`. Fields are still parsed if present in old records, but are no longer written.
 - **2026-07-20** - Added `minecraft` field: `tps`, `mem` (`total`, `used`), `players`. Both `minecraft` and direct children are optional (parent: null or not-present, children: null).

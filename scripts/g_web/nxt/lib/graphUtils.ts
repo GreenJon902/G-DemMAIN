@@ -1,3 +1,5 @@
+import type { Mem, MemAggregate, Tps, TpsAggregate } from "./panelUtils";
+
 /**
  * Finds the value of a per-record accessor across an array of records, preferring the value from the most
  * recent record for which it is defined. Useful for fields assumed constant across records (e.g. total system
@@ -10,4 +12,29 @@ export function latestDefined<T, V>(records: T[], accessor: (record: T) => V | n
         if (value !== null && value !== undefined) return value;
     }
     return null;
+}
+
+/** True if a Mem field holds aggregate stats ({min, mean, max, total}) rather than a plain snapshot ({used, total}). */
+export function isAggregateMem(mem: Mem): mem is MemAggregate {
+    return "min" in mem;
+}
+
+/** True if a Tps field holds aggregate stats ({min, mean, max}) rather than a plain snapshot number. */
+export function isAggregateTps(tps: Tps): tps is TpsAggregate {
+    return typeof tps === "object";
+}
+
+/**
+ * Reduces a Mem field to a single {value, min, max} point for graphing - value is `used` for a snapshot or
+ * `mean` for an aggregate, and min/max are null unless the field is aggregate (i.e. there is no band to draw).
+ */
+export function memPoint(mem: Mem | null | undefined): { value: number | null, min: number | null, max: number | null } {
+    if (mem === null || mem === undefined) return { value: null, min: null, max: null };
+    return isAggregateMem(mem) ? { value: mem.mean, min: mem.min, max: mem.max } : { value: mem.used, min: null, max: null };
+}
+
+// See memPoint above - same idea but for a Tps field, whose snapshot form is a bare number rather than an object
+export function tpsPoint(tps: Tps | null | undefined): { value: number | null, min: number | null, max: number | null } {
+    if (tps === null || tps === undefined) return { value: null, min: null, max: null };
+    return isAggregateTps(tps) ? { value: tps.mean, min: tps.min, max: tps.max } : { value: tps, min: null, max: null };
 }

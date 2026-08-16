@@ -7,7 +7,7 @@
     "system.slice/g_discord.service",
     "system.slice/mariadb.service"
   ],
-  "retention": [[5, 20], [360, 20], [86400, null]],
+  "retention": [[5, 20, "snapshot"], [360, 20, "aggregate"], [86400, null, "aggregate"]],
   "recordFolder": "/var/lib/g_monitor",
   "ramWarnThreshold": 0.9,
   "diskWarnThreshold": 0.9,

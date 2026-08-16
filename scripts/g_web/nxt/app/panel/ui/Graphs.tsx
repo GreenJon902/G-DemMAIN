@@ -3,10 +3,32 @@
  */
 
 import { BaseUnit, BYTES, humanize, PERCENTAGE, rebase, SECONDS, TPS } from "@/lib/unitUtils";
-import { latestDefined } from "@/lib/graphUtils";
+import { latestDefined, memPoint, tpsPoint } from "@/lib/graphUtils";
+import type { Mem, Tps } from "@/lib/panelUtils";
 import { Graph, LINE_COLORS, LINE_CYAN, LINE_FUCHSIA, LINE_GRAY, LINE_LIME, LINE_ROSE, LINE_VIOLET } from "./Graph";
 
 type nunumber = null | undefined | number;
+
+// Builds the Graph line(s) for a Mem series. A plain snapshot series is a single filled line, same as before.
+// An aggregate series additionally draws the min/max as a translucent band (approximated by underfilling both
+// the min and max lines with the same color, since Graph has no dedicated fill-between-lines primitive) with
+// the mean drawn as a plain line on top.
+function memGraphLines(data: Array<{ time: number, mem: Mem | null | undefined }>, max: number | null | undefined, label: string) {
+    const points = data.map(({ time, mem }) => ({ time, ...memPoint(mem) }));
+    const hasAggregate = points.some(p => p.min !== null || p.max !== null);
+    const ret = prepareData(points, max, true, rebase(BYTES, 10**3), "", "value", "min", "max");
+    // TODO: Don't draw actual lines for min and max
+    return {
+        lines: !ret ? [] : [
+            ...hasAggregate ? [
+                { data: ret.props.max, color: LINE_GRAY, label: `${label} (max)`, underFill: true },
+                { data: ret.props.min, color: LINE_GRAY, label: `${label} (min)`, underFill: true }
+            ] : [],
+            { data: ret.props.value, color: LINE_GRAY, label, underFill: !hasAggregate }
+        ],
+        yTicks: ret?.yTicks
+    };
+}
 
 /**
  * @param data - The data to plot. If a value is not given, then it will be ignored.
@@ -16,26 +38,26 @@ type nunumber = null | undefined | number;
  */
 export function CpuRamGraph({
     data, totMem, what, noCores
-}: { 
-    data: Array<{ time: number, cpu: nunumber, mem: nunumber }>,
+}: {
+    data: Array<{ time: number, cpu: nunumber, mem: Mem | null | undefined }>,
     totMem: number | null,
     noCores: number | null,
     what: string,
 }) {
-    const cpuRet = prepareData(data.map(x => ({
-        ...x,
-        cpu: (x.cpu === null || x.cpu === undefined) ? null : (x.cpu * (noCores ?? 1) * 100)  // Scale cpu to a proper percentage (sum of percentage for each core (so can be over 100%))
-    })), (noCores ?? 1) * 100, false, PERCENTAGE, "", "cpu");                                 // If we don't know the number of cores then assume 1. It doesn't really matter
-    const memRet = prepareData(data, totMem, true, rebase(BYTES, 10**3), "", "mem");
+    const cpuRet = prepareData(data.map(({ time, cpu }) => ({
+        time,
+        cpu: (cpu === null || cpu === undefined) ? null : (cpu * (noCores ?? 1) * 100)  // Scale cpu to a proper percentage (sum of percentage for each core (so can be over 100%))
+    })), (noCores ?? 1) * 100, false, PERCENTAGE, "", "cpu");                           // If we don't know the number of cores then assume 1. It doesn't really matter
+    const mem = memGraphLines(data, totMem, `${what} RAM`);
     return (
-        <Graph 
+        <Graph
             lines={[
-                ...(memRet) ? [{ data: memRet?.props.mem, color: LINE_GRAY, label: `${what} RAM`, underFill: true}] : [],
+                ...mem.lines,
                 ...(cpuRet) ? [{ data: cpuRet?.props.cpu, color: LINE_CYAN, label: `${what} CPU`, points: true}] : []
             ]}
-            xTicks={{ bottom: cpuRet?.xTicks }}  // cpuRet's xTicks should be the same as memRet's xTicks
-            yTicks={{ left: cpuRet?.yTicks , right: memRet?.yTicks }}
-            containerClassName="min-w-50 flex-1" 
+            xTicks={{ bottom: cpuRet?.xTicks }}  // cpuRet's xTicks should be the same as mem's xTicks
+            yTicks={{ left: cpuRet?.yTicks , right: mem.yTicks }}
+            containerClassName="min-w-50 flex-1"
             graphClassName="h-50"
         />
     );
@@ -48,19 +70,22 @@ export function CpuRamGraph({
 export function TpsHeapGraph({
     data, allocatedMem
 }: {
-    data: Array<{ time: number, tps: nunumber, mem: nunumber }>,
+    data: Array<{ time: number, tps: Tps | null | undefined, mem: Mem | null | undefined }>,
     allocatedMem: number | null,
 }) {
-    const tpsRet = prepareData(data, 20, false, TPS, "", "tps");  // TPS is capped at 20
-    const memRet = prepareData(data, allocatedMem, true, rebase(BYTES, 10**3), "", "mem");
+    const tpsPoints = data.map(({ time, tps }) => ({ time, ...tpsPoint(tps) }));
+    const tpsRet = prepareData(tpsPoints, 20, false, TPS, "", "value");  // TPS is capped at 20
+    // TODO: aggregate-mode tps also has min/max, but they're not drawn yet - implement a proper fill-between-lines
+    // (aka "range area"/"band") chart in Graph.tsx for the min/max envelope, then draw it here like memGraphLines does
+    const mem = memGraphLines(data, allocatedMem, "MC RAM");
     return (
         <Graph
             lines={[
-                ...(memRet) ? [{ data: memRet?.props.mem, color: LINE_GRAY, label: "MC RAM", underFill: true}] : [],
-                ...(tpsRet) ? [{ data: tpsRet?.props.tps, color: LINE_LIME, label: "MC TPS", points: true}] : []
+                ...mem.lines,
+                ...(tpsRet) ? [{ data: tpsRet?.props.value, color: LINE_LIME, label: "MC TPS", points: true}] : []
             ]}
-            xTicks={{ bottom: tpsRet?.xTicks }}  // tpsRet's xTicks should be the same as memRet's xTicks
-            yTicks={{ left: tpsRet?.yTicks , right: memRet?.yTicks }}
+            xTicks={{ bottom: tpsRet?.xTicks }}  // tpsRet's xTicks should be the same as mem's xTicks
+            yTicks={{ left: tpsRet?.yTicks , right: mem.yTicks }}
             containerClassName="min-w-50 flex-1"
             graphClassName="h-50"
         />

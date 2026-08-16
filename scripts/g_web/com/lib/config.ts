@@ -37,8 +37,12 @@ const zUnit = zod.object({
 });
 export type Unit = zod.infer<typeof zUnit>;
 
-// A single [interval, maxCount] retention rule from g_monitor/config.json - see doc/Monitoring.md "Retention"
-const zRetentionRule = zod.tuple([zod.number().int().positive(), zod.number().int().positive().nullable()]);
+// A single [interval, maxCount, mode] retention rule from g_monitor/config.json - see doc/Monitoring.md "Retention"
+const zRetentionRule = zod.tuple([
+    zod.number().int().positive(),
+    zod.number().int().positive().nullable(),
+    zod.enum(["snapshot", "aggregate"])
+]);
 
 const generate = () => {
     const zTNe = zod.string().trim().nonempty();  // Trimmed non-empty string

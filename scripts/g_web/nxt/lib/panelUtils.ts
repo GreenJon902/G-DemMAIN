@@ -157,12 +157,33 @@ const zDiskIO = z.strictObject({
     written: zNatural
 });
 type diskIO = z.infer<typeof zDiskIO>;
-const zMem = z.strictObject({
+// Memory can be recorded as a snapshot ({used, total}) or, for aggregate-mode rules, {min, mean, max, total} over the
+// retention window - which shape a given field/record holds is inferred purely from this structure, see "Snapshot vs. aggregate modes"
+const zMemSnapshot = z.strictObject({
     used: zNatural,  // Kilobytes
-    total: zNatural
+    total: zNatural  // Kilobytes
 });
+const zMemAggregate = z.strictObject({
+    min: zNatural,  // Kilobytes
+    mean: z.number().nonnegative(),  // Kilobytes, time-weighted average
+    max: zNatural,  // Kilobytes
+    total: zNatural  // Kilobytes, most recent reading (assumed constant, not aggregated)
+});
+const zMem = z.union([zMemSnapshot, zMemAggregate]);
+export type MemSnapshot = z.infer<typeof zMemSnapshot>;
+export type MemAggregate = z.infer<typeof zMemAggregate>;
+export type Mem = z.infer<typeof zMem>;
+// Same snapshot/aggregate duality as zMem, but tps has no "total" and its snapshot form is a bare number
+const zTpsAggregate = z.strictObject({
+    min: z.number().nonnegative(),
+    mean: z.number().nonnegative(),
+    max: z.number().nonnegative()
+});
+export type TpsAggregate = z.infer<typeof zTpsAggregate>;
+const zTps = z.union([z.number().nonnegative(), zTpsAggregate]);
+export type Tps = z.infer<typeof zTps>;
 const zMinecraft = z.strictObject({
-    tps: z.number().nonnegative().nullable(),  // Ticks per second, rolling average capped at 20
+    tps: zTps.nullable(),  // Ticks per second - rolling average capped at 20, or {min, mean, max} over the retention window
     mem: zMem.nullable(),  // Heap usage, in kilobytes
     players: z.array(z.string()).nullable().optional()  // @deprecated - see Schema Changelog, kept optional so old records still parse
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

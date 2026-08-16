@@ -21,19 +21,21 @@ print("Trackin CGroups:", CGROUPS)
 
 # Load retention rules
 RETENTION_RULES = {tuple(pair) for pair in readConfigRaw("g_monitor/config.json", "retention")}
-# readConfigRaw does not type-check nested list contents, so verify the shape ourselves - each rule
-# must be an (interval, max-count) pair, where max-count is either an int or None (keep forever)
+# readConfigRaw does not type-check nested list contents, so verify the shape ourselves - each rule must be
+# an (interval, max-count, mode) triple, where max-count is either an int or None (keep forever), and mode
+# is either "snapshot" or "aggregate" - see documentation
 for rule in RETENTION_RULES:
-    assert len(rule) == 2, f"Retention rule {rule!r} is not a (interval, max-count) pair"
-    interval, maxCount = rule
+    assert len(rule) == 3, f"Retention rule {rule!r} is not an (interval, max-count, mode) triple"
+    interval, maxCount, mode = rule
     assert type(interval) is int, f"Retention rule {rule!r} has a non-int interval"
     assert maxCount is None or type(maxCount) is int, f"Retention rule {rule!r} has a max-count that is neither int nor null"
+    assert mode in ("snapshot", "aggregate"), f"Retention rule {rule!r} has an unrecognised mode"
 print("Retention Rules:", RETENTION_RULES)
 
 # Find base interval (how long to wait between polls of the system)
-BASE_INTERVAL = min(interval for interval, _ in RETENTION_RULES)
+BASE_INTERVAL = min(interval for interval, _, _ in RETENTION_RULES)
 # Every interval must be a multiple of BASE_INTERVAL - for records to land on their expected times
-for interval, _ in RETENTION_RULES:
+for interval, _, _ in RETENTION_RULES:
     assert interval % BASE_INTERVAL == 0, f"Retention interval {interval} is not a multiple of the minimum interval {BASE_INTERVAL}"
 print(f"Found Base Interval: {BASE_INTERVAL}. Confirmed all intervals are multiples!")
 
@@ -395,13 +397,17 @@ def diff_cgroups(cgroups: dict, baseline: dict):
         new_baseline[cgroup] = {"cpu": new_cpu_baseline, "disk_io": new_disk_io_baseline}
     return result, new_baseline
 
-def compute_record(data: dict, interval_state: dict, current_time: float):
+def compute_record(data: dict, interval_state: dict, current_time: float, aggregate: dict | None):
     """
     Turns data (an absolute reading from read_data) into a record for one retention rule, diffing its cumulative
     counters against interval_state (that rule's entry in state.json's "intervals" - see documentation).
     current_time is this write's precise time (time.time()), used to compute the record's "actualPeriod" - the
     real time elapsed since this rule's previous record - which is None for the first record ever written for
     this rule (interval_state["time"] is None), the same as a cumulative counter with no baseline yet.
+    aggregate, for an "aggregate"-mode rule, is this write's flushed tracker (see flush_tracker) - its values
+    replace data's gauge readings (sys_mem, minecraft.tps, minecraft.mem, cgroups.*.mem) in the record. Pass
+    None for a "snapshot"-mode rule, to use data's own readings unchanged. Cumulative counters (sys_cpu,
+    sys_net_io, sys_disk_io, cgroups.*.cpu, cgroups.*.disk_io) are unaffected either way - see documentation.
     Returns (record, new_interval_state) - new_interval_state must replace interval_state in state.json, so the
     next record for this rule diffs against this tick's values.
     """
@@ -410,13 +416,21 @@ def compute_record(data: dict, interval_state: dict, current_time: float):
     sys_net_io, new_sys_net_io = diff_agg_ind(data["sys_net_io"], interval_state["sys_net_io"], ("sent", "recieved"))
     sys_disk_io, new_sys_disk_io = diff_agg_ind(data["sys_disk_io"], interval_state["sys_disk_io"], ("read", "written"))
     cgroups, new_cgroups = diff_cgroups(data["cgroups"], interval_state["cgroups"])
+    if aggregate is None:
+        sys_mem = data["sys_mem"]
+        minecraft = data["minecraft"]
+    else:
+        sys_mem = aggregate["sys_mem"]
+        minecraft = aggregate["minecraft"]
+        for (cgroup, cgroup_data) in cgroups.items():
+            cgroup_data["mem"] = aggregate["cgroups"].get(cgroup)
     record = {
         "actualPeriod": actual_period,
         "sys_cpu": sys_cpu,
-        "sys_mem": data["sys_mem"],
+        "sys_mem": sys_mem,
         "sys_net_io": sys_net_io,
         "sys_disk_io": sys_disk_io,
-        "minecraft": data["minecraft"],
+        "minecraft": minecraft,
         "cgroups": cgroups
     }
     new_interval_state = {
@@ -472,14 +486,104 @@ def refresh_reset_detection(state: dict):
                 interval_state["cgroups"].pop(cgroup, None)
         state["cgroup_inodes"][cgroup] = inode
 
+# Aggregate tracking ---
+# See "Snapshot vs. aggregate modes" in the documentation - for "aggregate" rules, monitor.py keeps a running,
+# in-memory-only tracker per rule (never persisted to state.json, unlike the cumulative-counter baselines
+# above - see documentation), folding in one more mainloop tick's worth of gauge readings every iteration, and
+# flushing it into a record's sys_mem/minecraft.tps/minecraft.mem/cgroups.*.mem fields once that rule is due.
+# Cumulative counters are unaffected by mode, so aren't tracked here at all.
+def new_value_tracker():
+    """
+    Fresh tracker for a single time-weighted-mean/min/max of a bare gauge reading (e.g. tps, or one mem's "used").
+    """
+    return {"weighted_sum": None, "min": None, "max": None}
+
+def track_value(tracker: dict, value: float | None, dt: float):
+    """
+    Folds one tick's reading (None if it failed to read this tick) into tracker, weighted by dt (this tick's
+    real duration - see "Precision" in the documentation).
+    """
+    if value is None:
+        return
+    tracker["weighted_sum"] = value * dt if tracker["weighted_sum"] is None else tracker["weighted_sum"] + value * dt
+    tracker["min"] = value if tracker["min"] is None else min(tracker["min"], value)
+    tracker["max"] = value if tracker["max"] is None else max(tracker["max"], value)
+
+def flush_value(tracker: dict, sum_dt: float):
+    """
+    Turns tracker's accumulated ticks into {"min", "mean", "max"}, or None if it never saw a valid tick.
+    """
+    if tracker["min"] is None:
+        return None
+    # sum_dt can only be 0 if the only tick(s) folded in were the mainloop's very first ever (see previous_tick_time
+    # below) - fall back to the single observed value rather than dividing by zero
+    mean = tracker["min"] if sum_dt == 0 else tracker["weighted_sum"] / sum_dt
+    return {"min": tracker["min"], "mean": mean, "max": tracker["max"]}
+
+def new_mem_tracker():
+    """
+    Fresh tracker for a {"total": int, "used": int} gauge (sys_mem, or one cgroup's/minecraft's mem) - "used" is
+    tracked as a value tracker, "total" is just carried through from the latest tick (assumed to stay constant).
+    """
+    return {"used": new_value_tracker(), "total": None}
+
+def track_mem(tracker: dict, value: dict | None, dt: float):
+    """
+    Folds one tick's {"total": int, "used": int} reading (None if it failed to read this tick) into tracker.
+    """
+    if value is None:
+        return
+    track_value(tracker["used"], value["used"], dt)
+    tracker["total"] = value["total"]
+
+def flush_mem(tracker: dict, sum_dt: float):
+    """
+    Turns tracker's accumulated ticks into {"min", "mean", "max", "total"}, or None if it never saw a valid tick.
+    """
+    used = flush_value(tracker["used"], sum_dt)
+    return None if used is None else {**used, "total": tracker["total"]}
+
+def new_tracker():
+    """
+    Fresh per-retention-rule aggregate tracker - see the "Aggregate tracking" comment above.
+    """
+    return {"sum_dt": 0.0, "sys_mem": new_mem_tracker(), "minecraft_mem": new_mem_tracker(), "minecraft_tps": new_value_tracker(), "cgroups": {}}
+
+def track_tick(tracker: dict, data: dict, dt: float):
+    """
+    Folds one mainloop tick's worth of gauge readings from data (see read_data) into tracker, weighted by dt.
+    """
+    tracker["sum_dt"] += dt
+    track_mem(tracker["sys_mem"], data["sys_mem"], dt)
+    minecraft = data["minecraft"] or {}
+    track_mem(tracker["minecraft_mem"], minecraft.get("mem"), dt)
+    track_value(tracker["minecraft_tps"], minecraft.get("tps"), dt)
+    for (cgroup, cgroup_data) in data["cgroups"].items():
+        track_mem(tracker["cgroups"].setdefault(cgroup, new_mem_tracker()), cgroup_data["mem"], dt)
+
+def flush_tracker(tracker: dict):
+    """
+    Turns tracker's accumulated ticks into the values compute_record splices into an "aggregate"-mode record -
+    see the "Aggregate tracking" comment above. Unlike compute_record's own return, this isn't itself a record -
+    it's passed straight back into compute_record as its aggregate argument.
+    """
+    sum_dt = tracker["sum_dt"]
+    return {
+        "sys_mem": flush_mem(tracker["sys_mem"], sum_dt),
+        "minecraft": {"tps": flush_value(tracker["minecraft_tps"], sum_dt), "mem": flush_mem(tracker["minecraft_mem"], sum_dt)},
+        "cgroups": {cgroup: flush_mem(cgroup_tracker, sum_dt) for (cgroup, cgroup_tracker) in tracker["cgroups"].items()}
+    }
+
 
 # Mainloop ---
 warned_resources = set()  # Resources currently over their warn threshold - see check_warn_threshold
 state = load_state()  # Tracks what's needed to detect resets and diff cumulative counters, persists across monitor.py restarts - see documentation
+trackers = {}  # rule_key -> aggregate tracker, one per "aggregate"-mode rule - in-memory only, see "Aggregate tracking"
+previous_tick_time = None  # Precise time of the previous mainloop tick, used to weight this tick's contribution to trackers
 while True:
     # Create record subfolders if necessary
     assert os.path.exists(RECORD_FOLDER), f"Record folder - '{RECORD_FOLDER}' - does not exist"
-    for interval, number in RETENTION_RULES:
+    for interval, number, mode in RETENTION_RULES:
         path = get_record_subfolder(interval, number)
         if not os.path.exists(path):
             os.mkdir(path)
@@ -492,6 +596,9 @@ while True:
     data = read_data()
     current_time_exact = time.time()  # Higher precision than current_time - used for actualPeriod/state.json's "time" (see documentation)
     current_time = int(current_time_exact)
+    # 0 for the very first ever tick (no previous tick to measure from) - see flush_value
+    tick_dt = 0.0 if previous_tick_time is None else current_time_exact - previous_tick_time
+    previous_tick_time = current_time_exact
 
     # Check RAM and the tracked drives against their warn thresholds, firing SYSWARN webhooks on
     # threshold crossings (check_warn_threshold is edge-triggered, so this doesn't spam every tick)
@@ -510,9 +617,14 @@ while True:
     live_cgroup_procs = {"timestamp": current_time, "cgroups": read_live_cgroup_procs()}
     open(os.path.join(RECORD_FOLDER, LIVE_CGROUP_PROCS_FILENAME), "w").write(json.dumps(live_cgroup_procs))
 
+    # Fold this tick into every "aggregate" rule's tracker - every tick, not just when a record is due
+    for interval, number, mode in RETENTION_RULES:
+        if mode == "aggregate":
+            track_tick(trackers.setdefault(get_rule_key(interval, number), new_tracker()), data, tick_dt)
+
     # Find subfolders where a new record needs creation
-    needs_new = []  # (path, rule_key) of subfolders where a new record needs to be put
-    for interval, number in RETENTION_RULES:
+    needs_new = []  # (path, rule_key, mode) of subfolders where a new record needs to be put
+    for interval, number, mode in RETENTION_RULES:
         rule_key = get_rule_key(interval, number)
         path = get_record_subfolder(interval, number)
         items = os.listdir(path)
@@ -520,19 +632,23 @@ while True:
 
         # Does this subfolder need a new record
         if current_time - newest_time >= interval:
-            needs_new.append((path, rule_key))
+            needs_new.append((path, rule_key, mode))
 
     # Write each due rule's record - every rule diffs data against (and then updates) its own baseline in state
-    for path, rule_key in needs_new:
+    for path, rule_key, mode in needs_new:
         interval_state = state["intervals"].setdefault(rule_key, {"time": None, "sys_cpu": None, "sys_net_io": None, "sys_disk_io": None, "cgroups": {}})
-        record, state["intervals"][rule_key] = compute_record(data, interval_state, current_time_exact)
+        aggregate = None
+        if mode == "aggregate":
+            aggregate = flush_tracker(trackers.setdefault(rule_key, new_tracker()))
+            trackers[rule_key] = new_tracker()  # Reset for the next window
+        record, state["intervals"][rule_key] = compute_record(data, interval_state, current_time_exact, aggregate)
         open(os.path.join(path, f"{current_time}.json"), "w").write(json.dumps(record))
 
-    # Persist state so if g_monitor restarts then we don't have to start from a blank slate 
+    # Persist state so if g_monitor restarts then we don't have to start from a blank slate
     save_state(state)
 
     # Remove old records
-    for interval, number in RETENTION_RULES:
+    for interval, number, mode in RETENTION_RULES:
         if number is not None:  # If there is a maximum number of records for this interval
             path = get_record_subfolder(interval, number)
             while len(items := os.listdir(path)) > number:
