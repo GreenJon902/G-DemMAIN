@@ -4,7 +4,7 @@ import { CpuRamGraph, MultiCPUGraph, TpsHeapGraph, TransferGraph } from "../ui/G
 import { loadGraphDataAction } from "./actions";
 import RadioButtons from "@/app/ui/RadioButtons";
 import { MonitorOption } from "@/lib/panelUtils";
-import { BYTES, rebase } from "@/lib/unitUtils";
+import { BYTES, humanize, rebase, SECONDS } from "@/lib/unitUtils";
 import LabelDataMissing from "@/app/ui/LabelDataMissing";
 import { latestDefined } from "@/lib/graphUtils";
 
@@ -15,6 +15,7 @@ export default function GraphPageContent({
     setParam: (param: MonitorOption) => void
 }) {
     const gd = data.timed ?? [];
+    const baseInterval = Math.min(...data.options.map(o => o.interval));  // See monitor.py's BASE_INTERVAL - the sampling resolution underlying every aggregate field's min/mean/max
     return (
         <>
             {/* Monitor option selector: */}
@@ -178,6 +179,9 @@ export default function GraphPageContent({
                     </PageSection>
                 </>
             }
+            <span className="block text-gray-600">
+                Min, mean and max are calculated with a resolution of {humanize(baseInterval, SECONDS, { baseInteger: true })}
+            </span>
         </>
     );
 }

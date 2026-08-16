@@ -10,19 +10,18 @@ import { Graph, LINE_COLORS, LINE_CYAN, LINE_FUCHSIA, LINE_GRAY, LINE_LIME, LINE
 type nunumber = null | undefined | number;
 
 // Builds the Graph line(s) for a Mem series. A plain snapshot series is a single filled line, same as before.
-// An aggregate series additionally draws the min/max as a translucent band (approximated by underfilling both
-// the min and max lines with the same color, since Graph has no dedicated fill-between-lines primitive) with
-// the mean drawn as a plain line on top.
+// An aggregate series additionally draws the min and max, each underfilled to the baseline with no stroke of
+// their own (approximating a band, since they share a color and both fill to the same baseline), with the
+// mean drawn as a plain line on top.
 function memGraphLines(data: Array<{ time: number, mem: Mem | null | undefined }>, max: number | null | undefined, label: string) {
     const points = data.map(({ time, mem }) => ({ time, ...memPoint(mem) }));
     const hasAggregate = points.some(p => p.min !== null || p.max !== null);
     const ret = prepareData(points, max, true, rebase(BYTES, 10**3), "", "value", "min", "max");
-    // TODO: Don't draw actual lines for min and max
     return {
         lines: !ret ? [] : [
             ...hasAggregate ? [
-                { data: ret.props.max, color: LINE_GRAY, label: `${label} (max)`, underFill: true },
-                { data: ret.props.min, color: LINE_GRAY, label: `${label} (min)`, underFill: true }
+                { data: ret.props.max, color: LINE_GRAY, label: `${label} (max)`, underFill: true, stroke: false, legend: false },
+                { data: ret.props.min, color: LINE_GRAY, label: `${label} (min)`, underFill: true, stroke: false, legend: false }
             ] : [],
             { data: ret.props.value, color: LINE_GRAY, label, underFill: !hasAggregate }
         ],
@@ -74,14 +73,14 @@ export function TpsHeapGraph({
     allocatedMem: number | null,
 }) {
     const tpsPoints = data.map(({ time, tps }) => ({ time, ...tpsPoint(tps) }));
-    const tpsRet = prepareData(tpsPoints, 20, false, TPS, "", "value");  // TPS is capped at 20
-    // TODO: aggregate-mode tps also has min/max, but they're not drawn yet - implement a proper fill-between-lines
-    // (aka "range area"/"band") chart in Graph.tsx for the min/max envelope, then draw it here like memGraphLines does
+    const hasAggregateTps = tpsPoints.some(p => p.min !== null || p.max !== null);
+    const tpsRet = prepareData(tpsPoints, 20, false, TPS, "", "value", "min", "max");  // TPS is capped at 20
     const mem = memGraphLines(data, allocatedMem, "MC RAM");
     return (
         <Graph
             lines={[
                 ...mem.lines,
+                ...(tpsRet && hasAggregateTps) ? [{ data: tpsRet.props.min, upperData: tpsRet.props.max, color: LINE_LIME, label: "MC TPS (range)", legend: false }] : [],
                 ...(tpsRet) ? [{ data: tpsRet?.props.value, color: LINE_LIME, label: "MC TPS", points: true}] : []
             ]}
             xTicks={{ bottom: tpsRet?.xTicks }}  // tpsRet's xTicks should be the same as mem's xTicks

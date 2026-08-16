@@ -33,6 +33,7 @@ export default function PanelPageContent(
                         what="System"
                     />
                 </div>
+                {/* No min/mean/max resolution note here (unlike the Graphs page) - this page always loads the smallest retention interval, which is snapshot mode, so there's no aggregation to explain */}
             </PageSection>
             { /* Service status -------------------------------------------------- */ }
             <PageSection title="Units">

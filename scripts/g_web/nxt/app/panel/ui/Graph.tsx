@@ -24,12 +24,57 @@ export const LINE_COLORS = [LINE_ROSE, LINE_FUCHSIA, LINE_VIOLET, LINE_BLUE, LIN
 
 
 type Line = {
-    data: { x: number, y: number | null }[],  // The datapoints to plot. These should be in the interval [0,1], where 0 is the bottom/left edge and 1 is the maximum on the top/right edge. We expect these to be sorted with x ascending. If y is not plotted then the line will break.
+    data: { x: number, y: number | null }[],  // The (only, or lower-bound) line's datapoints, in the interval [0,1] as before. We expect these to be sorted with x ascending. If y is not plotted then the line will break.
     color: LineColor,
-    underFill?: boolean,  // Do we fill in an opaque area under the line?
-    points?: boolean,  // Do we draw circles on each vertex?
-    label: string  // What to annotate the line as, this should be unique on this graph
+    label: string,  // What to annotate the line as in the legend (if shown) - this should be unique on this graph, as it's also used as the React key
+    legend?: boolean  // Show this line's own legend entry. Default true - set false for a bound (e.g. min/max) that doesn't need its own entry
+} & (
+    | {
+        // The shaded band between `data` (lower) and `upperData` (upper) - e.g. a min/max envelope. No stroke or points are drawn, only the fill. We assume the x keys in here are identical to those in data
+        upperData: { x: number, y: number | null }[]  // TODO: Don't pass the redundant x-coordinates
+    }
+    | {
+        upperData?: undefined,
+        underFill?: boolean,  // Fill the area under `data` down to the y=0 baseline
+        stroke?: boolean,  // Draw the stroke of `data`. Default true
+        points?: boolean  // Draw circles on each vertex of `data`
+    }
+)
+
+// Groups a line's data into runs of adjacent non-null points, so we don't join a line across a gap
+function groupLine(data: { x: number, y: number | null }[]) {
+    const groups: { x: number, y: number }[][] = [];
+    let current: { x: number, y: number }[] = [];
+    for (const { x, y } of data) {
+        if (y === null) {
+            groups.push(current);
+            current = [];
+        } else {
+            current.push({ x, y });
+        }
+    }
+    if (current.length > 0) groups.push(current);
+    return groups;
 }
+
+// Same as groupLine, but pairs up `data` (lower) with `upperData` (upper) for a band fill - a run breaks if either bound is null
+function groupBand(data: { x: number, y: number | null }[], upperData: { x: number, y: number | null }[]) {
+    const groups: { x: number, yLower: number, yUpper: number }[][] = [];
+    let current: { x: number, yLower: number, yUpper: number }[] = [];
+    for (let i = 0; i < data.length; i++) {
+        const { x, y: yLower } = data[i];
+        const yUpper = upperData[i]?.y ?? null;
+        if (yLower === null || yUpper === null) {
+            groups.push(current);
+            current = [];
+        } else {
+            current.push({ x, yLower, yUpper });
+        }
+    }
+    if (current.length > 0) groups.push(current);
+    return groups;
+}
+// TODO: Can be unify groupLine and groupBand?
 
 /**
  * An abstract graph drawing component.
@@ -55,26 +100,9 @@ export function Graph({
     yTicks: { left?: string[], right?: string[] }
 }) {
     // Optimize lines by determining which groups of points can be drawn in a single svg node (so adjacent non-null points)
-    const optimizedLines = lines.map(line => {
-        // Group adjacent non-null points
-        const groups: { x: number, y: number }[][] = [];
-        let current: { x: number, y: number }[] = [];
-        for (let i=0; i<line.data.length; i++) {
-            const {x, y} = line.data[i];
-            if (y === null) {
-                groups.push(current);
-                current = [];
-            } else {
-                current.push({x, y});
-            }
-        }
-        if (current.length > 0) groups.push(current);
-
-        return {
-            ...line,
-            optimizedData: groups
-        };
-    });
+    const optimizedLines = lines.map(line =>
+        line.upperData ? { ...line, bandGroups: groupBand(line.data, line.upperData) } : { ...line, optimizedData: groupLine(line.data) }
+    );
 
     
     return (
@@ -119,59 +147,84 @@ export function Graph({
                     optimizedLines.map(line => (
                         (line.data.length > 0 &&
                             <Fragment key={line.label}>
-                                {/* Line and fill (if applicable) */}
-                                {/* Fill (if applicable) --- */}
-                                {line.underFill && (
-                                    <svg 
+                                {"bandGroups" in line ? (
+                                    // Band fill only - the shaded region between the lower and upper bounds. No stroke or points are drawn for a band
+                                    <svg
                                         className={`absolute size-full ${graphClassName} overflow-hidden rounded-md`}
                                         preserveAspectRatio="none"
                                         viewBox="0 0 1 1"
                                     >
                                         {[
-                                            ...line.optimizedData.filter(ol => ol.length >= 2).map((ol, i) => (
-                                                <polygon 
-                                                    points={`${ol[0].x},1 ${ol.map(({x, y}) => `${x},${1-y}`).join(" ")} ${ol[ol.length - 1].x},1`} 
+                                            ...line.bandGroups.filter(g => g.length >= 2).map((g, i) => (
+                                                <polygon
+                                                    points={
+                                                        g.map(({x, yLower}) => `${x},${1-yLower}`).join(" ") + " " +
+                                                        [...g].reverse().map(({x, yUpper}) => `${x},${1-yUpper}`).join(" ")
+                                                    }
                                                     className={`${line.color.fill} opacity-30`}
                                                     key={i}
                                                 />
                                             ))
                                         ]}
                                     </svg>
-                                )}
-                                {/* Line --- */}
-                                <svg 
-                                    className={`absolute size-full ${graphClassName} ${line.points ? "overflow-visible" : "overflow-hidden rounded-md"}`}
-                                    preserveAspectRatio="none"
-                                    viewBox="0 0 1 1"
-                                >
-                                    {[
-                                        ...line.optimizedData.filter(ol => ol.length >= 2).map((ol, i) => (
-                                            <path 
-                                                key={i} 
-                                                vectorEffect="non-scaling-stroke"
-                                                className={`fill-none ${line.color.stroke} stroke-2`}
-                                                d={`M${ol[0].x} ${1 - ol[0].y} ` +
-                                                    ol.slice(1).map(({x, y}) => `L${x} ${1 - y}`).join(" ")} 
-                                            />
-                                        ))
-                                    ]}
-                                </svg>
-                                {/* Points (if applicable) --- */}
-                                {line.points && (
-                                    <svg
-                                        className={`absolute size-full ${graphClassName} overflow-visible`}
-                                        // No viewbox, we use percentages for this so that circle sizing is correct 
-                                    >
-                                        {line.data.filter(({y}) => y !== null).map(({x, y}, i) => (
-                                            <circle 
-                                                cx={x * 100 + "%"} 
-                                                cy={(1 - y!) * 100 + "%"} 
-                                                r="0.2rem" 
-                                                className={`${line.color.fill}`}
-                                                key={i}
-                                            />
-                                        ))}
-                                    </svg>
+                                ) : (
+                                    <>
+                                        {/* Fill (if applicable) --- */}
+                                        {line.underFill && (
+                                            <svg
+                                                className={`absolute size-full ${graphClassName} overflow-hidden rounded-md`}
+                                                preserveAspectRatio="none"
+                                                viewBox="0 0 1 1"
+                                            >
+                                                {[
+                                                    ...line.optimizedData.filter(ol => ol.length >= 2).map((ol, i) => (
+                                                        <polygon
+                                                            points={`${ol[0].x},1 ${ol.map(({x, y}) => `${x},${1-y}`).join(" ")} ${ol[ol.length - 1].x},1`}
+                                                            className={`${line.color.fill} opacity-30`}
+                                                            key={i}
+                                                        />
+                                                    ))
+                                                ]}
+                                            </svg>
+                                        )}
+                                        {/* Line (if applicable) --- */}
+                                        {(line.stroke ?? true) && (
+                                            <svg
+                                                className={`absolute size-full ${graphClassName} ${line.points ? "overflow-visible" : "overflow-hidden rounded-md"}`}
+                                                preserveAspectRatio="none"
+                                                viewBox="0 0 1 1"
+                                            >
+                                                {[
+                                                    ...line.optimizedData.filter(ol => ol.length >= 2).map((ol, i) => (
+                                                        <path
+                                                            key={i}
+                                                            vectorEffect="non-scaling-stroke"
+                                                            className={`fill-none ${line.color.stroke} stroke-2`}
+                                                            d={`M${ol[0].x} ${1 - ol[0].y} ` +
+                                                                ol.slice(1).map(({x, y}) => `L${x} ${1 - y}`).join(" ")}
+                                                        />
+                                                    ))
+                                                ]}
+                                            </svg>
+                                        )}
+                                        {/* Points (if applicable) --- */}
+                                        {line.points && (
+                                            <svg
+                                                className={`absolute size-full ${graphClassName} overflow-visible`}
+                                                // No viewbox, we use percentages for this so that circle sizing is correct
+                                            >
+                                                {line.data.filter(({y}) => y !== null).map(({x, y}, i) => (
+                                                    <circle
+                                                        cx={x * 100 + "%"}
+                                                        cy={(1 - y!) * 100 + "%"}
+                                                        r="0.2rem"
+                                                        className={`${line.color.fill}`}
+                                                        key={i}
+                                                    />
+                                                ))}
+                                            </svg>
+                                        )}
+                                    </>
                                 )}
                             </Fragment>
                         )
@@ -182,7 +235,7 @@ export function Graph({
             {/* Legend --- */}
             <div className="flex flex-row flex-wrap gap-1">
                 {
-                    lines.reverse().map(line => (
+                    lines.filter(line => line.legend ?? true).reverse().map(line => (
                         (line.data.length > 0 &&
                             <div key={line.label} className="flex h-6 flex-row items-center gap-1 rounded-md bg-gray-950 px-2 text-nowrap">
                                 <div className={`size-3 rounded-full ${line.color.bg}`} />
