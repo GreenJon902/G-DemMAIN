@@ -2,6 +2,7 @@
 
 A Python bot (`scripts/g_discord/g_discord.py`) bridging Minecraft chat to Discord and exposing `/list`.
 It talks to `g_mc_monitor`'s chat socket and FUSE filesystem - see [G-DemMAIN Monitor Mod.md](G-DemMAIN%20Monitor%20Mod.md) for that protocol.
+It also provides some other utilites - administration, leveling, etc. (see modules).
 This doc covers setting the bot up on Discord's side: the application, its token/intents/permissions, and inviting it to the server.
 
 ## Discord Developer Portal setup
@@ -38,8 +39,15 @@ Note that `/list` is registered as a **global** command (`tree.sync()` with no g
 - `environ/g_discord_bot`: `DISCORD_CHAT_CHANNEL_ID` - the Discord channel the bridge posts to and reads from.
   To get a channel's ID, enable Developer Mode (User Settings → Advanced), then right-click the channel → Copy Channel ID.
   Supplied per-install, not committed to the repo.
+- `g_discord/config.json`: settings for `leveling_module` -
+  - `userXpFilePath` - where per-user XP is persisted (`/var/lib/g_discord/userXp.json` in prod).
+  - `minAwardedXp`/`maxAwardedXp` - range of XP awarded per eligible message.
+  - `awardCooldown` - seconds a user must wait between XP awards.
+  - `levelXpCurve.a`/`levelXpCurve.b` - the `a*level^2 + b*level` curve mapping level to total XP required.
 
 ## Running
 
 `python3 g_discord.py`, no arguments - all configuration comes from the environment/config files above.
 In production this runs as `g_discord.service` (see [Services.md](Services.md) and `config/prod/systemd-services/g_discord.service`).
+
+Must be stopped with **SIGINT** - this allows `g_discord.py` to this to shut down cleanly and flush in-memory state (e.g. `leveling_module`'s XP data) to disk before exiting. 

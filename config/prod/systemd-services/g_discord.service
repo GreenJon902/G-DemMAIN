@@ -33,6 +33,9 @@ ExecStopPost=/opt/infra/.venv/bin/python3 /opt/infra/scripts/webhooks.py status 
 Restart=on-failure
 RestartSec=10
 
+# SIGINT allows shutdown hooks to run (flush to disk), default SIGTERM does not
+KillSignal=SIGINT
+
 # Any files created will be read/writable by the user g_discord and the group g_discord
 UMask=0002
 

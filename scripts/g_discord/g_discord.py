@@ -2,6 +2,7 @@
 # protocol this talks to, and doc/G-DemMAIN Discord Bot.md for setup.
 
 import discord
+import asyncio
 
 from libs.config import readEnviron
 
@@ -13,7 +14,7 @@ intents.message_content = True  # Needed to read the text of messages sent in th
 client = discord.Client(intents=intents)
 
 # Set up events
-from subscriptor import subscribe_to, register_client_instance
+from subscriptor import subscribe_to, register_client_instance, dispatch_event
 register_client_instance(client)
 from subscriptor import tree
 
@@ -21,6 +22,7 @@ from subscriptor import tree
 import minecraft_chat_module
 import administration_module.tempmute
 import administration_module.warn
+import leveling_module
 
 # We need to sync the tree so commands work
 @subscribe_to("ready")
@@ -29,4 +31,7 @@ async def on_ready(_):
     print("Tree has synced!")
 
 # Run the bot
-client.run(BOT_TOKEN)
+try:
+    client.run(BOT_TOKEN)
+finally:
+    asyncio.run(dispatch_event("stop"))

@@ -155,8 +155,11 @@ async def list_command(interaction: discord.Interaction):
 async def on_message(client: discord.Client, message: discord.Message):
     """Relays messages sent in the configured Discord chat channel to Minecraft chat."""
     # webhook_id is set for messages posted by the chat-bridge webhook itself (see
-    # get_or_create_webhook) - without this check we'd relay our own relayed messages right back
-    if message.author == client.user or message.webhook_id is not None or message.channel.id != CHAT_CHANNEL_ID:
+    # get_or_create_webhook) - without this check we'd relay our own relayed messages right back.
+    # message.type is only MessageType.default for organic chat - Discord posts a real, relayable
+    # Message for "User used /command" too, which shouldn't be forwarded into Minecraft's chat
+    if (message.author == client.user or message.webhook_id is not None
+            or message.channel.id != CHAT_CHANNEL_ID or message.type != discord.MessageType.default):
         return
     if chat_socket is None or not chat_socket.connected:
         await message.channel.send("Couldn't reach the Minecraft server - is it down?")
