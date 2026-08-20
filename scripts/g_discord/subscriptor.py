@@ -16,7 +16,7 @@ from functools import partial
 from typing import Callable
 
 # List of events that modules can bind to
-SUPPORTED_EVENTS = ["ready", "message"]
+SUPPORTED_EVENTS = ["ready", "message", "guild_channel_create"]
 
 # Map from event name to list of listener callbacks
 _listeners: dict[str, list[Callable[discord.Client, ...]]] = {}

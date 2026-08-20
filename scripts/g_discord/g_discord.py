@@ -19,7 +19,8 @@ from subscriptor import tree
 
 # Load modules
 import minecraft_chat_module
-import administration_module
+import administration_module.tempmute
+import administration_module.warn
 
 # We need to sync the tree so commands work
 @subscribe_to("ready")

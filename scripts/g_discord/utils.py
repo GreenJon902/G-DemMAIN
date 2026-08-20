@@ -15,13 +15,14 @@ async def get_or_create_webhook(channel, webhook_name):
     print(f"Creating new webhook \"{webhook_name}\"")
     return await channel.create_webhook(name=webhook_name)
 
-async def get_or_create_role(guild, role_name):
+async def get_or_create_role(guild, role_name, colour=None):
     """
-    Gets guild's role_name role, creating it if it doesn't already exist.
+    Gets guild's role_name role, creating it (with colour, if given) if it doesn't already exist.
+    colour is only applied on creation - it isn't enforced on an already-existing role.
     """
     role = discord.utils.get(guild.roles, name=role_name)
     if role is not None:
         return role
     print(f"Creating new role \"{role_name}\"")
-    return await guild.create_role(name=role_name)
+    return await guild.create_role(name=role_name, colour=colour if colour is not None else discord.Colour.default())
 
