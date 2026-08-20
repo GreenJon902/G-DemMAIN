@@ -4,3 +4,7 @@ DISCORD_BOT_TOKEN
 DISCORD_CHAT_CHANNEL_ID
 # The Discord channel the chat bridge posts to and reads from.
 # To get a channel's ID, enable Developer Mode (User Settings → Advanced), then right-click the channel → Copy Channel ID.
+
+DISCORD_MEMBER_LOG_CHANNEL_ID
+# The Discord channel member-join/leave/profile-update events are logged to (administration_module.log).
+# To get a channel's ID, enable Developer Mode (User Settings → Advanced), then right-click the channel → Copy Channel ID.

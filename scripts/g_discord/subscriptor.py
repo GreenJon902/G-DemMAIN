@@ -16,7 +16,9 @@ from functools import partial
 from typing import Callable
 
 # List of discord.py gateway events that modules can bind to - the first arguement is the discord client, the rest will be the event arguements
-NATIVE_EVENTS = ["ready", "message", "guild_channel_create"]
+# member_join/raw_member_remove/user_update all require the privileged Server Members Intent - see
+# doc/G-DemMAIN Discord Bot.md
+NATIVE_EVENTS = ["ready", "message", "guild_channel_create", "member_join", "raw_member_remove", "user_update"]
 
 # List of events that don't come from discord.py's gateway - nothing binds these onto the client,
 # they're only ever fired by an explicit dispatch_event call

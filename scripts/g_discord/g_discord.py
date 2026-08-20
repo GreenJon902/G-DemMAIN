@@ -11,6 +11,7 @@ BOT_TOKEN = readEnviron("DISCORD_BOT_TOKEN", str)
 
 intents = discord.Intents.default()
 intents.message_content = True  # Needed to read the text of messages sent in the chat channel
+intents.members = True  # Needed for member_join/raw_member_remove/user_update (administration_module.log)
 client = discord.Client(intents=intents)
 
 # Set up events
@@ -22,6 +23,7 @@ from subscriptor import tree
 import minecraft_chat_module
 import administration_module.tempmute
 import administration_module.warn
+import administration_module.log
 import leveling_module
 
 # We need to sync the tree so commands work
