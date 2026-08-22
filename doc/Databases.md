@@ -456,3 +456,14 @@ CREATE OR REPLACE VIEW hd_event_event_rea AS
   @@unique([event_id, related_event_id])
 ```
 `npm run build` will fail if this is missing.
+
+
+# g_mc
+```
+CREATE DATABASE g_mc
+    CHARACTER SET utf8mb4
+    COLLATE utf8mb4_unicode_ci;
+```
+
+Schema is managed by the ledger mod.
+

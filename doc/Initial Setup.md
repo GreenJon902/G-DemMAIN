@@ -75,6 +75,10 @@ See [Users, Groups, and Permissions.md](Users%2C%20Groups%2C%20and%20Permissions
 `sudo systemctl reset-failed g_mc g_web_nxt g_web_mcc g_monitor g_discord`
 `sudo systemctl restart g_mc g_web_nxt g_web_mcc g_monitor g_discord`
 
+12. Setup Minecraft
+Install the software as specified in [Minecraft.md](Minecraft.md), renaming the server jar to `minecraft_server.jar`.
+You must ensure the mods folder has the executable bit set to true (e.g. `chmod 755 mods`).
+
 # SSH
 We connect to the server through SSH. For security passwords are disabled, instead we use a public/private key pair.  
 If this is your first time, this is how we can set this up:  
@@ -95,3 +99,4 @@ Ensure the file `~/.ssh/authorized_keys` exists. If not create it and run `chmod
 Then append the line in `~/.ssh/id_ed25519_gdem` (formatted `ssh-ed25519 <your_key> <comment>`) to `~/.ssh/authorized_keys`.
 4. Your computer:  
 Now you can connect the server using `ssh gdem`.
+
