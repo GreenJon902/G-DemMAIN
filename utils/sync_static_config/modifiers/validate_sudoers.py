@@ -1,15 +1,19 @@
-import os
 import subprocess
 
-from exceptions import Problem, Skipped
+from colors import RESET, SUBPROC_COL
+from exceptions import Problem
 
 
 def _sudoers_is_valid():
     """
     Checks if the syntax of the currently-installed sudoers file is correct. visudo's own
-    stdout/stderr is piped straight through to ours.
+    stdout/stderr is piped straight through to ours, coloured so it's visually distinct from our
+    own output.
     """
+    
+    print("Sudoers output: ---", SUBPROC_COL, flush=True)  # Following text (the subproc call) is grey
     proc = subprocess.run(["/usr/sbin/visudo", "-c"])
+    print(RESET, "---", flush=True)  # Reset so next printed isn't also grey
     return proc.returncode == 0
 
 
@@ -18,18 +22,9 @@ def _before(scf):
         print("Initial sudoers correctly formatted")
     else:
         print("Sudoers check failed")
-        if input("Copy anyway (yes/no)? ") != "yes":
-            raise Skipped(scf.source_path, scf.dest_path)
 
-    # Print the old file as the only backup taken - the caller must capture this output
-    # themselves (e.g. by redirecting this script's output) if they want to restore it later.
-    if os.path.exists(scf.dest_path):
-        print("OLD SUDOERS FILE ----")
-        with open(scf.dest_path, "r") as f:
-            print(f.read())
-        print("---------------------")
-    else:
-        print("Old sudoers file does not exist!")
+    # It might be important to easily roll-back this file. So let the user know its contents if it may be changed
+    scf.print_old = True
 
 
 def _after(scf):

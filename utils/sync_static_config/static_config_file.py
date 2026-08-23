@@ -14,6 +14,10 @@ class StaticConfigFile:
     destination), both setters raise. That turns a modifier-ordering mistake - something trying
     to change either after the path's already been accounted for - into an immediate error
     instead of a silently wrong paths_accounted_for / orphan scan.
+    print_old is also a property, but locked one-way rather than by lock_dest(): once a modifier
+    sets it True (e.g. validate_sudoers, wanting a backup of the file it's about to overwrite
+    printed), it can't be set back to False - only write() decides whether it actually acts on it
+    (it does, by only printing once it knows a write is really about to happen).
     """
 
     def __init__(self, contents, source_path, dest_path, extension, has_marker):
@@ -23,6 +27,7 @@ class StaticConfigFile:
         self._dest_path = dest_path
         self._has_marker = has_marker
         self._dest_locked = False
+        self._print_old = False
 
     @property
     def dest_path(self):
@@ -41,6 +46,15 @@ class StaticConfigFile:
     def has_marker(self, value):
         assert not self._dest_locked, "has_marker is locked after accounting"
         self._has_marker = value
+
+    @property
+    def print_old(self):
+        return self._print_old
+
+    @print_old.setter
+    def print_old(self, value):
+        assert value or not self._print_old, "print_old can only be toggled on, not off"
+        self._print_old = value
 
     def lock_dest(self):
         self._dest_locked = True
