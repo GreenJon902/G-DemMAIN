@@ -5,7 +5,7 @@ from configparser import ConfigParser
 
 import modifiers
 from checkers import checker
-from colors import OLD_CONTENTS_COL, PATH_COL, RESET
+from colors import OLD_CONTENTS_COL, PATH_COL, RESET, WARNING, UNIMPORTANT
 from constants import MODIFIER_ORDER, MODIFIERS_TOUCHING_DEST_PATH
 from exceptions import AlreadyUpToDate, Problem, Skipped
 from modifiers import flags_to_modifiers
@@ -107,7 +107,7 @@ def build_call_chain(scf, flags):
 
 
 def print_problem(problem):
-    print(f"Problem with {PATH_COL}{problem.source_path}{RESET}: {problem.message}")
+    print(f"Problem with {PATH_COL}{problem.source_path}{RESET}: {WARNING}{problem.message}{RESET}")
 
 
 def write(scf):
@@ -205,10 +205,10 @@ print(f"{total_synced} files synced ({len(written)} written, {len(removed)} remo
 def print_path_list(label, paths):
     print(f"{label}:")
     if not paths:
-        print("(None)")
+        print(f"{UNIMPORTANT}(none){RESET}")
         return
     for path in paths:
-        print(path)
+        print(f"{PATH_COL}{path}{RESET}")
 
 
 print_path_list("Written", written)
@@ -217,12 +217,12 @@ if args.verbose:
     print_path_list("Already correct", already_correct)
 else:
     print("Already correct:")
-    print("(hidden)")
+    print(f"{UNIMPORTANT}(hidden){RESET}")
 print_path_list("Skipped", skipped)
 
 print("Problems:")
 if not problems:
-    print("(None)")
+    print(f"{UNIMPORTANT}(none){RESET}")
 else:
     for problem in problems:
-        print(problem.message)
+        print(f"{WARNING}{problem.message}{RESET}")
