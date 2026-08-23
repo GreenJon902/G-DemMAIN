@@ -167,7 +167,7 @@ This file can contain a mixture of `snapshot` and `aggregate` records, and each 
 ## Schema Changelog
 Changes to the `Monitor Format` JSON schema above. Once a field is dropped entirely (rather than just deprecated), g_web's parser rejects any record still holding it - see [Migrations](#migrations).
 
-- **2026-08-23** - Added `minecraft.playerCount` - `int` in snapshot mode, `{min, mean, max}` in aggregate mode (see Snapshot vs. aggregate modes), read as a count of entries in the FUSE mount's `players/` directory. Optional/nullable, so absent in records predating this change - no migration needed.
+- **2026-08-23** - Added `minecraft.playerCount`.
 - **2026-08-16.2** - Dropped `sys_disk_usage`, `minecraft.players` and `cgroups.*.procs` entirely (previously deprecated but still parsed). Added optional `migration_history`. See `utils/migrations/g_monitor1.py`.
 - **2026-08-16** - Retention rules gained a third `mode` element (`"snapshot"`/`"aggregate"`). `sys_mem`, `cgroups.*.mem`, `minecraft.mem` and `minecraft.tps` may now instead hold `{"min", "mean", "max"[, "total"]}` aggregate statistics - see Aggregation.
 - **2026-08-15** - `sys_cpu`/`sys_net_io`/`sys_disk_io` (`agg` and `ind`), `cgroups.*.cpu` and `cgroups.*.disk_io` now hold the delta accumulated since that retention rule's previous record, rather than an absolute value. Individual `sys_cpu.ind`/`sys_net_io.ind`/`sys_disk_io.ind` entries may now be `null` (previously always present with a value). Added `actualPeriod`.

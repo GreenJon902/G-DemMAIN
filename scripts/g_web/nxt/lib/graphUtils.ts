@@ -24,6 +24,13 @@ export function isAggregateTps(tps: Tps): tps is TpsAggregate {
     return typeof tps === "object";
 }
 
+/** True if a PlayerCount field holds aggregate stats ({min, mean, max}) rather than a plain snapshot number. */
+export function isAggregatePlayerCount(playerCount: PlayerCount): playerCount is PlayerCountAggregate {
+    return typeof playerCount === "object";
+}
+
+
+// TODO: The next few functions can be generalised?
 /**
  * Reduces a Mem field to a single {value, min, max} point for graphing - value is `used` for a snapshot or
  * `mean` for an aggregate, and min/max are null unless the field is aggregate (i.e. there is no band to draw).
@@ -37,11 +44,6 @@ export function memPoint(mem: Mem | null | undefined): { value: number | null, m
 export function tpsPoint(tps: Tps | null | undefined): { value: number | null, min: number | null, max: number | null } {
     if (tps === null || tps === undefined) return { value: null, min: null, max: null };
     return isAggregateTps(tps) ? { value: tps.mean, min: tps.min, max: tps.max } : { value: tps, min: null, max: null };
-}
-
-/** True if a PlayerCount field holds aggregate stats ({min, mean, max}) rather than a plain snapshot number. */
-export function isAggregatePlayerCount(playerCount: PlayerCount): playerCount is PlayerCountAggregate {
-    return typeof playerCount === "object";
 }
 
 // See tpsPoint above - same idea but for a PlayerCount field

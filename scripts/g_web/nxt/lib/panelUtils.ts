@@ -194,7 +194,7 @@ export type PlayerCount = z.infer<typeof zPlayerCount>;
 const zMinecraft = z.strictObject({
     tps: zTps.nullable(),  // Ticks per second - rolling average capped at 20, or {min, mean, max} over the retention window
     mem: zMem.nullable(),  // Heap usage, in kilobytes
-    playerCount: zPlayerCount.nullable().optional()  // Number of players online, or {min, mean, max} - optional since absent in records predating this field
+    playerCount: zPlayerCount.nullable().optional()  // Number of players online
 });
 const zCoercedMap = <T extends z.ZodTypeAny> (zValue: T) => z.record(z.string().nonempty(), zValue).transform(obj => new Map(Object.entries(obj)));
 const zCgroup = z.strictObject({

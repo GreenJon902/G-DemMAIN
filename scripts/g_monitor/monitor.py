@@ -304,7 +304,7 @@ def read_mc_mem():
 
 def read_mc_player_count():
     """
-    Returns int - the number of players currently online, from the FUSE mount's players/ directory.
+    Returns int - the number of players currently online.
     """
     return len(os.listdir(os.path.join(MC_FUSE_MOUNT, MC_PLAYERS)))
 
