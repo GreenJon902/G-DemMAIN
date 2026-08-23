@@ -31,7 +31,7 @@ The `diskWarnMounts` key is a JSON array of mount points (e.g. `"/"`) checked ag
 Each mainloop iteration samples:
 - System-wide stats: `/proc/stat` (CPU), `/proc/meminfo` (RAM), `/proc/net/dev` (network), `/sys/block/*/stat` (disk I/O), and `df -B1 --output=source,target,size,avail` (disk usage).
 - Per-cgroup stats, for each cgroup listed in `cgroups`: `/sys/fs/cgroup/<cgroup>/cpu.stat`, `memory.current`, `io.stat`, and `cgroup.procs`.
-- Minecraft TPS and heap usage, read from the `g_mc_monitor` FUSE mount's `tps`, `heap_used_bytes` and `heap_allocated_bytes` files - see [G-DemMAIN Monitor Mod.md](G-DemMAIN%20Monitor%20Mod.md) for the mount itself.
+- Minecraft TPS, heap usage and player count, read from the `g_mc_monitor` FUSE mount's `tps`, `heap_used_bytes` and `heap_allocated_bytes` files, and `players/` directory (player count is the number of entries in it) - see [G-DemMAIN Monitor Mod.md](G-DemMAIN%20Monitor%20Mod.md) for the mount itself.
 
 If a value fails to read, it's recorded as `null` rather than crashing the mainloop.
 
@@ -136,7 +136,12 @@ This file can contain a mixture of `snapshot` and `aggregate` records, and each 
             "min": int,                  Kilobytes                                # The heap currently in use
             "mean": int,                 Kilobytes                                #  "
             "max": int                   Kilobytes                                #  "
-        } | null
+        } | null,
+        "playerCount": int | {           Number of players currently online
+            "min": int,
+            "mean": float,
+            "max": int
+        } | null                         # Absent in records predating this field
     } | null,                            # Absent entirely in records predating this field
     "cgroups": {
         [cgroup_name]: {                     # Keys not necessarily constant
@@ -162,6 +167,7 @@ This file can contain a mixture of `snapshot` and `aggregate` records, and each 
 ## Schema Changelog
 Changes to the `Monitor Format` JSON schema above. Once a field is dropped entirely (rather than just deprecated), g_web's parser rejects any record still holding it - see [Migrations](#migrations).
 
+- **2026-08-23** - Added `minecraft.playerCount` - `int` in snapshot mode, `{min, mean, max}` in aggregate mode (see Snapshot vs. aggregate modes), read as a count of entries in the FUSE mount's `players/` directory. Optional/nullable, so absent in records predating this change - no migration needed.
 - **2026-08-16.2** - Dropped `sys_disk_usage`, `minecraft.players` and `cgroups.*.procs` entirely (previously deprecated but still parsed). Added optional `migration_history`. See `utils/migrations/g_monitor1.py`.
 - **2026-08-16** - Retention rules gained a third `mode` element (`"snapshot"`/`"aggregate"`). `sys_mem`, `cgroups.*.mem`, `minecraft.mem` and `minecraft.tps` may now instead hold `{"min", "mean", "max"[, "total"]}` aggregate statistics - see Aggregation.
 - **2026-08-15** - `sys_cpu`/`sys_net_io`/`sys_disk_io` (`agg` and `ind`), `cgroups.*.cpu` and `cgroups.*.disk_io` now hold the delta accumulated since that retention rule's previous record, rather than an absolute value. Individual `sys_cpu.ind`/`sys_net_io.ind`/`sys_disk_io.ind` entries may now be `null` (previously always present with a value). Added `actualPeriod`.

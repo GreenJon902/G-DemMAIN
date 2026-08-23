@@ -59,6 +59,7 @@ Every read computes the current value.
 └── players/
     ├── Notch                # one zero-byte file per online player, named after their username
     └── Jeb_                 # existence = online; there is nothing to read from the file itself
+                              # g_monitor also reads this directory's entry count as the player count - see Monitoring.md
 ```
 
 ### FUSE prerequisites

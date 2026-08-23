@@ -1,6 +1,6 @@
 "use client";
 import PageSection from "../../ui/PageSection";
-import { CpuRamGraph, MultiCPUGraph, TpsHeapGraph, TransferGraph } from "../ui/Graphs";
+import { CpuRamGraph, MultiCPUGraph, PlayerCountGraph, TpsHeapGraph, TransferGraph } from "../ui/Graphs";
 import { loadGraphDataAction } from "./actions";
 import RadioButtons from "@/app/ui/RadioButtons";
 import { MonitorOption } from "@/lib/panelUtils";
@@ -120,6 +120,9 @@ export default function GraphPageContent({
                             <TpsHeapGraph
                                 data={gd.map(d => ({ time: d.time, tps: d.minecraft.tps, mem: d.minecraft.mem }))}
                                 allocatedMem={latestDefined(gd, d => d.minecraft.mem?.total)}
+                            />
+                            <PlayerCountGraph
+                                data={gd.map(d => ({ time: d.time, playerCount: d.minecraft.playerCount }))}
                             />
                         </div>
                     </PageSection>

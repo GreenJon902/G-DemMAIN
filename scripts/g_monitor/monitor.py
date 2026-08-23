@@ -78,6 +78,7 @@ MC_FUSE_MOUNT = resolvePath(readConfig("g_mc_monitor/config.json", str, "fuseMou
 MC_TPS = "tps"
 MC_HEAP_USED = "heap_used_bytes"
 MC_HEAP_ALLOCATED = "heap_allocated_bytes"
+MC_PLAYERS = "players"
 RE_FILENAME = re.compile(r"^(\d+).json$")
 LIVE_CGROUP_PROCS_FILENAME = "live_cgroup_procs.json"
 STATE_FILENAME = "state.json"
@@ -301,6 +302,12 @@ def read_mc_mem():
         "total": int(int(open(os.path.join(MC_FUSE_MOUNT, MC_HEAP_ALLOCATED), "r").read()) / 1024)
     }
 
+def read_mc_player_count():
+    """
+    Returns int - the number of players currently online, from the FUSE mount's players/ directory.
+    """
+    return len(os.listdir(os.path.join(MC_FUSE_MOUNT, MC_PLAYERS)))
+
 def read_data():
     """
     Reads all the data from the system and CGROUPS and returns it as seriazable object that folows the format defined in the documentation.
@@ -314,7 +321,8 @@ def read_data():
         "sys_disk_io": read_sys_disk_io,
         "minecraft": lambda: attempt_build_dict({
             "tps": read_mc_tps,
-            "mem": read_mc_mem
+            "mem": read_mc_mem,
+            "playerCount": read_mc_player_count
         }),
         "cgroups": lambda: {
             cgroup: attempt_build_dict({
@@ -372,6 +380,7 @@ def build_schema(mode):
         minecraft=GroupField(
             tps=snapshotaggregate(expand=False),
             mem=mem_schema(),
+            playerCount=snapshotaggregate(expand=False),
         ),
         cgroups=MapField(lambda: GroupField(
             cpu=CumulativeField(),
