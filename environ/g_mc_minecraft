@@ -1,11 +1,11 @@
-DATABASE_EXTENSIONS_URL
+DATABASEEXTENSIONS_URL
 # The host that is running the g_mc database. This should include the database name. 
 # Likely just "localhost/g_mc".
 
-DATABASE_EXTENSIONS_USERNAME
+DATABASEEXTENSIONS_USERNAME
 # The username that is used to connect to the g_mc database
 
-DATABASE_EXTENSIONS_PASSWORD
+DATABASEEXTENSIONS_PASSWORD
 # The password that is used to connect to the g_mc database
 
 
