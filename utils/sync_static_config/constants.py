@@ -21,6 +21,6 @@ MODIFIERS_TOUCHING_DEST_PATH = 1  # The number of modifiers (from the start of f
 MODIFIER_ORDER = ["drop_ext", "template", "handle_marker", "validate_sudoers"]  # Index of item corresponds to FLAG_ORDER
 
 # Extensions sharing the plain-text line-diff checker/marker (as opposed to "json").
-TEXT_EXTENSIONS = {"conf", "cnf", "txt", "properties", "service", "timer", "sudoers"}
+TEXT_EXTENSIONS = {"conf", "cnf", "txt", "properties", "service", "timer", "sudoers", "toml"}
 
 SUPPORTED_EXTENSIONS = {"json", *TEXT_EXTENSIONS}

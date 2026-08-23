@@ -221,8 +221,6 @@ elif args.action == "syswarn":
     send(webhook_getters["SYSWARN"](), generate_syswarn(resource, used, threshold))
 elif args.action == "checkmc":
     # Send webhook
-    print(json.dumps(generate_checkmc(args.source_path, args.dest_path, json.loads(args.problems), json.loads(args.failed_files)), indent=4))
-    print(len(json.dumps(generate_checkmc(args.source_path, args.dest_path, json.loads(args.problems), json.loads(args.failed_files)))))
     send(webhook_getters["CHECKMC"](), generate_checkmc(args.source_path, args.dest_path, json.loads(args.problems), json.loads(args.failed_files)))
 
 elif args.action == "test":

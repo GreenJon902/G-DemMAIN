@@ -1,0 +1,18 @@
+{
+  "disableBlockDamage": {
+    "tnt": false,
+    "creeper": true,
+    "end_crystal": false,
+    "fireball": true,
+    "wither": false,
+    "wither_skull": false,
+    "respawn_anchor": false,
+    "bed": false,
+    "other": false
+  },
+  "disableFireCreation": {
+    "respawn_anchor": false,
+    "bed": false,
+    "other": false
+  }
+}

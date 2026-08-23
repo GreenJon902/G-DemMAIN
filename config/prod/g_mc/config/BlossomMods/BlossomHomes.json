@@ -1,0 +1,10 @@
+{
+  "teleportation": null,
+  "standStill": 0,
+  "cooldown": 0,
+  "defaultHome": "main",
+  "startHomes": 2,
+  "dimensionBlacklist": [],
+  "useBlacklistAsWhitelist": false,
+  "fallbackToPlayerSpawnPoint": false
+}

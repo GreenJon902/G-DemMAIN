@@ -1,0 +1,65 @@
+{
+  "___comment": "*wildcard*",
+  "config_date": "*wildcard*",
+  "last_start": "*wildcard*",
+  "last_stop": "*wildcard*",
+  "main": {
+    "unpluggedAfkEnabled": true,
+    "debugMode": false,
+    "reducedListDebugInfo": true,
+    "advancedAdminOptions": false
+  },
+  "commands": {
+    "unplugCommandPermissions": 0,
+    "unpluggedAdminCommandPermissions": 4,
+    "afkCommandPermissions": 0,
+    "enableUnplugCommand": true,
+    "enableAfkCommand": false
+  },
+  "unplugged": {
+    "defaultUnpluggedTimeout": 1440,
+    "resetHealthUponDeath": false,
+    "unpluggedDisableDamage": false,
+    "unpluggedHidePlayer": false,
+    "unpluggedHideFromOps": false
+  },
+  "messages": {
+    "broadcastMessages": true,
+    "hideUnpluggedJoin": true,
+    "displayDuration": false,
+    "displayReturnFeedback": true,
+    "defaultUnpluggedReason": "",
+    "unpluggedPlayerPrefix": "§e",
+    "unpluggedPlayerSuffix": "§r",
+    "unpluggedKickMessage": "§6Your player will be AFK§r",
+    "unpluggedExpiredReason": "§eTimeout expired§r",
+    "unpluggedStarted": " §ehas been unplugged§r",
+    "unpluggedPunctuation": "§e,§r ",
+    "unpluggedReplaced": "§6Replaced by player§r",
+    "unpluggedTerminated": "§cAFK session terminated§r",
+    "unpluggedUnsuccessful": "§eYour AFK session was interrupted§r",
+    "unpluggedUnsuccessfulPrefix": " §eafter:§a ",
+    "unpluggedUnsuccessfulPunctuation": "\n §7- For:§r ",
+    "unpluggedSuccessful": "§eYour Session was successful.§r",
+    "unpluggedSuccessfulPrefix": "§eYour §a",
+    "unpluggedSuccessfulSuffix": " §eSession was successful.§r",
+    "unpluggedSuccessfulPunctuation": "\n §7- For:§r ",
+    "whenUnpluggedReturned": " §ehas returned§r",
+    "whenUnpluggedExpired": " §eAFK session expired§r",
+    "whenUnpluggedInterrupted": " §eAFK session interrupted§r",
+    "whenUnpluggedTerminated": " §eAFK session terminated§r",
+    "whenUnpluggedDurationPrefix": " §6for: §a",
+    "whenUnpluggedDurationSuffix": "§7 minutes)",
+    "whenReturnDurationPrefix": " §7(Gone for: §a",
+    "whenReturnDurationSuffix": "§7)§r",
+    "duration": {
+      "option": "PRETTY",
+      "customFormat": ""
+    },
+    "timeDate": {
+      "option": "RFC1123",
+      "customFormat": ""
+    }
+  },
+  "players":"*wildcard*"
+}

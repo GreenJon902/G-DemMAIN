@@ -27,16 +27,21 @@ def substitute_wildcards(value):
     destination is handled.
     Returns (new_obj, contains_wildcards: bool)
     """
-    if value == JSON_WILDCARD_TOKEN:
-        return JSON_WILDCARD_SENTINEL, True
-    if isinstance(value, dict):
-        rec_ret = {key: substitute_wildcards(v) for key, v in value.items()}  # {key: [obj, contains_wildcards]}
-        return {k: v[0] for k, v in rec_ret.items()}, any(x[1] for x in rec_ret.values())
-    if isinstance(value, list):
-        rec_ret = [substitute_wildcards(v) for v in value]  # [[obj, contains_wildcards], ...]
-        unzipped = list(zip(*rec_ret))  # [obj, ...], [contains_wildcards, ...]
-        return list(unzipped[0]), any(unzipped[1])
-    return value, False
+   if value == JSON_WILDCARD_TOKEN:
+       return JSON_WILDCARD_SENTINEL, True
+   if isinstance(value, dict):
+       rec_ret = {key: substitute_wildcards(v) for key, v in value.items()}  # {key: [obj, contains_wildcards]}
+       if len(rec_ret) == 0:
+           return {}, False
+       return {k: v[0] for k, v in rec_ret.items()}, any(x[1] for x in rec_ret.values())
+   if isinstance(value, list):
+       rec_ret = [substitute_wildcards(v) for v in value]  # [[obj, contains_wildcards], ...]
+       if len(rec_ret) == 0:
+           return [], False
+       unzipped = list(zip(*rec_ret))  # [obj, ...], [contains_wildcards, ...]
+       return list(unzipped[0]), any(unzipped[1])
+
+   return value, False
 
 
 def json_matches(source_value, dest_value):
