@@ -182,9 +182,19 @@ const zTpsAggregate = z.strictObject({
 export type TpsAggregate = z.infer<typeof zTpsAggregate>;
 const zTps = z.union([z.number().nonnegative(), zTpsAggregate]);
 export type Tps = z.infer<typeof zTps>;
+// Same snapshot/aggregate duality as zMem, but playerCount has no "total" - min/max are whole counts, mean is time-weighted
+const zPlayerCountAggregate = z.strictObject({
+    min: zNatural,
+    mean: z.number().nonnegative(),
+    max: zNatural
+});
+export type PlayerCountAggregate = z.infer<typeof zPlayerCountAggregate>;
+const zPlayerCount = z.union([zNatural, zPlayerCountAggregate]);
+export type PlayerCount = z.infer<typeof zPlayerCount>;
 const zMinecraft = z.strictObject({
     tps: zTps.nullable(),  // Ticks per second - rolling average capped at 20, or {min, mean, max} over the retention window
-    mem: zMem.nullable()  // Heap usage, in kilobytes
+    mem: zMem.nullable(),  // Heap usage, in kilobytes
+    playerCount: zPlayerCount.nullable().optional()  // Number of players online
 });
 const zCoercedMap = <T extends z.ZodTypeAny> (zValue: T) => z.record(z.string().nonempty(), zValue).transform(obj => new Map(Object.entries(obj)));
 const zCgroup = z.strictObject({
@@ -289,7 +299,7 @@ export async function loadMonitorRecords(interval: number, number?: number | und
             time: time - latestTime,  // Normalise times
             sys_cpu: convNullAggInd(cpunoKeys, current.sys_cpu, arbCpuToUsage),  // Percentage utilisation
             sys_mem: current.sys_mem,  // In Kilobytes
-            minecraft: { tps: current.minecraft?.tps ?? null, mem: current.minecraft?.mem ?? null },  // TPS and heap usage in kilobytes
+            minecraft: { tps: current.minecraft?.tps ?? null, mem: current.minecraft?.mem ?? null, playerCount: current.minecraft?.playerCount ?? null },  // TPS, heap usage in kilobytes, and player count
             sys_net_io: convNullAggInd(netioKeys, current.sys_net_io, (c) => netIOToSpeed(c, dt)),  // Bytes per second
             sys_disk_io: convNullAggInd(diskioKeys, current.sys_disk_io, (c) => diskIOToSpeed(c, dt)),  // Bytes per second
             cgroups: convMap(cgroupKeys, current.cgroups, (c) => ({

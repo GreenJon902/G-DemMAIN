@@ -1,0 +1,24 @@
+[Unit]
+Description=Nightly snapshot of Minecraft player stats for visualisation
+
+# Status logging
+# We need to do it like this as OnFailure cannot run bash
+OnFailure=g_service_failed@CopyMCStats-g_copy_mc_stats.service
+
+[Service]
+Type=oneshot
+Restart=no
+User=g_copy_mc_stats
+Group=g_copy_mc_stats
+ExecStart=/opt/infra/.venv/bin/python3 /opt/infra/scripts/g_copy_mc_stats/main.py
+
+EnvironmentFile=/etc/g-demmain/common.env
+
+# Disable print buffering
+Environment=PYTHONUNBUFFERED=1
+
+# Enable monitoring of disk io by other processes (g_monitor)
+IOAccounting=yes
+
+[Install]
+WantedBy=multi-user.target

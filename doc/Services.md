@@ -8,6 +8,8 @@ All services are managed by systemd. Unit files live in `config/prod/systemd-ser
 |---|---|---|---|---|---|---|
 | `g_check_mc.service` | g_check_mc/g_check_mc | none (OnFailure=g_service_failed@CheckMC-g_check_mc.service) | Restart=no, Type=oneshot | none | `/opt/infra/.venv/bin/python3 /opt/infra/scripts/g_check_mc/main.py` | none |
 | `g_check_mc.timer` | — | OnCalendar=`*-*-* 01:00:00` (daily 1am, after `g_nightly_restart`), Persistent=false | — | — | triggers `g_check_mc.service` | — |
+| `g_copy_mc_stats.service` | g_copy_mc_stats/g_copy_mc_stats | none (OnFailure=g_service_failed@CopyMCStats-g_copy_mc_stats.service) | Restart=no, Type=oneshot | none | `/opt/infra/.venv/bin/python3 /opt/infra/scripts/g_copy_mc_stats/main.py` | none |
+| `g_copy_mc_stats.timer` | — | OnCalendar=`*-*-* 02:00:00` (daily 2am, after `g_check_mc`), Persistent=false | — | — | triggers `g_copy_mc_stats.service` | — |
 | `g_discord.service` | g_discord/g_discord | After=network.target; OnFailure=g_service_failed@Discord-g_discord.service | on-failure, RestartSec=10 | unset (commented out, TODO in the unit file) | `/opt/infra/.venv/bin/python3 /opt/infra/scripts/g_discord/g_discord.py` | none |
 | `g_mc.service` | g_mc/g_mc | After/Requires/BindsTo=mysql.service | on-failure, RestartSec=10 | /var/lib/g_mc | `java -Xms1G -Xmx3G -jar /var/lib/g_mc/minecraft_server.jar nogui`, plus a block of G1GC tuning flags | `/opt/infra/.venv/bin/python3 /opt/infra/scripts/g_mc/service_stop.py` |
 | `g_monitor.service` | g_monitor/g_monitor | none (OnFailure=g_service_failed@Monitor-g_monitor.service) | on-failure, RestartSec=10 | /var/lib/g_monitor | `/opt/infra/.venv/bin/python3 /opt/infra/scripts/g_monitor/monitor.py` | none |
