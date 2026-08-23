@@ -1,0 +1,173 @@
+from utils import get_or_create_webhook
+import json
+from subscriptor import subscribe_to, tree
+from libs.config import readConfig, readEnviron, resolvePath
+from libs.wrappedCalls import exit_all_on_fail
+import os
+import asyncio
+import discord
+
+CHAT_AUTH_KEY = readEnviron("MINECRAFT_MONITOR_CHAT_AUTH_KEY", str)
+CHAT_PORT = readConfig("g_mc_monitor/config.json", int, "chatPort")
+CHAT_CHANNEL_ID = readEnviron("DISCORD_CHAT_CHANNEL_ID", int)
+
+RECONNECT_DELAY = 5  # seconds to wait between chat socket reconnect attempts
+
+# g_mc_monitor's FUSE mount - read from the mod's own config so it stays in sync with whatever the
+# mod is actually using
+PLAYERS_DIR = os.path.join(resolvePath(readConfig("g_mc_monitor/config.json", str, "fuseMountPath")), "players")
+
+# Both g_mc_monitor sockets are loopback-only (see doc/G-DemMAIN Monitor Mod.md), so g_discord must
+# run on the same host as g_mc
+MC_MONITOR_HOST = readConfig("g_mc_monitor/config.json", str, "socketBindAddress")
+
+# Name of the webhook g_discord creates in the chat channel, used to post chat messages under the
+# sending player's own name instead of the bot's
+WEBHOOK_NAME = "G-DemMAIN g_d*sc*rd"  # It blocks calling it discord, so use asterisks
+
+# Emoji shown for each chat-socket event type
+EVENT_EMOJI = {
+    "server_started": ":white_check_mark:",
+    "server_stopped": ":octagonal_sign:",
+    "player_joined": ":arrow_right:",
+    "player_left": ":arrow_left:",
+    "player_died": ":skull:",
+    "player_advancement": ":trophy:",
+}
+
+class ChatSocket:
+    """
+    Owns the connection to g_mc_monitor's chat socket - authenticates, reconnects every
+    RECONNECT_DELAY seconds while disconnected, and forwards each incoming message/event to
+    send_callback (an `async def(data: dict)`). The history envelope is filtered out here and
+    never reaches send_callback. Knows nothing about Discord - send_callback and send_to_socket
+    are its only points of contact with the rest of the bot.
+    """
+
+    def __init__(self, host, port, auth_key, send_callback):
+        self._host = host
+        self._port = port
+        self._auth_key = auth_key
+        self._send_callback = send_callback
+        self._writer = None  # None while disconnected
+
+    @property
+    def connected(self):
+        return self._writer is not None
+
+    async def send_to_socket(self, name, text):
+        """Sends a chat message from Discord to Minecraft. Only call this while connected."""
+        outgoing = {"type": "message", "source": "Discord", "username": name, "message": text}
+        print("Sending:", outgoing)
+        self._writer.write((json.dumps(outgoing) + "\n").encode())
+        await self._writer.drain()
+
+    async def _handle_from_socket(self, line):
+        # TODO: the chat socket protocol has no `datetime` field on message/event objects (unlike
+        # the console socket's `line` objects) - once it does, history could be replayed for
+        # messages after the last one we relayed here, instead of being ignored entirely
+        data = json.loads(line)
+        assert "type" in data, f"Chat socket line missing 'type': {data}"
+        if data["type"] == "history":
+            assert "lines" in data, f"Chat socket history line missing 'lines': {data}"
+            return
+        elif data["type"] == "message":
+            assert "source" in data and "username" in data and "message" in data, f"Chat socket message line missing fields: {data}"
+        elif data["type"] == "event":
+            assert "event" in data and "message" in data, f"Chat socket event line missing fields: {data}"
+        await self._send_callback(data)
+
+    async def _listen_socket_loop(self, reader):
+        # Reads lines until the server closes the connection
+        while True:
+            line = await reader.readline()
+            print("Recieved:", line)
+            if not line:
+                break  # Connection closed by the server
+            try:
+                await self._handle_from_socket(line)
+            except Exception as e:
+                print("Failed to handle chat socket line:", e)
+
+    async def run(self):
+        """Connects and listens forever, reconnecting every RECONNECT_DELAY seconds while disconnected."""
+        while True:
+            try:
+                print(f"Connecting to {self._host}:{self._port}")
+                reader, writer = await asyncio.open_connection(self._host, self._port)
+                writer.write((json.dumps({"authKey": self._auth_key}) + "\n").encode())
+                await writer.drain()
+                self._writer = writer
+                print("Connected!")
+                await self._listen_socket_loop(reader)
+            except OSError as e:
+                print("Failed to connect to socket:", str(e))
+            self._writer = None
+            await asyncio.sleep(RECONNECT_DELAY)
+
+
+chat_socket = None  # Created in on_ready, once the target Discord channel can be fetched
+chat_bridge_started = False
+
+@subscribe_to("ready")
+async def on_ready(client):
+    """Called once the client has successfully connected to Discord."""
+    global chat_bridge_started, chat_socket
+    if not chat_bridge_started:  # on_ready can fire again on reconnect, only start this once
+        # A broken channel ID/webhook means the bridge can never work - exit_all_on_fail fails
+        # loudly and takes the whole process down instead of leaving the client running bridge-less
+        channel = await exit_all_on_fail(client.fetch_channel, CHAT_CHANNEL_ID, on_error_msg="Failed to fetch chat channel:")
+        webhook = await exit_all_on_fail(get_or_create_webhook, channel, WEBHOOK_NAME, on_error_msg="Failed to get or create webhook:")
+        chat_bridge_started = True  # Only mark started once setup above has actually succeeded
+
+        # send_callback for ChatSocket - handle_chat_line with channel/webhook already supplied
+        async def relay_to_discord(data):
+            if data["type"] == "message":
+                username = data["username"]
+                source = data["source"]
+                # Drop the "[source]" prefix for real in-game chat, keep it for other bridges
+                name = username if source == "Minecraft" else f"[{source}] {data['username']}"
+                # For minecraft users, set the avatar URL
+                avatar_url = f"https://mc-heads.net/avatar/{username}" if source == "Minecraft" else None
+                # Send webhook:
+                await webhook.send(content=data["message"], username=name, avatar_url=avatar_url)
+            elif data["type"] == "event":
+                emoji = EVENT_EMOJI.get(data["event"], ":question:")
+                await channel.send(f"{emoji} {data['message']}")
+
+        chat_socket = ChatSocket(MC_MONITOR_HOST, CHAT_PORT, CHAT_AUTH_KEY, relay_to_discord)
+        client.loop.create_task(chat_socket.run())
+    print(f"Logged in as {client.user}")
+
+@tree.command(name="list", description="List the players currently online on Minecraft")
+async def list_command(interaction: discord.Interaction):
+    """Replies with the online Minecraft players, read from g_mc_monitor's FUSE filesystem."""
+    if not os.path.isdir(PLAYERS_DIR):
+        await interaction.response.send_message("Couldn't reach the Minecraft server - is it down?", ephemeral=True)
+        return
+    players = sorted(os.listdir(PLAYERS_DIR))
+    if players:
+        await interaction.response.send_message(f"Online players ({len(players)}): {', '.join(players)}", ephemeral=True)
+    else:
+        await interaction.response.send_message("No players online.", ephemeral=True)
+
+@subscribe_to("message")
+async def on_message(client: discord.Client, message: discord.Message):
+    """Relays messages sent in the configured Discord chat channel to Minecraft chat."""
+    # webhook_id is set for messages posted by the chat-bridge webhook itself (see
+    # get_or_create_webhook) - without this check we'd relay our own relayed messages right back.
+    # message.type is only MessageType.default for organic chat - Discord posts a real, relayable
+    # Message for "User used /command" too, which shouldn't be forwarded into Minecraft's chat
+    if (message.author == client.user or message.webhook_id is not None
+            or message.channel.id != CHAT_CHANNEL_ID or message.type != discord.MessageType.default):
+        return
+    if chat_socket is None or not chat_socket.connected:
+        await message.channel.send("Couldn't reach the Minecraft server - is it down?")
+        return
+    # clean_content resolves mentions/channels/roles to their readable form (e.g. "@Notch") instead
+    # of raw IDs (e.g. "<@123456789012345678>"), which is what content would otherwise contain
+    try:
+        await chat_socket.send_to_socket(message.author.display_name, message.clean_content)
+    except Exception as e:
+        print("Failed to relay message to Minecraft:", e)
+        await message.channel.send("Failed to relay your message to Minecraft.")

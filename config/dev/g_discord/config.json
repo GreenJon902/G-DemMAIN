@@ -1,0 +1,8 @@
+{
+  "leveling_module": {
+    "userXpFilePath": "scripts/g_discord/userXp.json",
+    "minAwardedXp": 15, "maxAwardedXp": 25,
+    "awardCooldown": 10,
+    "levelXpCurve": { "a": 1, "b": 50 }
+  }
+}
