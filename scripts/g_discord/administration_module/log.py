@@ -31,8 +31,14 @@ async def on_raw_member_remove(client, payload: discord.RawMemberRemoveEvent):
 
 @subscribe_to("user_update")
 async def on_user_update(client, before: discord.User, after: discord.User):
-    """Logs username/display name/avatar changes - the only things a bare User (as opposed to a
-    guild Member) can change."""
+    """
+    Logs username/display name/avatar changes.
+    This does not send logs for bot accounts.
+    """
+
+    if before.bot:
+        return
+
     changes = []
     embeds = []
     if before.name != after.name:
