@@ -2,9 +2,9 @@
  * This file contains different graph presets/templates that are used frequently.
  */
 
-import { BaseUnit, BYTES, humanize, PERCENTAGE, rebase, SECONDS, TPS } from "@/lib/unitUtils";
-import { latestDefined, memPoint, tpsPoint } from "@/lib/graphUtils";
-import type { Mem, Tps } from "@/lib/panelUtils";
+import { BaseUnit, BYTES, humanize, PERCENTAGE, PLAYERS, rebase, SECONDS, TPS } from "@/lib/unitUtils";
+import { latestDefined, memPoint, playerCountPoint, tpsPoint } from "@/lib/graphUtils";
+import type { Mem, PlayerCount, Tps } from "@/lib/panelUtils";
 import { Graph, LINE_COLORS, LINE_CYAN, LINE_FUCHSIA, LINE_GRAY, LINE_LIME, LINE_ROSE, LINE_VIOLET } from "./Graph";
 
 type nunumber = null | undefined | number;
@@ -85,6 +85,31 @@ export function TpsHeapGraph({
             ]}
             xTicks={{ bottom: tpsRet?.xTicks }}  // tpsRet's xTicks should be the same as mem's xTicks
             yTicks={{ left: tpsRet?.yTicks , right: mem.yTicks }}
+            containerClassName="min-w-50 flex-1"
+            graphClassName="h-50"
+        />
+    );
+}
+
+/**
+ * @param data - The data to plot. If a value is not given, then it will be ignored.
+ */
+export function PlayerCountGraph({
+    data
+}: {
+    data: Array<{ time: number, playerCount: PlayerCount | null | undefined }>,
+}) {
+    const points = data.map(({ time, playerCount }) => ({ time, ...playerCountPoint(playerCount) }));
+    const hasAggregate = points.some(p => p.min !== null || p.max !== null);
+    const ret = prepareData(points, undefined, false, PLAYERS, "", "value", "min", "max");  // No fixed cap, so let prepareData auto-scale to the observed max
+    return (
+        <Graph
+            lines={[
+                ...(ret && hasAggregate) ? [{ data: ret.props.min, upperData: ret.props.max, color: LINE_CYAN, label: "Player Count (range)", legend: false }] : [],
+                ...(ret) ? [{ data: ret.props.value, color: LINE_CYAN, label: "Player Count", points: true }] : []
+            ]}
+            xTicks={{ bottom: ret?.xTicks }}
+            yTicks={{ left: ret?.yTicks }}
             containerClassName="min-w-50 flex-1"
             graphClassName="h-50"
         />

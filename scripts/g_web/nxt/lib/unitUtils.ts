@@ -3,6 +3,7 @@ export const BYTES = { 1: "B", [10**3]: "KB", [10**6]: "MB", [10**9]: "GB", [10*
 export const SECONDS = { 1: "s", 60: "m", [60*60]: "h", [60*60*24]: "d"};
 export const PERCENTAGE = { 1: "%" };
 export const TPS = { 1: "tps" };
+export const PLAYERS = { 1: "" };
 
 /**
  * Change the base unit of the given baseunit to a higher value.
