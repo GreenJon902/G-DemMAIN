@@ -9,6 +9,7 @@
 | g\_monitor | g\_monitor           |                                                                 | Yes                      |
 | g\_discord | g\_discord           | Only reads the g\_mc\_monitor FUSE mount (world-readable via allow\_other, see /var/lib/g\_mc/* below), so no supplementary groups needed. | Yes                      |
 | g\_check\_mc | g\_check\_mc       | No supplementary groups needed - /var/lib/g\_mc is world-readable. | Yes                      |
+| g\_copy\_mc\_stats | g\_copy\_mc\_stats | No supplementary groups needed - /var/lib/g\_mc is world-readable, and it owns /var/lib/g\_mc-stats. | Yes                |
 
 Warning: Try to avoid deleting users. If you must, remove any files that user owns first.
 
@@ -23,6 +24,7 @@ TODO: Remove g\_nightly\_restart from the diagram.
 | /opt/infra/ | jon | jon | 0755 | Only I should be able to write here. Every user needs read access as (nearly) all the scripts are stored here. |
 | /etc/g-demmain/ | root | root | 0600 | Only root should be able to read or write here, as there are secrets stored here. |
 | /var/lib/g\_discord/* | g\_discord | g\_discord | 2770 | |
+| /var/lib/g\_mc-stats/* | g\_copy\_mc\_stats | g\_copy\_mc\_stats | 2775 | Weekly deduplicated snapshots of player stats for visualisation. SetGID bit so that all files created in there are added to the g\_copy\_mc\_stats group, world-readable so a future visualisation consumer needs no extra group membership. |
 
 
 TODO: Do we need a view_infra group?

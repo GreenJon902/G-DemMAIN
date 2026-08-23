@@ -8,4 +8,6 @@ scripts/g_mc/g_mc_monitor/fuse/
 scripts/g_discord/userXp.json
 scripts/g_web/devData/
 scripts/g_check_mc/test/
+scripts/g_copy_mc_stats/source/
+scripts/g_copy_mc_stats/dest/
 
