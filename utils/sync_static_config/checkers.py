@@ -29,7 +29,7 @@ def compare(scf):
         # Currently the writer will overwrite the dest json file with the source file (which contains wildcards...), so we just say this is unsupported
         if scf.extension == "json":
             source_parsed, contains_wildcards = substitute_wildcards(json.loads(scf.contents))
-            if not is_same and contains_wildcards:
+            if contains_wildcards:
                 raise Problem(scf.source_path, f"Source JSON file contains wildcards and destination does not exist. This must be manually fixed - {scf.source_path}")
 
 
