@@ -22,6 +22,10 @@ def compare(scf):
     """
     dest_contents = _read_dest_if_exists(scf.dest_path)
     if dest_contents is None:
+        # TODO: Implement JSON native overwrites
+        # Currently the writer will overwrite the dest json file with the source file (which contains wildcards...), so we just say this is unsupported
+        if contains_wildcards:
+            raise Problem(scf.source_path, f"Source JSON file contains wildcards and destination file does not exist. This must be manually fixed - {scf.source_path}")
         return False, None
 
     if scf.extension == "json":
