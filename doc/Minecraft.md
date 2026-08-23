@@ -71,3 +71,6 @@ All prefix/suffix weights should be set to 0.
 
 ## Nightly drift check
 `scripts/g_check_mc/main.py` runs nightly (see [Services.md](Services.md)) and recursively re-checks `config/prod/g_mc` against `/var/lib/g_mc` using the same comparison logic as `sync_static_config`. No writes occur, this is only to check that config has not driffted (e.g. use of an ingame config command making (meant to be) permanant changes that the repo doesn't know about).
+
+# Config notes
+We omit the marker on certain files who's consumers do not support, or would remove, the marker.
