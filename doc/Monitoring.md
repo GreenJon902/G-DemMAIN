@@ -38,7 +38,7 @@ If a value fails to read, it's recorded as `null` rather than crashing the mainl
 ## Usage Warnings
 If system RAM usage, or the usage of any mount point listed in `diskWarnMounts`, goes over its configured threshold (`ramWarnThreshold`/`diskWarnThreshold`), the `SYSWARN` webhook is fired by spawning `scripts/webhooks.py syswarn ...` as a subprocess. See [Environment Variables.md](Environment%20Variables.md) for the webhook URL variables.
 This is edge-triggered - the alert fires once when usage crosses above the threshold, then stays silent while it remains over, and re-arms once usage drops back below the threshold. This means a resource stuck over threshold doesn't get a repeat warning every mainloop tick.
-Disk usage is queried directly via `df` (`read_disk_usage` in `monitor.py`) rather than through the historical record - it is not written to the `sys_disk_usage` field, which stays deprecated (see [Schema Changelog](#schema-changelog)).
+Disk usage is queried directly via `df` (`read_disk_usage` in `monitor.py`).
 
 ## Historical records
 In whatever folder the config's `recordFolder` resolves to (prod `/var/lib/g_monitor`, dev `scripts/g_monitor` relative to the repo root) are the records.
@@ -75,6 +75,7 @@ This file can contain a mixture of `snapshot` and `aggregate` records, and each 
 ```
 {
     "actualPeriod": float | null,         Seconds, real time elapsed since this retention rule's previous record - see Cumulative Counters. null for that rule's first record ever
+    "migration_history": [int, ...],      IDs of migration scripts (see Migrations below) applied to this record, in order - absent if none have been. Not written by monitor.py itself
     "sys_cpu": {
         "agg": {
             "total": int,                Arbitary units, Delta since last record
@@ -121,13 +122,6 @@ This file can contain a mixture of `snapshot` and `aggregate` records, and each 
             } | null                         # null if this key has no previous record to diff against - see Cumulative Counters
         }
     } | null,
-    "sys_disk_usage": {                  # @deprecated - see Schema Changelog. Current value only, now queried live (getDiskUsage in panelUtils.ts) instead
-        [mount_point]: {
-            "filesystem": str,
-            "total": int,                Bytes
-            "used": int                  Bytes
-        } 
-    } | null,
     "minecraft": {
         "tps": float | {                 Ticks per second, rolling average over the last 100 ticks, capped at 20
             "min": float,
@@ -142,8 +136,7 @@ This file can contain a mixture of `snapshot` and `aggregate` records, and each 
             "min": int,                  Kilobytes                                # The heap currently in use
             "mean": int,                 Kilobytes                                #  "
             "max": int                   Kilobytes                                #  "
-        } | null,
-        "players": [str, ...] | null     @deprecated - see Schema Changelog. Usernames of currently online players, unused and no longer written
+        } | null
     } | null,                            # Absent entirely in records predating this field
     "cgroups": {
         [cgroup_name]: {                     # Keys not necessarily constant
@@ -160,10 +153,6 @@ This file can contain a mixture of `snapshot` and `aggregate` records, and each 
             "disk_io": {
                 "read": int,             Bytes, Delta since last record
                 "written": int           Bytes, Delta since last record
-            } | null,
-            "procs": {                    # @deprecated - see Schema Changelog. Current value only, now published live (see live_cgroup_procs.json below) instead
-                [process_id: int]: str       # Value is terminal command used to start the process
-                                             # Keys not necessarily constant
             } | null
         }
     }
@@ -171,12 +160,20 @@ This file can contain a mixture of `snapshot` and `aggregate` records, and each 
 ```
 
 ## Schema Changelog
-Changes to the `Monitor Format` JSON schema above. Deprecated fields are still accepted when parsing old records, but are no longer written and shouldn't be relied on.
+Changes to the `Monitor Format` JSON schema above. Once a field is dropped entirely (rather than just deprecated), g_web's parser rejects any record still holding it - see [Migrations](#migrations).
 
+- **2026-08-16.2** - Dropped `sys_disk_usage`, `minecraft.players` and `cgroups.*.procs` entirely (previously deprecated but still parsed). Added optional `migration_history`. See `utils/migrations/g_monitor1.py`.
 - **2026-08-16** - Retention rules gained a third `mode` element (`"snapshot"`/`"aggregate"`). `sys_mem`, `cgroups.*.mem`, `minecraft.mem` and `minecraft.tps` may now instead hold `{"min", "mean", "max"[, "total"]}` aggregate statistics - see Aggregation.
 - **2026-08-15** - `sys_cpu`/`sys_net_io`/`sys_disk_io` (`agg` and `ind`), `cgroups.*.cpu` and `cgroups.*.disk_io` now hold the delta accumulated since that retention rule's previous record, rather than an absolute value. Individual `sys_cpu.ind`/`sys_net_io.ind`/`sys_disk_io.ind` entries may now be `null` (previously always present with a value). Added `actualPeriod`.
 - **2026-07-22** - Deprecated `sys_disk_usage`, `minecraft.players` and `cgroups.*.procs`. Fields are still parsed if present in old records, but are no longer written.
 - **2026-07-20** - Added `minecraft` field: `tps`, `mem` (`total`, `used`), `players`. Both `minecraft` and direct children are optional (parent: null or not-present, children: null).
+
+## Migrations
+When the `Monitor Format` schema changes in a way that's not purely additive (e.g. a field is dropped entirely, rather than just deprecated), existing records on disk need to be rewritten to match - g_web's zod schema doesn't special-case every past shape forever.
+
+Each migration is a standalone script in `utils/migrations/`, named `<component><id>.py` (e.g. `g_monitor1.py` for `g_monitor`'s first migration). Its module docstring documents the schema change it performs as a diff of the [Monitor Format](#monitor-format) (`+`/`-` for added/removed lines). It's run manually, once, against a record folder - it is not run automatically by `monitor.py` or `g_web`.
+
+Every record a migration touches gets that migration's id appended to its `migration_history` field (a list of ints, oldest first). This is bookkeeping only - `monitor.py` never writes it, and g_web's zod schema parses and discards it.
 
 ## Live Data
 Some data should always reflect its current value rather than a historical sample, but is either too expensive to compute on every panel page load, or requires filesystem access `g_web` doesn't have (e.g. reading `cgroup.procs` and `/proc/<pid>/cmdline` for cgroups owned by other services). For this, `monitor.py` publishes small "live" files directly in the record folder root (a sibling of the retention subfolders), overwriting them in place every mainloop iteration. Unlike the historical records, only the latest value is kept - there is no history and no retention rule.

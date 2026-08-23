@@ -1,0 +1,6 @@
+{
+  "description": "A flat JSON demo file proving native JSON comparison - port is wildcarded here in the source, so any value the destination holds for it is accepted as a match.",
+  "name": "demo",
+  "port": 9999,
+  "G_MARKER": "# This is a G-DemMAIN synced config file, and may be overwritten when sync is run. Please do not modify this line, and leave it as the first line of this file."
+}

@@ -1,0 +1,4 @@
+{
+  "source_path": "config/prod/g_mc",
+  "dest_path": "/var/lib/g_mc"
+}

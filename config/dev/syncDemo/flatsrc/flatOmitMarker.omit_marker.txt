@@ -1,0 +1,1 @@
+A flat demo file proving omit_marker: no marker line is added to this file, even though it's still tracked by sync-map.

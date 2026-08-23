@@ -1,0 +1,24 @@
+[Unit]
+Description=Nightly check that /var/lib/g_mc still matches this repo's config/prod/g_mc
+
+# Status logging
+# We need to do it like this as OnFailure cannot run bash
+OnFailure=g_service_failed@CheckMC-g_check_mc.service
+
+[Service]
+Type=oneshot
+Restart=no
+User=g_check_mc
+Group=g_check_mc
+ExecStart=/opt/infra/.venv/bin/python3 /opt/infra/scripts/g_check_mc/main.py
+
+EnvironmentFile=/etc/g-demmain/common.env
+
+# Disable print buffering
+Environment=PYTHONUNBUFFERED=1
+
+# Enable monitoring of disk io by other processes (g_monitor)
+IOAccounting=yes
+
+[Install]
+WantedBy=multi-user.target

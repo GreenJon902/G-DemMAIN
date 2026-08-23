@@ -1,0 +1,4 @@
+{
+  "description": "A recursive JSON demo file proving MarkerExistsInSource: this source illegally already has a G_MARKER field, which should be reported as a problem rather than silently copied or overwritten.",
+  "G_MARKER": "this should never be set in a source file"
+}

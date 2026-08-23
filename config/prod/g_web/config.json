@@ -11,6 +11,8 @@
     { "name": "g_web_mcc",         "type": "service", "controllable": true,  "expectActive": true,  "impactsPanel": false },
     { "name": "g_nightly_restart", "type": "service", "controllable": false, "expectActive": false, "impactsPanel": false },
     { "name": "g_nightly_restart", "type": "timer",   "controllable": true,  "expectActive": true,  "impactsPanel": false },
+    { "name": "g_check_mc",        "type": "service", "controllable": false, "expectActive": false, "impactsPanel": false },
+    { "name": "g_check_mc",        "type": "timer",   "controllable": true,  "expectActive": true,  "impactsPanel": false },
     { "name": "g_monitor",         "type": "service", "controllable": true,  "expectActive": true,  "impactsPanel": false },
     { "name": "g_discord",         "type": "service", "controllable": true,  "expectActive": true,  "impactsPanel": false },
     { "name": "mysql",             "type": "service", "controllable": true,  "expectActive": true,  "impactsPanel": true }

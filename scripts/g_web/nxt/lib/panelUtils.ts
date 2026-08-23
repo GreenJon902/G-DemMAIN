@@ -184,20 +184,17 @@ const zTps = z.union([z.number().nonnegative(), zTpsAggregate]);
 export type Tps = z.infer<typeof zTps>;
 const zMinecraft = z.strictObject({
     tps: zTps.nullable(),  // Ticks per second - rolling average capped at 20, or {min, mean, max} over the retention window
-    mem: zMem.nullable(),  // Heap usage, in kilobytes
-    players: z.array(z.string()).nullable().optional()  // @deprecated - see Schema Changelog, kept optional so old records still parse
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-}).transform(({ players, ...rest }) => rest);  // Strip the deprecated field from the parsed type
+    mem: zMem.nullable()  // Heap usage, in kilobytes
+});
 const zCoercedMap = <T extends z.ZodTypeAny> (zValue: T) => z.record(z.string().nonempty(), zValue).transform(obj => new Map(Object.entries(obj)));
 const zCgroup = z.strictObject({
     cpu: zNatural.nullable(),  // Microseconds, delta since last record, sum of ms on each core
     mem: zMem.nullable(),
-    disk_io: zDiskIO.nullable(),
-    procs: zCoercedMap(z.string()).nullable().optional()  // @deprecated - see Schema Changelog, kept optional so old records still parse
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-}).transform(({ procs, ...rest }) => rest);  // Strip the deprecated field from the parsed type
+    disk_io: zDiskIO.nullable()
+});
 const MonitorRecord = z.strictObject({
-    actualPeriod: z.number().nonnegative().nullable().default(null),  // Seconds, real time elapsed since this rule's previous record - null for that rule's first record ever           // TODO: .default(null) for legacy compatibility
+    actualPeriod: z.number().nonnegative().nullable(),  // Seconds, real time elapsed since this rule's previous record - null for that rule's first record ever
+    migration_history: z.array(z.number().int()).optional(),  // IDs of migration scripts (see utils/migrations) applied to this record, in order - not written by monitor.py itself
     sys_cpu: z.strictObject({
         agg: zArbCpu,
         ind: zCoercedMap(zArbCpu.nullable())  // null if this key has no previous record to diff against (see documentation)
@@ -211,15 +208,10 @@ const MonitorRecord = z.strictObject({
         agg: zDiskIO,
         ind: zCoercedMap(zDiskIO.nullable())  // null if this key has no previous record to diff against (see documentation)
     }).nullable(),
-    sys_disk_usage: zCoercedMap(z.strictObject({
-        filesystem: z.string().nonempty(),
-        total: zNatural,  // Bytes
-        used: zNatural
-    })).nullable().optional(),  // @deprecated - see Schema Changelog, kept optional so old records still parse
     minecraft: zMinecraft.nullable().default(null),  // Absent entirely in records predating this field
     cgroups: zCoercedMap(zCgroup)
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-}).transform(({ sys_disk_usage, ...rest }) => rest);  // Strip the deprecated field from the parsed type
+}).transform(({ migration_history, ...rest }) => rest);  // Strip migration_history from the parsed type - it's bookkeeping for utils/migrations, g_web has no use for it
 export type MonitorRecord = z.infer<typeof MonitorRecord>;
 
 export type MonitorOption = { interval: number, number?: number | undefined }
@@ -292,7 +284,7 @@ export async function loadMonitorRecords(interval: number, number?: number | und
 
     // Transform data
     const graphData = records.map(({ time, data: current }) => {
-        const dt = current.actualPeriod ?? interval;  // TODO: the `?? interval` is for backwards compatibility
+        const dt = current.actualPeriod;
         return {
             time: time - latestTime,  // Normalise times
             sys_cpu: convNullAggInd(cpunoKeys, current.sys_cpu, arbCpuToUsage),  // Percentage utilisation

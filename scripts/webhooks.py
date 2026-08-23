@@ -2,6 +2,7 @@
 
 import requests
 import os
+import json
 from argparse import ArgumentParser
 
 from libs.config import readEnviron, ConfigError
@@ -103,6 +104,32 @@ def generate_syswarn(resource, used_fraction, threshold_fraction):
                 }]
     }
 
+CHECKMCCOLOR = 16753920
+def generate_checkmc(source_path, dest_path, problems, failed_files):
+    # Generate the json for a message about g_check_mc finding source_path and dest_path out of sync.
+    # problems and failed_files are lists of human-readable strings.
+    problems_text = "\n".join([f"- {p}" for p in problems[:6]]) if problems else "(None)"
+    failed_files_text = "\n".join([f"- {f}" for f in failed_files]) if failed_files else "(None)"
+    
+    # Webhook JSON can be at most 2000 chars long, so crop if need be
+    if len(problems_text) > 700:
+        problems_text = problems_text[:697] + "..."
+    if len(failed_files_text) > 700:
+        failed_files_text = failed_files_text[:697] + "..."
+
+    return {
+            "username": "G-DemMAIN",
+            "embeds": [{
+                "title": ":warning: g_check_mc found a discrepancy :warning:",
+                "description": f"Active config (`{dest_path}`) has drifted from source (`{source_path}`).\nHave you re-configured something without commiting the changes to the repo?\n\nOtherwise this could be a tracking bug..",
+                "fields": [
+                    {"name": "Errors", "value": problems_text, "inline": False},
+                    {"name": "Failed files", "value": failed_files_text, "inline": False}
+                ],
+                "color": CHECKMCCOLOR
+                }]
+    }
+
 def generate_test(intended_recipient):
     # Content for a testing webhook.
     return {"username": "G-DemMAIN",
@@ -121,7 +148,8 @@ webhook_getters = {
     "WEBLOGIN": lambda: readEnviron("WEBLOGIN_WEBHOOK", str),
     "WEBCOMMAND": lambda: readEnviron("WEBCOMMAND_WEBHOOK", str),
     "HISDOC": lambda: readEnviron("HISDOC_WEBHOOK", str),
-    "SYSWARN": lambda: readEnviron("SYSWARN_WEBHOOK", str)
+    "SYSWARN": lambda: readEnviron("SYSWARN_WEBHOOK", str),
+    "CHECKMC": lambda: readEnviron("CHECK_MC_WEBHOOK", str)
 }
 
 # Parse arguments
@@ -148,6 +176,11 @@ syswarn_parser = subparsers.add_parser("syswarn", help="Send a notification that
 syswarn_parser.add_argument("resource", help="Human-readable resource name, e.g. RAM or 'Disk (/)'")
 syswarn_parser.add_argument("used", type=float, help="Current usage as a fraction in [0, 1]")
 syswarn_parser.add_argument("threshold", type=float, help="The configured warn threshold as a fraction in [0, 1]")
+checkmc_parser = subparsers.add_parser("checkmc", help="Send a notification that g_check_mc found a discrepancy between its source and destination")
+checkmc_parser.add_argument("source_path", help="The source path (folder, not files) that was checked")
+checkmc_parser.add_argument("dest_path", help="The destination path (folder, not files) that was checked")
+checkmc_parser.add_argument("problems", help="JSON-encoded list of human-readable problem messages")
+checkmc_parser.add_argument("failed_files", help="JSON-encoded list of paths that failed the check")
 test_parser = subparsers.add_parser("test", help="Test that the webhooks are working")
 args = parser.parse_args()
 
@@ -186,6 +219,11 @@ elif args.action == "syswarn":
     threshold = args.threshold
     # Send webhook
     send(webhook_getters["SYSWARN"](), generate_syswarn(resource, used, threshold))
+elif args.action == "checkmc":
+    # Send webhook
+    print(json.dumps(generate_checkmc(args.source_path, args.dest_path, json.loads(args.problems), json.loads(args.failed_files)), indent=4))
+    print(len(json.dumps(generate_checkmc(args.source_path, args.dest_path, json.loads(args.problems), json.loads(args.failed_files)))))
+    send(webhook_getters["CHECKMC"](), generate_checkmc(args.source_path, args.dest_path, json.loads(args.problems), json.loads(args.failed_files)))
 
 elif args.action == "test":
     # Just try and call all webhooks

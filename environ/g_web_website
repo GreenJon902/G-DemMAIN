@@ -9,5 +9,6 @@ G_WEB_DATABASE_PASSWORD
 # The password that is used to connect to the g_web database
 
 G_WEB_DATABASE_HOST
-# The host that is running the g_web database. Likely just "localhost".
+# The host that is running the g_web database. This should not include the database name.
+# Likely just "localhost".
 

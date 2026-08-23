@@ -1,0 +1,21 @@
+{
+  "description": "A recursive JSON demo file proving nested, multi-wildcard comparison - the wildcarded fields below resolve in the destination to a plain value, a nested object, a list, and fields nested inside list elements. server.host is deliberately NOT wildcarded, and the fixture gives it a mismatching value, so this file should still be flagged as differing despite every wildcarded field matching.",
+  "server": {
+    "host": "0.0.0.0",
+    "port": "*wildcard*",
+    "credentials": "*wildcard*"
+  },
+  "trackedUnits": [
+    {
+      "name": "g_mc",
+      "type": "service",
+      "extra": "*wildcard*"
+    },
+    {
+      "name": "g_web",
+      "type": "service",
+      "extra": "*wildcard*"
+    }
+  ],
+  "tags": "*wildcard*"
+}
