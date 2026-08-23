@@ -5,5 +5,7 @@ scripts/g_monitor/*/
 scripts/g_monitor/state.json
 scripts/g_monitor/live_cgroup_procs.json
 scripts/g_mc/g_mc_monitor/fuse/
+scripts/g_discord/userXp.json
 scripts/g_web/devData/
 scripts/g_check_mc/test/
+
