@@ -29,6 +29,7 @@ Download from https://fabricmc.net/use/server/.
 | [BlossomLib](https://modrinth.com/mod/blossomlib)                         | 2.6.0+26.2                | |
 | [Mods Command](https://modrinth.com/mod/mods-command)                     | mc26.2-1.1.16             | |
 | [adventure-platform-mod](https://modrinth.com/mod/adventure-platform-mod) | 7.1.1                     | |
+| [Styled Chat](https://modrinth.com/mod/styled-chat)                       | 2.13.0+26.2               | |
 
 <details>
   <summary>Possible future mods</summary>
@@ -37,7 +38,6 @@ Download from https://fabricmc.net/use/server/.
   - Dynmaps - Waiting for 26.2, and waiting for it to be merged with main.
   - InvSee
   - G-Coin? - Or at least disable placing of G-Blocks? - https://github.com/GreenJon902/G-Coin.
-  - Nicknames and chat styling - We could have tiers and operator tags and teams and afk tags.
   - We previously had TickLogger. We probably don't need such fine data, so probably can just save player stats once a week.
 </details>
 
@@ -45,20 +45,10 @@ Download from https://fabricmc.net/use/server/.
 TODO: 
 Configure unplugged properly
 
-Config syncing?
-
-TODO, document how luckperms config is setup 
-    - prefixes are all teams
-    - suffixes are all tiers
-    - what about ranks
-
 Re-implement mods list ourselves - two levels - overview and detailed?
 
 What I've done:
 Created mods/luckperms owned by g_mc - g\_mc cannot write to mods folder.
-
-
-<%luckperms:prefix% %player:displayname% [%luckperms:suffix%]>
 
 
 ## Gamerules
@@ -68,6 +58,16 @@ The gamerules we overwrite from default are listed below.
 | locatorBar    | false |
 
 
+## Name-formatting
+
+There are two tracks: `staff` and `tier`. These both have suffixes (for above-default levels), and both expect them to be shown.  
+Then teams are just miscellaneaous groups, and instead use prefixes. Again it is expected these are shown.  
+
+No other prefixes or suffixes should be set, as it will mess up the above 3. If another type should be added, the luckperms config will need to be modified.  
+
+To set a player nickname, the display-name should be used, as that will then be spliced between the prefix and suffix.
+
+All prefix/suffix weights should be set to 0.
 
 ## Nightly drift check
 `scripts/g_check_mc/main.py` runs nightly (see [Services.md](Services.md)) and recursively re-checks `config/prod/g_mc` against `/var/lib/g_mc` using the same comparison logic as `sync_static_config`. No writes occur, this is only to check that config has not driffted (e.g. use of an ingame config command making (meant to be) permanant changes that the repo doesn't know about).
