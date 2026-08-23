@@ -57,15 +57,12 @@ def json_matches(source_value, dest_value):
 
     if isinstance(source_value, dict) and isinstance(dest_value, dict):
         if source_value.keys() != dest_value.keys():
-            print(source_value, dest_value)
             return False
         return all(json_matches(source_value[key], dest_value[key]) for key in source_value)
 
     if isinstance(source_value, list) and isinstance(dest_value, list):
         if len(source_value) != len(dest_value):
-            print(source_value, dest_value)
             return False
         return all(json_matches(sv, dv) for sv, dv in zip(source_value, dest_value))
 
-    print(source_value == dest_value, source_value, dest_value)
     return source_value == dest_value
