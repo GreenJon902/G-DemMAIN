@@ -1,0 +1,1 @@
+A flat demo file proving drop_ext: this file's deployed name has no extension.

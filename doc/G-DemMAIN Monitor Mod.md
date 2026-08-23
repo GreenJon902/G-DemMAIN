@@ -68,7 +68,7 @@ Two host-level things fall out of that:
 
 1. **`fuse3` (or `fuse`) and `libfuse-dev` must be installed** and `/dev/fuse` must be accessible to the `g_mc` user (usually already true - check the `fuse` group or device permissions if mounting fails).
 2. **`user_allow_other` must be uncommented in `/etc/fuse.conf`** - without it, a non-root mount with `-o allow_other` is rejected by libfuse itself, regardless of file permissions.
-   This is synced automatically from [`config/prod/fuse/fuse.conf`](../config/prod/fuse/fuse.conf) by `utils/sync-static-config.py` (see [Config Sync.md](Config%20Sync.md)) - run the sync script before first starting the server with this mod installed.
+   This is synced automatically from [`config/prod/fuse/fuse.conf`](../config/prod/fuse/fuse.conf) by `utils/sync_static_config/main.py` (see [Config Sync.md](Config%20Sync.md)) - run the sync script before first starting the server with this mod installed.
 
 If the mount fails, what happens next depends on `unsafe` (see [Config](#config)): by default this crashes startup;
 with `G_MC_MONITOR_UNSAFE=true` the mod instead logs an error and carries on without it (console/chat sockets and in-game commands are unaffected).

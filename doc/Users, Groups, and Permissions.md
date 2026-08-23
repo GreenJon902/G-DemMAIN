@@ -6,8 +6,9 @@
 | root       | root                 | Created by default, do not touch this.                          | Kinda? Has UID=0         |
 | g\_mc      | g\_mc                | Should be as locked down as possible as may run arbitrary code. | Yes                      |
 | g\_web     | g\_web               | Should be as locked down as possible as may run arbitrary code. | Yes                      |
-| g\_monitor | g\_monitor           | Should be as locked down as possible as may run arbitrary code. | Yes                      |
-| g\_discord | g\_discord           | Should be as locked down as possible as may run arbitrary code. Only reads the g\_mc\_monitor FUSE mount (world-readable via allow\_other, see /var/lib/g\_mc/* below), so no supplementary groups needed. | Yes                      |
+| g\_monitor | g\_monitor           |                                                                 | Yes                      |
+| g\_discord | g\_discord           | Only reads the g\_mc\_monitor FUSE mount (world-readable via allow\_other, see /var/lib/g\_mc/* below), so no supplementary groups needed. | Yes                      |
+| g\_check\_mc | g\_check\_mc       | No supplementary groups needed - /var/lib/g\_mc is world-readable. | Yes                      |
 
 Warning: Try to avoid deleting users. If you must, remove any files that user owns first.
 

@@ -1,0 +1,4 @@
+{
+  "description": "A recursive JSON demo file that will be flagged as a marker conflict - the destination is missing G_MARKER even though this source requires one.",
+  "value": 1
+}

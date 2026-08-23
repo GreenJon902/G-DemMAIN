@@ -1,0 +1,5 @@
+{
+  "description": "A flat JSON demo file proving native JSON comparison - port is wildcarded here in the source, so any value the destination holds for it is accepted as a match.",
+  "name": "demo",
+  "port": "*wildcard*"
+}

@@ -1,0 +1,1 @@
+A flat demo file proving omit_marker still overwrites: the destination below has different content and no marker, so this should show a diff and prompt to replace it.

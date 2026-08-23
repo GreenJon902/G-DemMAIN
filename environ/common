@@ -18,6 +18,10 @@ SYSWARN_WEBHOOK
 # The webhook url for sending notifications when system RAM or a tracked drive gets too full.
 # This should be formatted something like https://discord.com/api/webhooks/___/___.
 
+CHECK_MC_WEBHOOK
+# The webhook url for sending notifications when g_check_mc fails.
+# This should be formatted something like https://discord.com/api/webhooks/___/___.
+
 G_DEMMAIN_ROOT prod="/opt/infra" !dev
 # The absolute path to the repo checkout in use.
 # Forced to /opt/infra in prod. Never set in dev - devUtils/prepDevEnv.sh computes and exports it directly from the current worktree instead.
