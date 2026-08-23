@@ -1,0 +1,4 @@
+{
+  "source_path": "/var/lib/g_mc/world/players/stats",
+  "dest_path": "/var/lib/g_mc-stats"
+}

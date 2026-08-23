@@ -38,7 +38,6 @@ Download from https://fabricmc.net/use/server/.
   - Dynmaps - Waiting for 26.2, and waiting for it to be merged with main.
   - InvSee
   - G-Coin? - Or at least disable placing of G-Blocks? - https://github.com/GreenJon902/G-Coin.
-  - We previously had TickLogger. We probably don't need such fine data, so probably can just save player stats once a week.
 </details>
 
 
@@ -69,8 +68,16 @@ To set a player nickname, the display-name should be used, as that will then be 
 
 All prefix/suffix weights should be set to 0.
 
-## Nightly drift check
+## Config notes
+We omit the marker on certain files who's consumers do not support, or would remove, the marker.
+
+### Nightly drift check
 `scripts/g_check_mc/main.py` runs nightly (see [Services.md](Services.md)) and recursively re-checks `config/prod/g_mc` against `/var/lib/g_mc` using the same comparison logic as `sync_static_config`. No writes occur, this is only to check that config has not driffted (e.g. use of an ingame config command making (meant to be) permanant changes that the repo doesn't know about).
 
-# Config notes
-We omit the marker on certain files who's consumers do not support, or would remove, the marker.
+## `g_copy_mc_stats` - Nightly stats snapshot
+`scripts/g_copy_mc_stats/main.py` runs nightly (2am, see [Services.md](Services.md)) and copies `/var/lib/g_mc/world/players/stats/*.json` into a new timestamped folder under `/var/lib/g_mc-stats`. 
+
+To avoid storing large amounts of unchanged data for players who rarely play, a run of snapshots where a player's file is unchanged is collapsed down to just its first and last occurrence.
+
+It is expected that no extra files / folders are added to `/var/lib/g_mc/world/players/stats`, `/var/lib/g_mc-stats` or `/var/lib/g_mc-stats/*`.
+The folder structure is `/var/lib/g_mc-stats/<yyyy-mm-dd-hh-mm-ss>/<uuid>.json`.
