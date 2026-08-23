@@ -11,3 +11,6 @@ DIFF_HUNK_COL = "\033[36m" if sys.stdout.isatty() else ""
 
 # Marks output from a subprocess call rather than python
 SUBPROC_COL = "\033[38;5;240m" if sys.stdout.isatty() else ""
+
+# Marks a file's old contents, printed (see StaticConfigFile.print_old) right before it's overwritten
+OLD_CONTENTS_COL = "\033[38;5;250m" if sys.stdout.isatty() else ""

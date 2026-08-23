@@ -1,8 +1,7 @@
-import os
 import subprocess
 
 from colors import RESET, SUBPROC_COL
-from exceptions import Problem, Skipped
+from exceptions import Problem
 
 
 def _sudoers_is_valid():
@@ -24,15 +23,8 @@ def _before(scf):
     else:
         print("Sudoers check failed")
 
-    # Print the old file as the only backup taken - the caller must capture this output
-    # themselves (e.g. by redirecting this script's output) if they want to restore it later.
-    if os.path.exists(scf.dest_path):
-        print("OLD SUDOERS FILE ----")
-        with open(scf.dest_path, "r") as f:
-            print(f.read())
-        print("---------------------")
-    else:
-        print("Old sudoers file does not exist!")
+    # It might be important to easily roll-back this file. So let the user know its contents if it may be changed
+    scf.print_old = True
 
 
 def _after(scf):

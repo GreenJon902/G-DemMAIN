@@ -5,7 +5,7 @@ from configparser import ConfigParser
 
 import modifiers
 from checkers import checker
-from colors import PATH_COL, RESET
+from colors import OLD_CONTENTS_COL, PATH_COL, RESET
 from constants import MODIFIER_ORDER, MODIFIERS_TOUCHING_DEST_PATH
 from exceptions import AlreadyUpToDate, Problem, Skipped
 from modifiers import flags_to_modifiers
@@ -115,6 +115,14 @@ def write(scf):
     Writes scf.contents to scf.dest_path. Only ever reached when the checker earlier in the
     chain didn't raise AlreadyUpToDate, so there's always something real to write here.
     """
+    # Log the contents if the flag is set
+    if scf.print_old and os.path.exists(scf.dest_path):
+        print(f"Old contents of {PATH_COL}{scf.dest_path}{RESET} ---")
+        with open(scf.dest_path, "r") as f:
+            print(f"{OLD_CONTENTS_COL}{f.read()}{RESET}")
+        print("---")
+
+    # Write the file
     print(f"Writing {PATH_COL}{scf.dest_path}{RESET}")
     if not args.dry_run:
         parent = os.path.dirname(scf.dest_path)
