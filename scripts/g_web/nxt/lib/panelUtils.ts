@@ -252,7 +252,7 @@ export async function loadMonitorRecords(interval: number, number?: number | und
     const records = await Promise.all(recordNames.map(async record => ({
         time: parseInt(record),  // This will ignore the .json
         data: MonitorRecord.parse(JSON.parse(await fs.readFile(path.join(subfolder, record), "utf-8")), { 
-            error: () => { console.error(`Parse error in ${record}`); return undefined }  // Say where the error occured, then pass back to zod's error handler
+            error: () => { console.error(`Parse error in ${record}`); return undefined; }  // Say where the error occured, then pass back to zod's error handler
         })
     })));
     records.sort((a, b) => a.time - b.time);  // Sort based off time
