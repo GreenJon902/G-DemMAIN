@@ -25,6 +25,7 @@ import administration_module.tempmute
 import administration_module.warn
 import administration_module.log
 import leveling_module
+import mc_stats_graph_module
 
 # We need to sync the tree so commands work
 @subscribe_to("ready")
