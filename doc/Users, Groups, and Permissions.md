@@ -2,7 +2,7 @@
 
 | User       | Groups               | Notes                                                           | System user (UID < 1000) |
 |------------|----------------------|-----------------------------------------------------------------|--------------------------|
-| jon        | jon,users,sudo,g_mc  |                                                                 | No                       |
+| jon        | jon,users,sudo,g_mc,systemd-journal |                                                  | No                       |
 | root       | root                 | Created by default, do not touch this.                          | Kinda? Has UID=0         |
 | g\_mc      | g\_mc                | Should be as locked down as possible as may run arbitrary code. | Yes                      |
 | g\_web     | g\_web               | Should be as locked down as possible as may run arbitrary code. | Yes                      |

@@ -8,3 +8,6 @@ DISCORD_CHAT_CHANNEL_ID
 DISCORD_MEMBER_LOG_CHANNEL_ID
 # The Discord channel member-join/leave/profile-update events are logged to (administration_module.log).
 # To get a channel's ID, enable Developer Mode (User Settings → Advanced), then right-click the channel → Copy Channel ID.
+
+MPLCONFIGDIR prod="/var/lib/g_discord/mplconfig" !dev
+# The path to matplotlib's config directory. Must be set manually as g_discord has no "home directory".
