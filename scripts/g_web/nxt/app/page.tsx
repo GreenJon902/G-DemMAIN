@@ -9,9 +9,10 @@ export default function Page() {
                 src="/home-image.png"
                 alt=""
                 fill
-                preload={true}
+                priority
+                sizes="100vw"
                 className="object-cover object-center"
-                unoptimized={true}  // Otherwise it's sometimes blury
+                quality={100}
             />
             <div className="relative rounded-xl border-2 border-gray-500 bg-gray-700/80 p-4">
                 <h1 className="flex justify-center transition-transform duration-200 hover:scale-110">
