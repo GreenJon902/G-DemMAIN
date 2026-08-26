@@ -2,25 +2,28 @@ import json
 import os
 
 from colors import PATH_COL, RESET
-from diffing import json_matches, line_diff, substitute_wildcards
+from constants import BINARY_EXTENSIONS, TEXT_EXTENSIONS, TEXT_WILDCARD_TOKEN
+from diffing import json_matches, line_diff, substitute_wildcards, text_matches
 from exceptions import AlreadyUpToDate, Skipped, Problem
 
 
-def _read_dest_if_exists(dest_path):
+def _read_dest_if_exists(dest_path, binary):
     if not os.path.exists(dest_path):
         return None
-    with open(dest_path, "r") as f:
+    with open(dest_path, "rb" if binary else "r") as f:
         return f.read()
 
 
 def compare(scf):
     """
-    Compares the source and destination file - a nested JSON comparison for "json", a simple
-    text comparison for every other extension.
+    Compares the source and destination file - a nested JSON comparison for "json", a wildcard-
+    aware line-by-line comparison for the plain-text extensions, and a byte comparison for the
+    binary extensions.
     Returns (is_same, diff). If is_same is true then diff is always None. Otherwise, if diff is
     None then the destination file does not exist.
     """
-    dest_contents = _read_dest_if_exists(scf.dest_path)
+    is_binary = scf.extension in BINARY_EXTENSIONS
+    dest_contents = _read_dest_if_exists(scf.dest_path, is_binary)
     if dest_contents is None:
 
 
@@ -32,7 +35,11 @@ def compare(scf):
             if contains_wildcards:
                 raise Problem(scf.source_path, f"Source JSON file contains wildcards and destination does not exist. This must be manually fixed - {scf.source_path}")
 
-
+        # TODO: Native overwrites?? Is this even worth implementing for the number file types????
+        # A (non-dropped) wildcard line means we don't have a real value to write, so a fresh destination value can't be created automatically
+        elif scf.extension in TEXT_EXTENSIONS:
+            if TEXT_WILDCARD_TOKEN in scf.contents.splitlines():
+                raise Problem(scf.source_path, f"Source text file contains a wildcard line and destination does not exist. This must be manually fixed - {scf.source_path}")
 
         return False, None
 
@@ -40,17 +47,29 @@ def compare(scf):
         source_parsed, contains_wildcards = substitute_wildcards(json.loads(scf.contents))
         dest_parsed = json.loads(dest_contents)
         is_same = json_matches(source_parsed, dest_parsed)
-        
+
         # TODO: Implement JSON native overwrites
         # Currently the writer will overwrite the dest json file with the source file (which contains wildcards...), so we just say this is unsupported
         if not is_same and contains_wildcards:
             raise Problem(scf.source_path, f"Source JSON file contains wildcards and does not match. This must be manually fixed - {scf.source_path}")
-        
+
+    elif scf.extension in TEXT_EXTENSIONS:
+        is_same, contains_wildcard = text_matches(scf.contents.splitlines(), dest_contents.splitlines())
+
+        # TODO: Native overwrites?? Is this even worth implementing for the number file types????
+        # A (non-dropped) wildcard line means we don't have a real value to write in its place, so an actual mismatch elsewhere can't be auto-fixed
+        if not is_same and contains_wildcard:
+            raise Problem(scf.source_path, f"Source text file contains a wildcard line and does not match destination. This must be manually fixed - {scf.source_path}")
+
     else:
+        # Binary comparison, check for byte-exact equality
         is_same = dest_contents == scf.contents
 
     if is_same:
         return True, None
+    # Files are different
+    if is_binary:  # We can't (easily) show a (useful) diff for binary
+        return False, [f"Binary files {scf.dest_path} ({len(dest_contents)} bytes) and {scf.source_path} ({len(scf.contents)} bytes) differ"]
     return False, line_diff(dest_contents.splitlines(), scf.contents.splitlines(), scf.dest_path, scf.source_path)  # TODO: Proper JSON diff for json files
 
 

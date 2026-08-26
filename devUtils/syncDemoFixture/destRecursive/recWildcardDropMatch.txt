@@ -1,0 +1,4 @@
+# This is a G-DemMAIN synced config file, and may be overwritten when sync is run. Please do not modify this line, and leave it as the first line of this file.
+Static line
+# 2026-01-01 00:00:00 saved
+Another static line

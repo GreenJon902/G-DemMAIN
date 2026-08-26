@@ -1,8 +1,8 @@
 import json
 import os
 
-from constants import HEADER_LINE, JSON_MARKER_KEY, TEXT_EXTENSIONS
-from exceptions import DestinationMissingMarker, MarkerExistsInSource
+from constants import BINARY_EXTENSIONS, HEADER_LINE, JSON_MARKER_KEY, TEXT_EXTENSIONS
+from exceptions import DestinationMissingMarker, MarkerExistsInSource, ModifierUnsupportedForExtension
 
 
 def _text_has_marker(contents):
@@ -35,7 +35,11 @@ def _add_marker_and_find_problem(scf):
     Adds the marker to scf.contents, and returns a Problem instance describing why the
     destination doesn't have one (or None), instead of raising it - shared by the before-func
     (which raises) and the test_prep-func (which returns).
+    This is un-supported for binary-files (and expects `.omit_marker` to have been given). 
     """
+    if scf.extension in BINARY_EXTENSIONS:
+        return ModifierUnsupportedForExtension(scf.source_path, scf.extension, "marker")
+
     dest_contents = _read_dest_if_exists(scf.dest_path)
 
     if scf.extension == "json":
