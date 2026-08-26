@@ -4,6 +4,7 @@
   "monitorFolder": "scripts/g_monitor",
   "minecraftCacheFile": "scripts/g_web/devData/minecraft-cache.json",
   "mccwssPort": 8001,
+  "mccwssTail": ":8001",
   "gWebDatabasePort": 3306,
   "trackedUnits": [
     { "name": "dbus",      "type": "service", "controllable": false, "expectActive": true, "impactsPanel": false },

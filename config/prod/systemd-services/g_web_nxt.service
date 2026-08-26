@@ -15,10 +15,9 @@ OnFailure=g_service_failed@Website-g_web_nxt.service
 User=g_web
 Group=g_web
 WorkingDirectory=/var/lib/g_web/nxt
-ExecStart=/usr/bin/node /var/lib/g_web/node_modules/.bin/next start -p 3000
+ExecStart=/usr/bin/node /var/lib/g_web/node_modules/.bin/next start -p 3000 -H 127.0.0.1
 
 Environment=NODE_ENV=production
-# This port is temporary
 Environment=PORT=3000
 EnvironmentFile=/etc/g-demmain/common.env
 EnvironmentFile=/etc/g-demmain/g_web_website.env

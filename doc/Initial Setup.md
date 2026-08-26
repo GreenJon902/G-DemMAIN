@@ -6,14 +6,16 @@ May be missing details!
 TODO: Add documentation on use of fail2ban (brute force attacks)
 
 2. ```
-ufw allow 25565
-ufw allow 3000  # TODO: switch to port 80 once the site's off the temporary port (see Services.md)
-ufw allow 3001
-ufw allow 25575  # TODO: Why was this port ever open (was RCON before, but that shouldn't have been open either)
-ufw allow <ssh_port>
-ufw enable
-systemctl enable fail2ban
+sudo ufw allow 25565
+sudo ufw allow 80
+sudo ufw allow 443
+sudo ufw allow 443/udp  # HTTP/3 (QUIC) - see doc/Caddy.md
+sudo ufw allow <ssh_port>
+sudo ufw enable
+sudo systemctl enable fail2ban
 ```
+
+No other ports should be allwed.
 
 3. ```
 adduser jon
@@ -25,8 +27,17 @@ And add `jon ALL=(ALL) NOPASSWD: ALL` to the end of `visudo`.
 
 5. Login as jon and copy the SSH key. Use `scp` to copy the G-DemMAIN repo to the infra folder and apply SSH configurations. Use `sudo chmod 2755 -R *` to fix the permissions. Reload the SSH config on the server.
 
-6. `apt install mariadb-server mariadb-client openjdk-25-jdk-headless python3.13-venv fuse3 libfuse-dev`
+6. `sudo apt install mariadb-server mariadb-client openjdk-25-jdk-headless python3.13-venv fuse3 libfuse-dev`
 See `Python.md` for setting up the venv.
+
+Caddy isn't in the default apt repos, so it needs its own repo added first - see [Caddy.md](Caddy.md):
+```
+sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+sudo apt update
+sudo apt install caddy
+```
 
 7. Create service users (run all lines that are necessary): 
 ```
@@ -38,13 +49,21 @@ sudo chmod 2775 /var/lib/g_mc
 sudo usermod -aG g_mc jon    # You may need to relog for this to take effect
 ```
 
-8. Setup the environment and config files.
+8. Setup the environment and config files, reload caddy
 ```
 cd /opt/infra/environ && \
 sudo python3 ../utils/sync-environ.py prod && \
 cd /opt/infra/config/prod && \
 sudo python3 ../../utils/sync_static_config/main.py && \
 sudo systemctl daemon-reload
+```
+
+Whenever `config/prod/g_web/Caddyfile` changes, validate before reloading so a bad edit can't take the site down (see [Caddy.md](Caddy.md)):
+```
+# Load the env vars into the shell so caddy validate can see them (not needed to reload)
+export DOMAIN_NAME="..."  # We must set this so validate works
+caddy validate --config /opt/infra/config/prod/g_web/Caddyfile
+sudo systemctl reload caddy
 ```
 
 9. Set up the database 
@@ -70,9 +89,9 @@ See `G-DemMAIN Discord Bot.md`. We need the bot created/configured on Discord's 
 
 See [Users, Groups, and Permissions.md](Users%2C%20Groups%2C%20and%20Permissions.md) for how folder ownership, the setgid bit, and UMask combine to keep permissions consistent across users.
 
-`sudo systemctl stop g_mc g_web_nxt g_web_mcc g_monitor g_discord`
-`sudo systemctl reset-failed g_mc g_web_nxt g_web_mcc g_monitor g_discord`
-`sudo systemctl restart g_mc g_web_nxt g_web_mcc g_monitor g_discord`
+`sudo systemctl stop g_mc g_web_nxt g_web_mcc g_monitor g_discord caddy`
+`sudo systemctl reset-failed g_mc g_web_nxt g_web_mcc g_monitor g_discord caddy`
+`sudo systemctl restart g_mc g_web_nxt g_web_mcc g_monitor g_discord caddy`
 
 12. Setup Minecraft
 Install the software as specified in [Minecraft.md](Minecraft.md), renaming the server jar to `minecraft_server.jar`.

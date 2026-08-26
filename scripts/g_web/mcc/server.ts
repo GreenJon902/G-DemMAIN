@@ -6,7 +6,7 @@ import { sendWebcommandWebhook } from "@g/com/lib/webhook";
 import { zConsoleCommand, zConsoleServerMessage, type ConsoleMeta } from "@g/com/lib/mcConsoleProtocol";
 
 // Create the WebSocketServer - the server that the client/browser connects to.
-const wss = new WebSocketServer({ port: C().MCCWSS_PORT });  // TODO: Use HTTPS
+const wss = new WebSocketServer({ port: C().MCCWSS_PORT, host: "127.0.0.1" });  // `host=127.0.0.1` => loopback-only
 
 /** Builds a synthetic notice, for messages mcc generates itself rather than relaying from the monitor mod. */
 function mccMeta(level: ConsoleMeta["level"], message: string): ConsoleMeta {

@@ -5,6 +5,9 @@ g_web ALL=(root) NOPASSWD: \
     /usr/bin/systemctl start mysql.service, \
     /usr/bin/systemctl restart mysql.service, \
     /usr/bin/systemctl stop mysql.service, \
+    /usr/bin/systemctl start caddy.service, \
+    /usr/bin/systemctl restart caddy.service, \
+    /usr/bin/systemctl stop caddy.service, \
     /usr/bin/systemctl start g_nightly_restart.timer, \
     /usr/bin/systemctl stop g_nightly_restart.timer, \
     /usr/bin/systemctl start g_check_mc.timer, \
