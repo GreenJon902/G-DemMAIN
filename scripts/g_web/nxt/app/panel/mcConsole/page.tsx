@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Console | Panel" };
 export default function Page() {
     return (
         <PageSection title="Console">
-            <Console mccwss_port={C().MCCWSS_PORT} />
+            <Console mccwss_tail={C().MCCWSS_TAIL} />
             <TextLink
                 href="/panel/mcLogs/latest.log"
                 color={TEXT_LINK_GRAY}

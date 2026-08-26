@@ -34,10 +34,12 @@ A source file's name can carry flags, in this fixed order, before its real exten
 ```
 - `drop_ext` - the extension is stripped from the deployed filename (e.g. for the sudoers drop-in, which must have no extension on disk).
 - `template` - see [Templates](#templates) below.
-- `omit_marker` - no ownership marker is added to this file at all (see [Extra information](#extra-information)) - useful for a destination the marker's comment syntax can't safely be added to. A file synced this way is never recognised as "ours" by the orphan-cleanup scan, so it's never offered for automatic removal.
+- `omit_marker` - no ownership marker is added to this file at all (see [Extra information](#extra-information)) - useful for a destination the marker's comment syntax can't safely be added to. A file synced this way is never recognised as "ours" by the orphan-cleanup scan, so it's never offered for automatic removal. **Required** for a binary extension (see [Binary files](#binary-files)) - there's no way to embed a marker in one, so omitting `.omit_marker` there is reported as a problem instead of silently doing nothing.
 - `validate_sudoers` - runs `visudo -c` both before and after the copy, and prints the previous file's contents as a manual backup - currently only used for the sudoers drop-in (see [What's not synced](#whats-not-synced)).
 
-Only extensions the tool explicitly knows about are accepted: `json`, and the plain-text group `conf`, `cnf`, `txt`, `properties`, `service`, `timer`, `sudoers`. Anything else is reported as a problem and left alone.
+`template` and `validate_sudoers` both assume text content, so neither can be used on a binary extension - doing so is reported as a problem.
+
+Only extensions the tool explicitly knows about are accepted: `json`; the plain-text group `conf`, `cnf`, `txt`, `properties`, `service`, `timer`, `sudoers`, `toml`; and the binary group `png`. Anything else is reported as a problem and left alone.
 
 ### Templates
 A source file flagged `.template` gets `${<file>/<var>}` occurrences replaced with the environment variable `<var>` defined in `<file>` (this doesn't validate that the destination is actually supposed to have access to that variable). Templated files get a note appended underneath the marker when copied over.
@@ -56,9 +58,17 @@ Leave the marker as-is - do not edit or remove it. A destination file that alrea
 
 JSON comparison is native (not line-based) and supports partial matching: a source field whose value is the literal string `*wildcard*` matches any value the destination holds there - the key must still be present, just not any particular value.
 
+Plain-text files are compared line by line, and support whole-line wildcards. Ignoring the whitespace - and an optional comment (beginning `#`) - this should be the only text on the ling:
+- `*wildcard*` - This blocks the ability to overwrite the dest with the source.
+- `*wildcard-drop*` - This drops the line from the source before copying, so does not block.
+
 After every run, destination folders are scanned for marked files that weren't accounted for this run (i.e. no longer have a matching source) - you'll be prompted to remove or ignore each one.
 
 When changing a destination folder, it can help to leave the old destination folder tracked - so the script can still find and remove any old synced files there.
+
+### Binary files
+Binary files can be copied, however do not support markers (must have `omit_marker` set), templates, or sudo-validation (duh).
+Hence they will not be picked up as orphaned-files.
 
 ## `sync-environ.py`
 Some settings can't/shouldn't live in the git repo (secrets, per-host values), so they're stored as environment variable files instead. This script ensures every key defined in `environ/*` exists in the destination environment folder for the given mode (`prod`/`dev`), and flags extraneous or unset keys.

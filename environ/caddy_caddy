@@ -1,0 +1,3 @@
+DOMAIN_NAME !dev
+# The domain name Caddy serves the site on, and requests its TLS certificate for.
+# Never set in dev - Caddy isn't used there.

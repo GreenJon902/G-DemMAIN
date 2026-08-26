@@ -1,6 +1,6 @@
 import os
 
-from constants import SUPPORTED_EXTENSIONS
+from constants import BINARY_EXTENSIONS, SUPPORTED_EXTENSIONS
 from exceptions import UnsupportedExtension
 from filename_parsing import parse_filename
 
@@ -76,7 +76,7 @@ def build_scf(source_file, source_folder, destination_folder):
     dest_relpath = os.path.join(reldir, f"{base_name}.{extension}") if reldir else f"{base_name}.{extension}"
     dest_path = os.path.join(destination_folder, dest_relpath)
 
-    with open(source_file, "r") as f:
+    with open(source_file, "rb" if extension in BINARY_EXTENSIONS else "r") as f:
         contents = f.read()
 
     return StaticConfigFile(

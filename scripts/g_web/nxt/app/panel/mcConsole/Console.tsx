@@ -60,9 +60,11 @@ function tryParseJson(text: string): unknown {
     }
 }
 
-export default function Console({ mccwss_port }: { mccwss_port: number }) {
+export default function Console({ mccwss_tail }: { mccwss_tail: string }) {
     /**
-     * We need to pass mccwss_port from the server to the client-component as a prop as client can't access environ.
+     * We need to pass mccwss_tail from the server to the client-component as a prop as client can't access environ.
+     * In prod this is a path (e.g. "/ws/") reverse-proxied by Caddy alongside the site's own HTTPS; in dev (no
+     * Caddy in front) it's a literal ":<port>" connected to directly.
      */
 
     // Store the entries received from MCCWSS (both real console lines and locally/mcc-synthesized notices)
@@ -107,7 +109,7 @@ export default function Console({ mccwss_port }: { mccwss_port: number }) {
     }
 
     // Stable entry point for initiating a connection. Updated after every render so it always
-    // captures the latest mccwss_port and pushMeta without needing them in dependency arrays.
+    // captures the latest mccwss_tail and pushMeta without needing them in dependency arrays.
     // Resolves true when the socket opens, false on any failure (auth cancelled, error, etc.).
     const connectRef = useRef<() => Promise<boolean>>(null!);
     useEffect(() => {
@@ -124,7 +126,8 @@ export default function Console({ mccwss_port }: { mccwss_port: number }) {
                     if (!ok) { connectingRef.current = false; resolve(false); return; }
 
                     pushMeta("INFO", "Connecting...");
-                    const socket = new WebSocket(`ws://${window.location.hostname}:${mccwss_port}`);
+                    const scheme = window.location.protocol === "https:" ? "wss" : "ws";  // We can derive protocol (security) from how we're currently accessing the page
+                    const socket = new WebSocket(`${scheme}://${window.location.hostname}${mccwss_tail}`);
                     socketRef.current = socket;
 
                     // Append to the array in a way that makes react update
@@ -185,7 +188,7 @@ export default function Console({ mccwss_port }: { mccwss_port: number }) {
             socketRef.current?.close();
             socketRef.current = null;
         };
-    }, [mccwss_port]);
+    }, [mccwss_tail]);
 
     // Close the connection when sudo expires, but only if this connection actually needed it
     // (the reconnect will re-prompt); reconnect if sudo becomes active while we are disconnected

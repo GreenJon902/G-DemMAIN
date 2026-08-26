@@ -1,0 +1,21 @@
+{
+	email GreenJon902@gmail.com
+	# WHEN TESTING: Set the acme_ca to the staging site so you don't get rate limited!!
+	#acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+}
+
+{$DOMAIN_NAME} {
+	# Console websocket - matched first so it never falls through to the catch-all below
+	handle /ws/* {
+		reverse_proxy 127.0.0.1:3001
+	}
+
+	# Everything else -> Next.js
+	handle {
+		# Compress text-ish responses (HTML/CSS/JS/JSON) above 1KB. This ignores other types by default
+		encode zstd gzip {
+			minimum_length 1024
+		}
+		reverse_proxy 127.0.0.1:3000
+	}
+}

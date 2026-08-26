@@ -1,7 +1,8 @@
 import subprocess
 
 from colors import RESET, SUBPROC_COL
-from exceptions import Problem
+from constants import BINARY_EXTENSIONS
+from exceptions import ModifierUnsupportedForExtension, Problem
 
 
 def _sudoers_is_valid():
@@ -18,6 +19,13 @@ def _sudoers_is_valid():
 
 
 def _before(scf):
+    """ 
+    Checks sudoers file is currently valid.
+    This is un-supported for binary-files.
+    """
+    if scf.extension in BINARY_EXTENSIONS:
+        raise ModifierUnsupportedForExtension(scf.source_path, scf.extension, "validate_sudoers")
+
     if _sudoers_is_valid():
         print("Initial sudoers correctly formatted")
     else:
@@ -28,6 +36,14 @@ def _before(scf):
 
 
 def _after(scf):
+    """ 
+    Checks sudoers file is still valid.
+    This is un-supported for binary-files.
+    """
+    if scf.extension in BINARY_EXTENSIONS:  # Ig we don't need this check, but I'll add it anyway
+        raise ModifierUnsupportedForExtension(scf.source_path, scf.extension, "validate_sudoers")
+
+
     if _sudoers_is_valid():
         print("Sudoers is formatted correctly")
     else:
@@ -38,6 +54,13 @@ def _after(scf):
 
 
 def _test_prep(scf):
+    """ 
+    Checks sudoers file is currently valid.
+    This is un-supported for binary-files.
+    """
+    if scf.extension in BINARY_EXTENSIONS:
+        return ModifierUnsupportedForExtension(scf.source_path, scf.extension, "validate_sudoers")
+
     if _sudoers_is_valid():
         return None
     return Problem(scf.source_path, "Sudoers check failed (visudo -c) before any change was made")

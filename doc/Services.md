@@ -6,6 +6,7 @@ All services are managed by systemd. Unit files live in `config/prod/systemd-ser
 
 | Service | User/Group | After/Requires/BindsTo | Restart | WorkingDirectory | ExecStart | ExecStop |
 |---|---|---|---|---|---|---|
+| `caddy.service.d` | caddy | OnFailure=g_service_failed@Caddy-caddy.service | inherited | inherited | overridden to run against `config/prod/g_web/Caddyfile` instead of the package's default `/etc/caddy/Caddyfile` (see [Caddy.md](Caddy.md)) | inherited |
 | `g_check_mc.service` | g_check_mc/g_check_mc | none (OnFailure=g_service_failed@CheckMC-g_check_mc.service) | Restart=no, Type=oneshot | none | `/opt/infra/.venv/bin/python3 /opt/infra/scripts/g_check_mc/main.py` | none |
 | `g_check_mc.timer` | — | OnCalendar=`*-*-* 01:00:00` (daily 1am, after `g_nightly_restart`), Persistent=false | — | — | triggers `g_check_mc.service` | — |
 | `g_copy_mc_stats.service` | g_copy_mc_stats/g_copy_mc_stats | none (OnFailure=g_service_failed@CopyMCStats-g_copy_mc_stats.service) | Restart=no, Type=oneshot | none | `/opt/infra/.venv/bin/python3 /opt/infra/scripts/g_copy_mc_stats/main.py` | none |
@@ -28,6 +29,7 @@ Notes:
 - Security hardening (`ProtectSystem=full`, `PrivateTmp=true`) is active on `g_discord.service`, `g_web_mcc.service` and `g_web_nxt.service`. On `g_mc.service` both are present but commented out - there's an open TODO in that unit file about restoring them once FUSE compatibility is sorted out. `g_monitor.service` sets neither.
 - `OnFailure=` triggers the templated `g_service_failed@.service`, which fires a "crashed" status webhook (`scripts/webhooks.py`) - this is why individual services don't need their own failure-notification logic.
 - `mysql.service` itself is provided by the MariaDB package, not this repo; `mysql.service.d/override.conf` only layers in the webhook hooks and the `Before=g_mc.service` ordering (so `g_mc.service` is fully stopped before MariaDB stops, and started only after MariaDB is up).
+- `caddy.service` itself is provided by the Caddy package, not this repo; `caddy.service.d/override.conf` overrides `ExecStart`/`ExecReload` to point at `config/prod/g_web/Caddyfile` in this repo instead of the package's default, and layers in the webhook hooks and `After=` ordering on the two web services.
 
 # Using systemctl
 

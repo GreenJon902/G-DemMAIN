@@ -34,6 +34,13 @@ class DestinationMissingMarker(WriterCheckFailure):
         self.dest_path = dest_path
 
 
+class ModifierUnsupportedForExtension(WriterCheckFailure):
+    def __init__(self, source_path, extension, modifier):
+        super().__init__(source_path, f'"{modifier}" is not supported for extension "{extension}" - "{source_path}"')
+        self.extension = extension
+        self.modifier = modifier
+
+
 class Skipped(Exception):
     """
     Raised when a write is rejected by the user (or a pre-check declined). Carries only

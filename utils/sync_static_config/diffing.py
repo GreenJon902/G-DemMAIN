@@ -1,7 +1,14 @@
 import difflib
+import re
 
 from colors import DIFF_ADD_COL, DIFF_HUNK_COL, DIFF_REMOVE_COL, RESET
-from constants import JSON_WILDCARD_SENTINEL, JSON_WILDCARD_TOKEN
+from constants import (
+    JSON_WILDCARD_SENTINEL,
+    JSON_WILDCARD_TOKEN,
+    TEXT_COMMENT_PREFIX,
+    TEXT_WILDCARD_DROP_TOKEN,
+    TEXT_WILDCARD_TOKEN,
+)
 
 
 def _colorize_diff_line(line):
@@ -66,3 +73,43 @@ def json_matches(source_value, dest_value):
         return all(json_matches(sv, dv) for sv, dv in zip(source_value, dest_value))
 
     return source_value == dest_value
+
+
+_TEXT_WILDCARD_LINE_PATTERN = re.compile(
+    r"^\s*(" + re.escape(TEXT_WILDCARD_TOKEN) + "|" + re.escape(TEXT_WILDCARD_DROP_TOKEN) + r")"
+    r"\s*(" + re.escape(TEXT_COMMENT_PREFIX) + r".*)?$"
+)
+
+
+def _get_text_wildcard_token(line):
+    """
+    Checks if line is a valid wildcard line.
+    This means (ignoring whitespace), it starts with TEXT_WILDCARD_TOKEN/TEXT_WILDCARD_DROP_TOKEN and then either
+        - ends there
+        - immediately following is a "#", and we ignore folowing content.
+    """
+    match = _TEXT_WILDCARD_LINE_PATTERN.match(line)
+    return match.group(1) if match else None
+
+
+def text_matches(source_lines, dest_lines):
+    """
+    Line-by-line comparison of text file contents, honouring TEXT_WILDCARD_TOKEN/TEXT_WILDCARD_DROP_TOKEN lines.
+    Returns (is_same, contains_wildcard)
+        - contains_wildcard is only true when TEXT_WILDCARD_TOKEN is present - not the drop variant (as the drop variant doesn't block us from copying this file).
+    """
+    contains_wildcard = any(_get_text_wildcard_token(line) == TEXT_WILDCARD_TOKEN for line in source_lines)
+    if len(source_lines) != len(dest_lines):
+        return False, contains_wildcard
+    for source_line, dest_line in zip(source_lines, dest_lines):
+        if _get_text_wildcard_token(source_line) is not None:
+            continue
+        if source_line != dest_line:
+            return False, contains_wildcard
+    return True, contains_wildcard
+
+
+def drop_wildcard_lines(contents):
+    """ Removes every TEXT_WILDCARD_DROP_TOKEN line (see _get_text_wildcard_token) before it's written. """
+    lines = contents.splitlines(keepends=True)
+    return "".join(line for line in lines if _get_text_wildcard_token(line.rstrip("\r\n")) != TEXT_WILDCARD_DROP_TOKEN)

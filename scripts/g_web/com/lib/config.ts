@@ -53,6 +53,9 @@ const generate = () => {
     const gMonitor = readConfigFile("g_monitor/config.json");
 
     const MCCWSS_PORT = zJsonPort.parse(gWeb.mccwssPort);
+    // The bit the browser appends after the hostname to reach mcc - a path (prod, proxied by Caddy) or a literal ":<port>" (dev, connected to directly)
+    // We do it like this as we can't use a path in dev (we don't have this proxy layer), but in prod we don't want to open any more ports. The port - if given - should match MCCWSS_PORT
+    const MCCWSS_TAIL = zTNe.parse(gWeb.mccwssTail);
     const SESSION_PASSWORD = zTNe.min(32).parse(process.env.SESSION_PASSWORD);
 
     const LIST_FOLDER = resolvePath(zTNe.parse(gWeb.listFolder));  // This folder contains whitelist.json and ...
@@ -74,7 +77,7 @@ const generate = () => {
     const MONITOR_RETENTION_RULES = zod.array(zRetentionRule).parse(gMonitor.retention);
 
     return {
-        MCCWSS_PORT, SESSION_PASSWORD, LIST_FOLDER, MC_LOG_FOLDER, MONITOR_FOLDER, MINECRAFT_CACHE_FILE, MINECRAFT_MONITOR_CONSOLE_PORT, MINECRAFT_MONITOR_CONSOLE_HOST, MINECRAFT_MONITOR_CONSOLE_AUTH_KEY, G_WEB_DATABASE_USER, G_WEB_DATABASE_PASSWORD, G_WEB_DATABASE_HOST, G_WEB_DATABASE_PORT, TRACKED_UNITS, MONITOR_RETENTION_RULES
+        MCCWSS_PORT, MCCWSS_TAIL, SESSION_PASSWORD, LIST_FOLDER, MC_LOG_FOLDER, MONITOR_FOLDER, MINECRAFT_CACHE_FILE, MINECRAFT_MONITOR_CONSOLE_PORT, MINECRAFT_MONITOR_CONSOLE_HOST, MINECRAFT_MONITOR_CONSOLE_AUTH_KEY, G_WEB_DATABASE_USER, G_WEB_DATABASE_PASSWORD, G_WEB_DATABASE_HOST, G_WEB_DATABASE_PORT, TRACKED_UNITS, MONITOR_RETENTION_RULES
     };
 };
 

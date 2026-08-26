@@ -1,6 +1,9 @@
 import os
 import re
 
+from constants import BINARY_EXTENSIONS
+from exceptions import ModifierUnsupportedForExtension
+
 TEMPLATE_ITEM_PATTERN = r"\$\{([a-zA-Z_-]+)/([a-zA-Z_-]+)\}"
 ENVVAR_PATTERN = r"^{VAR_NAME}=(.*)$"
 ENVVAR_PATTERN_FLAGS = re.MULTILINE
@@ -14,9 +17,13 @@ def build_template_funcs(environ_dir, vprint):
     """
     Builds TEMPLATE_FUNCS bound to a specific --environ directory (and verbose-print
     function), since template substitution needs to know where to read env values from.
+    These are un-supported for binary-files.
     """
 
     def substitute(scf):
+        if scf.extension in BINARY_EXTENSIONS:
+            raise ModifierUnsupportedForExtension(scf.source_path, scf.extension, "template")
+
         def sub(match):
             file, var = match.groups()
             pattern = ENVVAR_PATTERN.replace("{VAR_NAME}", var)

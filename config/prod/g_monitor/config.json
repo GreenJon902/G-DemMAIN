@@ -5,7 +5,8 @@
     "system.slice/g_web_mcc.service",
     "system.slice/g_monitor.service",
     "system.slice/g_discord.service",
-    "system.slice/mariadb.service"
+    "system.slice/mariadb.service",
+    "system.slice/caddy.service"
   ],
   "retention": [[5, 20, "snapshot"], [360, 20, "aggregate"], [86400, null, "aggregate"]],
   "recordFolder": "/var/lib/g_monitor",

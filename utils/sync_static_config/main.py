@@ -6,11 +6,12 @@ from configparser import ConfigParser
 import modifiers
 from checkers import checker
 from colors import OLD_CONTENTS_COL, PATH_COL, RESET, WARNING, UNIMPORTANT
-from constants import MODIFIER_ORDER, MODIFIERS_TOUCHING_DEST_PATH
+from constants import BINARY_EXTENSIONS, MODIFIER_ORDER, MODIFIERS_TOUCHING_DEST_PATH, TEXT_EXTENSIONS
 from exceptions import AlreadyUpToDate, Problem, Skipped
 from modifiers import flags_to_modifiers
 from modifiers.handle_marker import MARKER_CHECKERS
 from static_config_file import build_scf
+from diffing import drop_wildcard_lines
 
 # Parse arguments
 parser = ArgumentParser(description="See doc/Config Sync.md")
@@ -124,11 +125,13 @@ def write(scf):
 
     # Write the file
     print(f"Writing {PATH_COL}{scf.dest_path}{RESET}")
+    if scf.extension in TEXT_EXTENSIONS:  
+        scf.contents = drop_wildcard_lines(scf.contents)  # TODO: Should dropping wildcards really happen here?
     if not args.dry_run:
         parent = os.path.dirname(scf.dest_path)
         if parent and not os.path.exists(parent):
             os.makedirs(parent)
-        with open(scf.dest_path, "w") as f:
+        with open(scf.dest_path, "wb" if scf.extension in BINARY_EXTENSIONS else "w") as f:
             f.write(scf.contents)
     written.append(scf.dest_path)
 

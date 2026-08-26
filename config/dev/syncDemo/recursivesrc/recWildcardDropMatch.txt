@@ -1,0 +1,3 @@
+Static line
+*wildcard-drop* # save timestamp, changes on its own
+Another static line
