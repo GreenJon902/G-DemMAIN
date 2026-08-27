@@ -2,7 +2,7 @@ import json
 import os
 
 from colors import PATH_COL, RESET
-from constants import BINARY_EXTENSIONS, TEXT_EXTENSIONS, TEXT_WILDCARD_TOKEN
+from constants import BINARY_EXTENSIONS, JSON_EXTENSIONS, TEXT_EXTENSIONS, TEXT_WILDCARD_TOKEN
 from diffing import json_matches, line_diff, substitute_wildcards, text_matches
 from exceptions import AlreadyUpToDate, Skipped, Problem
 
@@ -30,7 +30,7 @@ def compare(scf):
 
         # TODO: Implement JSON native overwrites
         # Currently the writer will overwrite the dest json file with the source file (which contains wildcards...), so we just say this is unsupported
-        if scf.extension == "json":
+        if scf.extension in JSON_EXTENSIONS:
             source_parsed, contains_wildcards = substitute_wildcards(json.loads(scf.contents))
             if contains_wildcards:
                 raise Problem(scf.source_path, f"Source JSON file contains wildcards and destination does not exist. This must be manually fixed - {scf.source_path}")
@@ -43,7 +43,7 @@ def compare(scf):
 
         return False, None
 
-    if scf.extension == "json":
+    if scf.extension in JSON_EXTENSIONS:
         source_parsed, contains_wildcards = substitute_wildcards(json.loads(scf.contents))
         dest_parsed = json.loads(dest_contents)
         is_same = json_matches(source_parsed, dest_parsed)

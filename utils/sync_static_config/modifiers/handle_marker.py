@@ -1,7 +1,7 @@
 import json
 import os
 
-from constants import BINARY_EXTENSIONS, HEADER_LINE, JSON_MARKER_KEY, TEXT_EXTENSIONS
+from constants import BINARY_EXTENSIONS, HEADER_LINE, JSON_EXTENSIONS, JSON_MARKER_KEY, TEXT_EXTENSIONS
 from exceptions import DestinationMissingMarker, MarkerExistsInSource, ModifierUnsupportedForExtension
 
 
@@ -19,7 +19,7 @@ def _json_has_marker(contents):
 
 # One marker-presence check per supported extension - shared between this modifier's own
 # destination check (below) and the post-write orphan scan in main.py.
-MARKER_CHECKERS = {"json": _json_has_marker}
+MARKER_CHECKERS = {ext: _json_has_marker for ext in JSON_EXTENSIONS}
 MARKER_CHECKERS.update({ext: _text_has_marker for ext in TEXT_EXTENSIONS})
 
 
@@ -42,7 +42,7 @@ def _add_marker_and_find_problem(scf):
 
     dest_contents = _read_dest_if_exists(scf.dest_path)
 
-    if scf.extension == "json":
+    if scf.extension in JSON_EXTENSIONS:
         parsed = json.loads(scf.contents)
         if JSON_MARKER_KEY in parsed:
             problem = MarkerExistsInSource(scf.source_path)

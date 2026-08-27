@@ -32,4 +32,7 @@ TEXT_EXTENSIONS = {"conf", "cnf", "txt", "properties", "service", "timer", "sudo
 # Extensions read/written as bytes and compared for exact equality
 BINARY_EXTENSIONS = {"png"}
 
-SUPPORTED_EXTENSIONS = {"json", *TEXT_EXTENSIONS, *BINARY_EXTENSIONS}
+# Extensions sharing the nested-JSON comparison/marker
+JSON_EXTENSIONS = {"json", "mcmeta"}
+
+SUPPORTED_EXTENSIONS = {*JSON_EXTENSIONS, *TEXT_EXTENSIONS, *BINARY_EXTENSIONS}
