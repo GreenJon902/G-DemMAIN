@@ -1,4 +1,7 @@
 {
+  "g_discord": {
+    "statusText": "😎 Still playing the g-dem smp?.."
+  },
   "leveling_module": {
     "userXpFilePath": "/var/lib/g_discord/userXp.json",
     "minAwardedXp": 15, "maxAwardedXp": 25,
