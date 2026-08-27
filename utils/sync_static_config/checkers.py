@@ -3,7 +3,7 @@ import os
 
 from colors import PATH_COL, RESET
 from constants import BINARY_EXTENSIONS, JSON_EXTENSIONS, TEXT_EXTENSIONS, TEXT_WILDCARD_TOKEN
-from diffing import json_matches, line_diff, substitute_wildcards, text_matches
+from diffing import json_matches, line_diff, substitute_wildcards, text_matches, drop_wildcard_lines
 from exceptions import AlreadyUpToDate, Skipped, Problem
 
 
@@ -21,8 +21,10 @@ def compare(scf):
     binary extensions.
     Returns (is_same, diff). If is_same is true then diff is always None. Otherwise, if diff is
     None then the destination file does not exist.
+    Diff uses source with TEXT_WILDCARD_DROP_TOKEN replaced.
     """
     is_binary = scf.extension in BINARY_EXTENSIONS
+    source_display_contents = scf.contents  # We show the diff after TEXT_WILDCARD_DROP_TOKEN has already happened
     dest_contents = _read_dest_if_exists(scf.dest_path, is_binary)
     if dest_contents is None:
 
@@ -60,6 +62,11 @@ def compare(scf):
         # A (non-dropped) wildcard line means we don't have a real value to write in its place, so an actual mismatch elsewhere can't be auto-fixed
         if not is_same and contains_wildcard:
             raise Problem(scf.source_path, f"Source text file contains a wildcard line and does not match destination. This must be manually fixed - {scf.source_path}")
+        
+        # We show what we'll overwrite with, which is the result of this function
+        print(dest_contents, "---", source_display_contents)
+        source_display_contents = drop_wildcard_lines(source_display_contents)
+        print(source_display_contents.splitlines())
 
     else:
         # Binary comparison, check for byte-exact equality
@@ -70,7 +77,8 @@ def compare(scf):
     # Files are different
     if is_binary:  # We can't (easily) show a (useful) diff for binary
         return False, [f"Binary files {scf.dest_path} ({len(dest_contents)} bytes) and {scf.source_path} ({len(scf.contents)} bytes) differ"]
-    return False, line_diff(dest_contents.splitlines(), scf.contents.splitlines(), scf.dest_path, scf.source_path)  # TODO: Proper JSON diff for json files
+    print(dest_contents, source_display_contents)
+    return False, line_diff(dest_contents.splitlines(), source_display_contents.splitlines(), scf.dest_path, scf.source_path)  # TODO: Proper JSON diff for json files
 
 
 def checker(scf):
