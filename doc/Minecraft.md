@@ -104,6 +104,8 @@ What I've done:
 Migration scripts need to be built for fabric essentials rather than blossom?
 Configure fabric essentials.
 
+Look into storing luckperms using YAML. Then we can track that from the repo.
+
 
 Afk updates:
     We need to update unplugged to support a max afk duration.

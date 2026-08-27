@@ -64,9 +64,7 @@ def compare(scf):
             raise Problem(scf.source_path, f"Source text file contains a wildcard line and does not match destination. This must be manually fixed - {scf.source_path}")
         
         # We show what we'll overwrite with, which is the result of this function
-        print(dest_contents, "---", source_display_contents)
         source_display_contents = drop_wildcard_lines(source_display_contents)
-        print(source_display_contents.splitlines())
 
     else:
         # Binary comparison, check for byte-exact equality
@@ -77,7 +75,7 @@ def compare(scf):
     # Files are different
     if is_binary:  # We can't (easily) show a (useful) diff for binary
         return False, [f"Binary files {scf.dest_path} ({len(dest_contents)} bytes) and {scf.source_path} ({len(scf.contents)} bytes) differ"]
-    print(dest_contents, source_display_contents)
+
     return False, line_diff(dest_contents.splitlines(), source_display_contents.splitlines(), scf.dest_path, scf.source_path)  # TODO: Proper JSON diff for json files
 
 
