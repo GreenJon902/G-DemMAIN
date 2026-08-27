@@ -1,12 +1,14 @@
 # Minecraft
 This file lists the current status of software and any notes about the actual minecraft server itself.  
 
-## Software
+## Software (& software-ish things)
 Minecraft Version: `26.2`.  
 Fabric Loader Version: `0.19.3`.  
 Download from https://fabricmc.net/use/server/.  
 
 ### Mods
+If a mod file's name does not contain the mod-version, then this should be manually added, otherwise leave it as it is.
+
 | Mod                                                                       | Installed Version         | Notes |
 |---------------------------------------------------------------------------|---------------------------|-------|
 | [g_mc_monitor](G-DemMAIN%20Monitor%20Mod.md)                              | *Current version in repo* | |
@@ -23,13 +25,9 @@ Download from https://fabricmc.net/use/server/.
 | [No Crop Trample](https://modrinth.com/mod/nocroptrample)                 | 1.5-26.2                  | |
 | [Blastproof](https://modrinth.com/mod/blastproof)                         | 0.2.0+mc26.2              | |
 | [Unplugged AFK](https://modrinth.com/mod/unplugged-afk)                   | v0.2.4-mc26.2             | |
-| [BlossomHomes](https://modrinth.com/mod/blossomhomes)                     | 2.2.13+26.1               | |
-| [BlossomTpa](https://modrinth.com/mod/blossomtpa)                         | 2.2.14+26.1               | | 
-| [BlossomWarps](https://modrinth.com/mod/blossomwarps)                     | 2.0.17+26.1               | |
-| [BlossomLib](https://modrinth.com/mod/blossomlib)                         | 2.6.0+26.2                | |
-| [Mods Command](https://modrinth.com/mod/mods-command)                     | mc26.2-1.1.16             | |
 | [adventure-platform-mod](https://modrinth.com/mod/adventure-platform-mod) | 7.1.1                     | |
 | [Styled Chat](https://modrinth.com/mod/styled-chat)                       | 2.13.0+26.2               | |
+| [Fabric Essentials](https://modrinth.com/mod/melius-essentials)           | 1.4.11+26.2               | |
 
 <details>
   <summary>Possible future mods</summary>
@@ -40,14 +38,15 @@ Download from https://fabricmc.net/use/server/.
   - G-Coin? - Or at least disable placing of G-Blocks? - https://github.com/GreenJon902/G-Coin.
 </details>
 
+### Datapacks
+All datapack folder/zip names - excluding the repo-tracked datapacks - should be clearly named and contain the minecraft version in them.
 
-TODO: 
-Configure unplugged properly
-
-Re-implement mods list ourselves - two levels - overview and detailed?
-
-What I've done:
-Created mods/luckperms owned by g_mc - g\_mc cannot write to mods folder.
+| Datapack source | (Number): Selection | Notes |
+|-----------------|---------------------|-------|
+| [Vanilla Tweaks (Datapacks)](https://vanillatweaks.net/picker/datapacks/) | `(14): armor statues, custom nether portals, dragon drops, durability ping, fast leaf decay, husks drop sand, more effective tools, more mob heads, multiplayer sleep, nether portal coords, player head drops, silence mobs, unlock all recipes, wandering trades` | This must be unzipped on install, each datapack is it's own archive. |
+| [Vanilla Tweaks (Crafting Tweaks)](https://vanillatweaks.net/picker/crafting-tweaks/) | `(12): unpackable ice, unpackable nether wart, unpackable wool, craftable bundles leather, powder to glass, blackstone cobblestone, dropper to dispenser, coal to black dye, charcoal to black dye, universal dyeing, back to blocks, rotten flesh to leather` | This can be left as is (but should be renamed with the mc version). |
+| [Element paintings](https://modrinth.com/datapack/elemental-painting]) | *N/A* | |
+| *Repo Tracked* | `(2): unpackable_quartz, warden_swift_sneak` | These are synced by the `sync_static_config` util. The marker should be ignord by minecraft. |
 
 
 ## Gamerules
@@ -68,6 +67,12 @@ To set a player nickname, the display-name should be used, as that will then be 
 
 All prefix/suffix weights should be set to 0.
 
+## Fabric Essentials Config
+
+I have some notes:
+- The `tier{2,3}` groups must have `fabric-essentials.command.sethome.limit.tier{2,3}` set respectively.
+- `teleportation.savedBackLocations` and `itemEdit.*` are set, yet the commands are blocked for normal users so this is not a problem.
+
 ## Config notes
 We omit the marker on certain files who's consumers do not support, or would remove, the marker.
 
@@ -81,3 +86,29 @@ To avoid storing large amounts of unchanged data for players who rarely play, a 
 
 It is expected that no extra files / folders are added to `/var/lib/g_mc/world/players/stats`, `/var/lib/g_mc-stats` or `/var/lib/g_mc-stats/*`.
 The folder structure is `/var/lib/g_mc-stats/<yyyy-mm-dd-hh-mm-ss>/<uuid>.json`.
+
+
+
+
+
+# TODO
+Check/configure unplugged afk suffix.
+
+Datapacks need checking.
+
+Find OG motd from backup.
+
+What I've done:
+    Created mods/luckperms owned by g_mc - g\_mc cannot write to mods folder.
+
+Migration scripts need to be built for fabric essentials rather than blossom?
+Configure fabric essentials.
+
+
+Afk updates:
+    We need to update unplugged to support a max afk duration.
+    g\_mc_monitor needs to differentiate between unplugged and normal log-ings (might need to set `broadcastMessages=false`) - "User joined the game", "User has gone un-plugged AFK".
+    Support for plugged-afk (people may want to have mc open on another screen so they can make sure their character is safe. We do not encourage this behavior though.):
+        - Kick if afk for over 20 minutes unless /afk is ran.  
+        - /afk adds [AFK] tag, and sends user a message saying "We strongly advise you use /unplug".
+    Support for being crouched while unplugged.
