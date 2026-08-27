@@ -17,6 +17,7 @@ JSON_WILDCARD_SENTINEL = {"thiscanbeanything": "ignoreme123123"}
 TEXT_WILDCARD_TOKEN = "*wildcard*"
 TEXT_WILDCARD_DROP_TOKEN = "*wildcard-drop*"
 TEXT_COMMENT_PREFIX = "#"
+TEXT_DROPPED_LINE = "# This line was dropped due to being TEXT_WILDCARD_DROP_TOKEN, this will probably get replaced"
 
 # Filename flag tokens, in the fixed order they must appear in a source filename:
 # <filename>[.drop_ext][.template][.omit_marker][.validate_sudoers].<extension>
@@ -32,4 +33,7 @@ TEXT_EXTENSIONS = {"conf", "cnf", "txt", "properties", "service", "timer", "sudo
 # Extensions read/written as bytes and compared for exact equality
 BINARY_EXTENSIONS = {"png"}
 
-SUPPORTED_EXTENSIONS = {"json", *TEXT_EXTENSIONS, *BINARY_EXTENSIONS}
+# Extensions sharing the nested-JSON comparison/marker
+JSON_EXTENSIONS = {"json", "mcmeta"}
+
+SUPPORTED_EXTENSIONS = {*JSON_EXTENSIONS, *TEXT_EXTENSIONS, *BINARY_EXTENSIONS}

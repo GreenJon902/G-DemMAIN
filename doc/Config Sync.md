@@ -60,7 +60,7 @@ JSON comparison is native (not line-based) and supports partial matching: a sour
 
 Plain-text files are compared line by line, and support whole-line wildcards. Ignoring the whitespace - and an optional comment (beginning `#`) - this should be the only text on the ling:
 - `*wildcard*` - This blocks the ability to overwrite the dest with the source.
-- `*wildcard-drop*` - This drops the line from the source before copying, so does not block.
+- `*wildcard-drop*` - This replaces the line with a dummy comment, so does not block. We replace rather than remove so that line-by-line comparison remains simple.
 
 After every run, destination folders are scanned for marked files that weren't accounted for this run (i.e. no longer have a matching source) - you'll be prompted to remove or ignore each one.
 

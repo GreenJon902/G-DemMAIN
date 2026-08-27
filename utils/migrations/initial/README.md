@@ -92,9 +92,23 @@ We map all trivial connections, and we map `world-name` to `world` with updated 
 Note that all uuid formats have dashes (e.g. `86f5d3d8-0d4b-4230-9852-77a40baf39bd`).
 
 ## Database
-- HisDoc - TODO: This. Looks like it should be straight forward.
+- HisDoc - See the following steps.
 - McMMO - We're dropping this so nothing needs to be done.
 - CoreProtect -> Ledger + Merge - I wanted to merge the various historic databases (from backups) so it would be complete, and then migrate it to Ledger's schema. This looks like it will not be feasable at the current time (size of databases).
+
+HisDoc migration:
+There are two scripts, a `database/hisdoc-validate.sql` and `database/hisdoc-migrate.sql`.
+These scripts were briefly checked, however they were written with the intention that the user does sufficient validation of migrated data.
+The schema is mostly the same, so the validation script more focuses on bugs in the old hisdoc version.
+
+First run the validate script.
+Respond to any errors.
+Repeat till all FATAL problems are fixed, and the only remaning WARNINGs can be ignored.
+Run the migrate script.
+
+This will create INSERT changelogs only for events.
+Running validate creates the PersonUserMap. You must fill this out for all Persons who have made a post or made a change (and so all need a user account in `g_web`).
+    - This is used only for event-author and changelog-author - migrated Persons will not be linked to an account by default.
 
 
 # Mee6 levels

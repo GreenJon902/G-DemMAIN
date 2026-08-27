@@ -44,10 +44,11 @@ Note that `/list` is registered as a **global** command (`tree.sync()` with no g
 - `environ/g_discord_bot`: `DISCORD_MEMBER_LOG_CHANNEL_ID` - the Discord channel `administration_module.log` posts member-join/leave/profile-update events to.
   Checked against a real channel on startup (`client.fetch_channel`) - the bot exits immediately if it doesn't resolve.
 - `g_discord/config.json`: settings for `leveling_module` -
-  - `userXpFilePath` - where per-user XP is persisted (`/var/lib/g_discord/userXp.json` in prod).
-  - `minAwardedXp`/`maxAwardedXp` - range of XP awarded per eligible message.
-  - `awardCooldown` - seconds a user must wait between XP awards.
-  - `levelXpCurve.a`/`levelXpCurve.b` - the `a*level^2 + b*level` curve mapping level to total XP required.
+  - `leveling_module.userXpFilePath` - where per-user XP is persisted (`/var/lib/g_discord/userXp.json` in prod).
+  - `leveling_module.minAwardedXp`/`leveling_module.maxAwardedXp` - range of XP awarded per eligible message.
+  - `leveling_module.awardCooldown` - seconds a user must wait between XP awards.
+  - `leveling_module.levelXpCurve.a`/`leveling_module.levelXpCurve.b` - the `a*level^2 + b*level` curve mapping level to total XP required.
+  - `g_discord.tatusText` - the status text of the bot. Can contain unicode-characters (so supports emojis characters, but not ":emojis_like\_this:").
 
 ## Running
 

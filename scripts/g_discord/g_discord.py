@@ -4,11 +4,12 @@
 import discord
 import asyncio
 
-from libs.config import readEnviron
+from libs.config import readConfig, readEnviron
+
+BOT_TOKEN = readEnviron("DISCORD_BOT_TOKEN", str)
+STATUS_TEXT = readConfig("g_discord/config.json", str, "g_discord", "statusText")
 
 # Create discord client instance
-BOT_TOKEN = readEnviron("DISCORD_BOT_TOKEN", str)
-
 intents = discord.Intents.default()
 intents.message_content = True  # Needed to read the text of messages sent in the chat channel
 intents.members = True  # Needed for member_join/raw_member_remove/user_update (administration_module.log)
@@ -27,11 +28,18 @@ import administration_module.log
 import leveling_module
 import mc_stats_graph_module
 
-# We need to sync the tree so commands work
 @subscribe_to("ready")
-async def on_ready(_):
+async def on_ready(client_):
+    # We need to sync the tree so commands work
     await tree.sync()
     print("Tree has synced!")
+
+    # Set status
+    await client_.change_presence(
+            activity=discord.CustomActivity(
+                name=STATUS_TEXT
+            )
+    )
 
 # Run the bot
 try:

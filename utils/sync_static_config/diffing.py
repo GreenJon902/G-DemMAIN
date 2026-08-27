@@ -8,6 +8,7 @@ from constants import (
     TEXT_COMMENT_PREFIX,
     TEXT_WILDCARD_DROP_TOKEN,
     TEXT_WILDCARD_TOKEN,
+    TEXT_DROPPED_LINE
 )
 
 
@@ -110,6 +111,10 @@ def text_matches(source_lines, dest_lines):
 
 
 def drop_wildcard_lines(contents):
-    """ Removes every TEXT_WILDCARD_DROP_TOKEN line (see _get_text_wildcard_token) before it's written. """
-    lines = contents.splitlines(keepends=True)
-    return "".join(line for line in lines if _get_text_wildcard_token(line.rstrip("\r\n")) != TEXT_WILDCARD_DROP_TOKEN)
+    """ Replaces every TEXT_WILDCARD_DROP_TOKEN line with TEXT_DROPPED_LINE (see _get_text_wildcard_token) before it's written. """
+    lines = contents.splitlines()
+    print(lines)
+    return "\n".join(
+        (line if _get_text_wildcard_token(line) != TEXT_WILDCARD_DROP_TOKEN else TEXT_DROPPED_LINE) 
+        for line in lines
+    )

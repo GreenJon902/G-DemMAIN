@@ -1,0 +1,52 @@
+{
+  "homes": {
+    "defaultLimit": 2,
+    "homesLimits": [
+      {
+        "permission": "tier2",
+        "limit": 3,
+        "stacks": false
+      },
+      {
+        "permission": "tier3",
+        "limit": 4,
+        "stacks": false
+      }
+    ]
+  },
+  "tpa": {
+    "expiry": 30
+  },
+  "commands": {
+    "allowPartialNames": false
+  },
+  "teleportation": {
+    "waitingPeriod": {
+      "period": 0,
+      "cancellation": {
+        "damage": false,
+        "maxMoveDistance": -1
+      }
+    },
+    "savedBackLocations": 32,
+    "saveBackCommandLocation": false
+  },
+  "itemEdit": {
+    "name": {
+      "maxLength": 50,
+      "experienceLevelCost": 1
+    },
+    "lore": {
+      "maxLength": 50,
+      "maxLines": 5,
+      "experienceLevelCost": 1
+    }
+  },
+  "ignoreCommandSpyCommands": [
+    "me",
+    "msg",
+    "teammsg",
+    "tell",
+    "w"
+  ]
+}
