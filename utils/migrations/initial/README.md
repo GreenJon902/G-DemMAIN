@@ -4,6 +4,7 @@ This folder holds the scripts & notes for the migration to G-DemMAIN:
  - Migration of the database from ApexMC to G-DemMAIN.
  - Migration of homes and warps from EssentialsX to Blossom{Homes,Warps}.
  - Migration of discord XP from Mee6 to g_discord.
+ - Migration of stats history to the new name format.
 
 Note that the results of this migration are only valid for the current state of the project (currently 2026/08/25).
 
@@ -93,6 +94,13 @@ The destination a folder containing `<player-uuid>/fabric-essentials.yml`.
 
 We map all trivial connections, and we map `world-name` to `dimension` with updated values.
 Note that all uuid formats have dashes (e.g. `86f5d3d8-0d4b-4230-9852-77a40baf39bd`).
+
+## Stats history
+Stats backups were previously stored as folders named `yyyy.mm.dd/<uuid>.json`, and will be stored as folders named `/var/lib/g_mc-stats/yyyy-mm-dd-hh-mm-ss/<uuid>.json`.
+
+Run `statsBackups/rename.py <source_folder> <dest_folder>`.
+
+This expects the source folder to contain folders whose names match `yyyy.mm.dd`. Each matching folder's contents are copied (not moved) to a same-named folder under the destination, renamed to `yyyy-mm-dd-00-00-00` (we assume taken at midnight as we don't have this data). Folders whose name doesn't match the expected format are skipped.
 
 ## Database
 - HisDoc - See the following steps.
