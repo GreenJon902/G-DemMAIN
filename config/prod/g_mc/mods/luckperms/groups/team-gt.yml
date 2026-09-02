@@ -1,0 +1,4 @@
+name: team-gt
+prefixes:
+- GT:
+    priority: 0

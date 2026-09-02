@@ -1,0 +1,4 @@
+name: tier1
+suffixes:
+- '[Tier 1]':
+    priority: 0

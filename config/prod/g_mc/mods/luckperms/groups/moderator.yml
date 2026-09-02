@@ -1,0 +1,4 @@
+name: moderator
+suffixes:
+- '[Mod]':
+    priority: 0

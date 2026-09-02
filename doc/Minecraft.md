@@ -59,7 +59,8 @@ The gamerules we overwrite from default are listed below.
 ## Name-formatting
 
 There are two tracks: `staff` and `tier`. These both have suffixes (for above-default levels), and both expect them to be shown.  
-Then teams are just miscellaneaous groups, and instead use prefixes. Again it is expected these are shown.  
+Then teams are just miscellaneaous groups (all prefixed `team-`), and instead use prefixes. Again it is expected these are shown.  
+These should contain square brackets if required.  
 
 No other prefixes or suffixes should be set, as it will mess up the above 3. If another type should be added, the luckperms config will need to be modified.  
 
@@ -101,10 +102,11 @@ Find OG motd from backup.
 What I've done:
     Created mods/luckperms owned by g_mc - g\_mc cannot write to mods folder.
 
+Auto `chown` after sync for synced files? 
+
 Configure fabric essentials.
 
-Look into storing luckperms using YAML. Then we can track that from the repo.
-
+Fix luckperms config.
 
 Afk updates:
     We need to update unplugged to support a max afk duration.

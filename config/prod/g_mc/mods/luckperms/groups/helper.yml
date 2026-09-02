@@ -1,0 +1,4 @@
+name: helper
+suffixes:
+- '[Helper]':
+    priority: 0

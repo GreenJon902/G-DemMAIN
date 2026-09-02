@@ -1,0 +1,7 @@
+name: owner
+permissions:
+- fabric-essentials.command.setwarp
+- fabric-essentials.command.tpall
+suffixes:
+- '[Owner]':
+    priority: 0
