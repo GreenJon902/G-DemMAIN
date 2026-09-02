@@ -8,9 +8,8 @@ This folder holds the scripts & notes for the migration to G-DemMAIN:
 Note that the results of this migration are only valid for the current state of the project (currently 2026/08/25).
 
 ## Homes and warps
-Homes and warps were previously managed by EssentialsX - `<server>/plugins/Essentials/{userdata,warps}/` - and will be managed by BlossomHomes and BlossomWarps - `<server>/world/data/{BlossomWarps,BlossomHomes}.json`.
+Homes and warps were previously managed by EssentialsX - `<server>/plugins/Essentials/{userdata,warps}/` - and will be managed by fabric-essentials - `<server>/fabric-essentials.json` and `<server>/world/players/mod_data/<uuid-dashed>/fabric-essentials.json` for warps and homes respectively.
 
-Note: This sets `maxHomes=2` for all users. 
 
 ### Warps
 Run `homesAndWarps/warps.py <source_folder> <dest_file>`.
@@ -30,22 +29,26 @@ lastowner: <player-uuid>
 
 The destination is a single json file of the following format.
 ```
-[
-  {
-    "name": <name>,
-    "owner": <player-uuid>,
-    "x": <float>,
-    "y": <float>,
-    "z": <float>,
-    "yaw": <float>,
-    "pitch": <float>,
-    "world": <world-name>,  # "minecraft:overworld", "minecraft:the_nether", "minecraft:the_end"
-    "global": <boolean>  # If true then aliases `/warp <warp-name> with /<warp-name>`. We default to false.
-  }, ...
-]
+{
+  "warps": {
+    <name>: {
+      "location": {
+        "pos": {
+          "x": <float>,
+          "y": <float>,
+          "z": <float>,
+        },
+        "yaw": <float>,
+        "pitch": <float>,
+        "dimension": <world-name>,  # "minecraft:overworld", "minecraft:the_nether", "minecraft:the_end"
+      }
+    },
+    ...
+  }
+}
 ```
 
-We map all trivial connections, we map `lastowner` to `owner`, and we map `world-name` to `world` with updated values.
+We map all trivial connections, and we map `world-name` to `dimension` with updated values.
 Note that all uuid formats have dashes (e.g. `86f5d3d8-0d4b-4230-9852-77a40baf39bd`).
 
 
@@ -67,28 +70,28 @@ homes:
     ...
 ```
 
-The destination is a single json file of the following format.
+The destination a folder containing `<player-uuid>/fabric-essentials.yml`.
 ```
-[
-  {
-    "uuid": <player-uuid>,
-    "homes": [
-      {
-        "name": <home-name>,
-        "world": <world-name>,  # "minecraft:overworld", "minecraft:the_nether", "minecraft:the_end"
-        "x": <float>,
-        "y": <float>,
-        "z": <float>,
+{
+  "homes": {
+    <name>: {
+      "location": {
+        "pos": {
+          "x": <float>,
+          "y": <float>,
+          "z": <float>,
+        },
         "yaw": <float>,
-        "pitch": <float>
-      }, ...
-    ],
-    "maxHomes": <int>  # We default to 2
-  }, ...
-]
+        "pitch": <float>,
+        "dimension": <world-name>,  # "minecraft:overworld", "minecraft:the_nether", "minecraft:the_end"
+      }
+    },
+    ...
+  }
+}
 ```
 
-We map all trivial connections, and we map `world-name` to `world` with updated values.
+We map all trivial connections, and we map `world-name` to `dimension` with updated values.
 Note that all uuid formats have dashes (e.g. `86f5d3d8-0d4b-4230-9852-77a40baf39bd`).
 
 ## Database

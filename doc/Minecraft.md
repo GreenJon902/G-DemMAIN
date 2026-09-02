@@ -101,7 +101,6 @@ Find OG motd from backup.
 What I've done:
     Created mods/luckperms owned by g_mc - g\_mc cannot write to mods folder.
 
-Migration scripts need to be built for fabric essentials rather than blossom?
 Configure fabric essentials.
 
 Look into storing luckperms using YAML. Then we can track that from the repo.
