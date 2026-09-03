@@ -1,0 +1,16 @@
+name: admin
+permissions:
+- fabric-essentials.command.itemedit
+- fabric-essentials.command.itemedit.lore
+- fabric-essentials.command.itemedit.name:
+    value: false
+- fabric-essentials.command.tpall
+- invview.command
+- luckperms
+- minecraft.command.deop
+- minecraft.command.op
+parents:
+- moderator
+suffixes:
+- '[Admin]':
+    priority: 0

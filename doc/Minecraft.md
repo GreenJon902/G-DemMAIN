@@ -28,6 +28,8 @@ If a mod file's name does not contain the mod-version, then this should be manua
 | [adventure-platform-mod](https://modrinth.com/mod/adventure-platform-mod) | 7.1.1                     | |
 | [Styled Chat](https://modrinth.com/mod/styled-chat)                       | 2.13.0+26.2               | |
 | [Fabric Essentials](https://modrinth.com/mod/melius-essentials)           | 1.4.11+26.2               | |
+| [Vanilla Permissions](https://modrinth.com/mod/vanilla-permissions)       | 0.3.6+26.1.2              | |
+| [Inv View](https://modrinth.com/mod/invview)                              | 1.4.21-26.2+              | |
 
 <details>
   <summary>Possible future mods</summary>
@@ -43,7 +45,7 @@ All datapack folder/zip names - excluding the repo-tracked datapacks - should be
 
 | Datapack source | (Number): Selection | Notes |
 |-----------------|---------------------|-------|
-| [Vanilla Tweaks (Datapacks)](https://vanillatweaks.net/picker/datapacks/) | `(14): armor statues, custom nether portals, dragon drops, durability ping, fast leaf decay, husks drop sand, more effective tools, more mob heads, multiplayer sleep, nether portal coords, player head drops, silence mobs, unlock all recipes, wandering trades` | This must be unzipped on install, each datapack is it's own archive. |
+| [Vanilla Tweaks (Datapacks)](https://vanillatweaks.net/picker/datapacks/) | `(14): armor statues, custom nether portals, durability ping, fast leaf decay, husks drop sand, more effective tools, more mob heads, multiplayer sleep, nether portal coords, player head drops, silence mobs, unlock all recipes, wandering trades` | This must be unzipped on install, each datapack is it's own archive. |
 | [Vanilla Tweaks (Crafting Tweaks)](https://vanillatweaks.net/picker/crafting-tweaks/) | `(12): unpackable ice, unpackable nether wart, unpackable wool, craftable bundles leather, powder to glass, blackstone cobblestone, dropper to dispenser, coal to black dye, charcoal to black dye, universal dyeing, back to blocks, rotten flesh to leather` | This can be left as is (but should be renamed with the mc version). |
 | [Element paintings](https://modrinth.com/datapack/elemental-painting]) | *N/A* | |
 | *Repo Tracked* | `(2): unpackable_quartz, warden_swift_sneak` | These are synced by the `sync_static_config` util. The marker should be ignord by minecraft. |
@@ -93,20 +95,10 @@ The folder structure is `/var/lib/g_mc-stats/<yyyy-mm-dd-hh-mm-ss>/<uuid>.json`.
 
 
 # TODO
-Check/configure unplugged afk suffix.
-
-Datapacks need checking.
-
-Find OG motd from backup.
-
 What I've done:
     Created mods/luckperms owned by g_mc - g\_mc cannot write to mods folder.
 
-Auto `chown` after sync for synced files? 
-
-Configure fabric essentials.
-
-Fix luckperms config.
+    Auto `chown` after sync for synced files? 
 
 Afk updates:
     We need to update unplugged to support a max afk duration.
@@ -115,3 +107,4 @@ Afk updates:
         - Kick if afk for over 20 minutes unless /afk is ran.  
         - /afk adds [AFK] tag, and sends user a message saying "We strongly advise you use /unplug".
     Support for being crouched while unplugged.
+    It should say in tab what is going on.

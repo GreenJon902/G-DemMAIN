@@ -1,6 +1,5 @@
 name: tier
 groups:
-- default
 - tier1
 - tier2
 - tier3

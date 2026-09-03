@@ -1,4 +1,6 @@
 name: moderator
+parents:
+- helper
 suffixes:
 - '[Mod]':
     priority: 0

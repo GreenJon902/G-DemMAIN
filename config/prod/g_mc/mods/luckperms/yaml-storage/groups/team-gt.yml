@@ -1,4 +1,6 @@
 name: team-gt
+parents:
+- default
 prefixes:
 - GT:
     priority: 0
