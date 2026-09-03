@@ -1,0 +1,7 @@
+name: admin
+permissions:
+- fabric-essentials.command.tpall
+- luckperms
+suffixes:
+- '[Admin]':
+    priority: 0

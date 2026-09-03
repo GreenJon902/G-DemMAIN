@@ -5,8 +5,6 @@ See README.md in parent folder.
 import sys, os, yaml, json
 from shared import WORLD_MAP
 
-GLOBAL_DEFAULT = False  # This default value provides the same behavior as before
-
 # Get source and destination paths
 if len(sys.argv) != 3:
     raise Exception("Invalid number of arguements")
@@ -18,7 +16,7 @@ if os.path.exists(dest_path):
     raise Exception("Dest path already exists")
 
 # Convert data
-output = []  # Output is a single file
+output = {}  # Output is a single file
 for file in os.listdir(source_path):
     # Validate name
     if not file.endswith(".yml"):
@@ -41,15 +39,14 @@ for file in os.listdir(source_path):
         continue
     
     # Add to output
-    output.append({
-        "name": contents["name"],
-        "owner": contents["lastowner"],
-        "x": contents["x"], "y": contents["y"], "z": contents["z"],
-        "yaw": contents["yaw"], "pitch": contents["pitch"],
-        "global": GLOBAL_DEFAULT,
-        "world": WORLD_MAP[contents["world-name"]]
-    })
+    output[contents["name"]] = {
+        "location": {
+            "pos": {"x": contents["x"], "y": contents["y"], "z": contents["z"]},
+            "yaw": contents["yaw"], "pitch": contents["pitch"],
+            "dimension": WORLD_MAP[contents["world-name"]]
+        }
+    }
 
 # Save data
 print(f"Finished migrating {len(output)} warps")
-json.dump(output, open(dest_path, "w"), indent=4)
+json.dump({"warps": output}, open(dest_path, "w"), indent=4)
