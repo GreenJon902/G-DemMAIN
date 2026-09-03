@@ -9,6 +9,8 @@ permissions:
 - fabric-essentials.command.smithing
 - fabric-essentials.command.stonecutter
 - fabric-essentials.command.workbench
+parents:
+- tier2
 suffixes:
 - '[Tier 3]':
     priority: 0

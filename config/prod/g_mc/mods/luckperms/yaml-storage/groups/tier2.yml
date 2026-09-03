@@ -1,6 +1,8 @@
 name: tier2
 permissions:
 - fabric-essentials.command.sethome.limit.tier2
+parents:
+- tier1
 suffixes:
 - '[Tier 2]':
     priority: 0

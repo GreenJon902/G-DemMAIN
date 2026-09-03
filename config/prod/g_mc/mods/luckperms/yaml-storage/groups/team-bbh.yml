@@ -1,4 +1,6 @@
 name: team-bbh
+parents:
+- default
 prefixes:
 - BBH:
     priority: 0

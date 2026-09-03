@@ -30,7 +30,7 @@
     "displayReturnFeedback": true,
     "defaultUnpluggedReason": "",
     "unpluggedPlayerPrefix": "§e",
-    "unpluggedPlayerSuffix": "§r",
+    "unpluggedPlayerSuffix": " [AFK]§r",
     "unpluggedKickMessage": "§6Your player will be AFK§r",
     "unpluggedExpiredReason": "§eTimeout expired§r",
     "unpluggedStarted": " §ehas been unplugged§r",

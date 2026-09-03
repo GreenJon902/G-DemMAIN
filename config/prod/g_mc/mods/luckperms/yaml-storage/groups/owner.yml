@@ -1,0 +1,6 @@
+name: owner
+parents:
+- admin
+suffixes:
+- '[Owner]':
+    priority: 0

@@ -39,7 +39,7 @@
     "lore": {
       "maxLength": 50,
       "maxLines": 5,
-      "experienceLevelCost": 1
+      "experienceLevelCost": 0
     }
   },
   "ignoreCommandSpyCommands": [

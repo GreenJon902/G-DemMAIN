@@ -1,4 +1,6 @@
 name: helper
+parents:
+- default
 suffixes:
 - '[Helper]':
     priority: 0
