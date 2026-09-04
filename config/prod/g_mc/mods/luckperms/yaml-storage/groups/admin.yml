@@ -6,9 +6,19 @@ permissions:
     value: false
 - fabric-essentials.command.tpall
 - invview.command
+- ledger
+- ledger.commands.rollback:
+    value: false
 - luckperms
+- minecraft.command.ban
+- minecraft.command.banlist
+- minecraft.command.datapack
 - minecraft.command.deop
 - minecraft.command.op
+- minecraft.command.pardon
+- minecraft.command.scoreboard
+- minecraft.command.whitelist
+- styledchat
 parents:
 - moderator
 suffixes:

@@ -2,5 +2,5 @@ name: tier1
 parents:
 - default
 suffixes:
-- '[Tier 1]':
+- <gold>[Tier <bold>1</>]</>:
     priority: 0

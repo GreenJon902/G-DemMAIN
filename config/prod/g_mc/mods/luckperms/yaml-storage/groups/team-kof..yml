@@ -1,6 +1,6 @@
-name: team-bbh
+name: team-kof
 parents:
 - default
 prefixes:
-- <#FF0000>BBH</>:
+- <pink>KoF</>:
     priority: 0

@@ -45,7 +45,7 @@ All datapack folder/zip names - excluding the repo-tracked datapacks - should be
 
 | Datapack source | (Number): Selection | Notes |
 |-----------------|---------------------|-------|
-| [Vanilla Tweaks (Datapacks)](https://vanillatweaks.net/picker/datapacks/) | `(14): armor statues, custom nether portals, durability ping, fast leaf decay, husks drop sand, more effective tools, more mob heads, multiplayer sleep, nether portal coords, player head drops, silence mobs, unlock all recipes, wandering trades` | This must be unzipped on install, each datapack is it's own archive. |
+| [Vanilla Tweaks (Datapacks)](https://vanillatweaks.net/picker/datapacks/) | `(15): anti enderman grief, armor statues, custom nether portals, durability ping, fast leaf decay, husks drop sand, more effective tools, more mob heads, multiplayer sleep, nether portal coords, player head drops, silence mobs, unlock all recipes, wandering trades` | This must be unzipped on install, each datapack is it's own archive. |
 | [Vanilla Tweaks (Crafting Tweaks)](https://vanillatweaks.net/picker/crafting-tweaks/) | `(12): unpackable ice, unpackable nether wart, unpackable wool, craftable bundles leather, powder to glass, blackstone cobblestone, dropper to dispenser, coal to black dye, charcoal to black dye, universal dyeing, back to blocks, rotten flesh to leather` | This can be left as is (but should be renamed with the mc version). |
 | [Element paintings](https://modrinth.com/datapack/elemental-painting]) | *N/A* | |
 | *Repo Tracked* | `(2): unpackable_quartz, warden_swift_sneak` | These are synced by the `sync_static_config` util. The marker should be ignord by minecraft. |
@@ -98,7 +98,8 @@ The folder structure is `/var/lib/g_mc-stats/<yyyy-mm-dd-hh-mm-ss>/<uuid>.json`.
 What I've done:
     Created mods/luckperms owned by g_mc - g\_mc cannot write to mods folder.
 
-    Auto `chown` after sync for synced files? 
+    Auto `chown` after sync for synced files? `sudo chown -R g_mc /var/lib/g_mc/config /var/lib/g_mc/mods/luckperms/`
+        - What I did in prod: g_mc owns everything except from mods folder contents (however does own mods/luckperms) and doesn't own main jar either
 
 Afk updates:
     We need to update unplugged to support a max afk duration.

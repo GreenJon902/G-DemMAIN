@@ -2,5 +2,5 @@ name: moderator
 parents:
 - helper
 suffixes:
-- '[Mod]':
+- <orange>[Mod]</>:
     priority: 0

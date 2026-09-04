@@ -78,5 +78,18 @@
     },
     "custom_message_types": {}
   },
-  "styles": []
+  "styles": [
+    {
+      "require": {
+        "type": "permission",
+        "permission": "minecraft:group.colourless"
+      },
+      "message_formats": {
+        "chat": "<clear><%luckperms:prefix%%player:displayname%%luckperms:suffix%> ${message}</clear>"
+      },
+      "formatting": {},
+      "emoticons": {},
+      "custom_message_types": {}
+    }
+  ]
 }
