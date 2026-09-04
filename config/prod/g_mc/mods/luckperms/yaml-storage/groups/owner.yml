@@ -2,5 +2,5 @@ name: owner
 parents:
 - admin
 suffixes:
-- '[Owner]':
+- <dark_red>[<bold>Owner</>]</>:
     priority: 0

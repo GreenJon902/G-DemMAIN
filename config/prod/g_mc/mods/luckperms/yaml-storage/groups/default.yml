@@ -1,3 +1,5 @@
 name: default
 permissions:
 - fabric-essentials.command.mods
+- g_mc_monitor.heap
+- g_mc_monitor.tps

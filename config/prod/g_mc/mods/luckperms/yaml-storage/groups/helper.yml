@@ -1,6 +1,7 @@
 name: helper
 parents:
 - default
+- ledger.commands.inspect
 suffixes:
 - '[Helper]':
     priority: 0

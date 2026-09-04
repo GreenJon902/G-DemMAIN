@@ -12,5 +12,5 @@ permissions:
 parents:
 - tier2
 suffixes:
-- '[Tier 3]':
+- <gold>[Tier <bold>3</>]</>':
     priority: 0

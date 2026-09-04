@@ -2,5 +2,5 @@ name: team-gt
 parents:
 - default
 prefixes:
-- GT:
+- <bold><underline><#00FF00>GT</></></>:
     priority: 0

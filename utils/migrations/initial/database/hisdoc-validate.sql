@@ -458,7 +458,7 @@ BEGIN
 
     INSERT INTO hisdoc_validation_report (severity, check_code, source_table, row_key, detail)
     SELECT 'FATAL', 'ENCODING_DOUBLE_ENCODED', d.tbl, CAST(d.id AS CHAR),
-           CONCAT(d.col, ' looks double-encoded. Currently: ', LEFT(d.shown, 200),
+           CONCAT(d.col, ' looks double-encoded. Currently: ', LEFT(CONVERT(d.shown USING utf8mb4), 200),
                   ' -- should probably be: ',
                   LEFT(CONVERT(CAST(CONVERT(d.raw USING latin1) AS BINARY) USING utf8mb4), 200))
       FROM (
