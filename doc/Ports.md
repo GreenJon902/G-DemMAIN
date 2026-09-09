@@ -17,3 +17,5 @@ Port blocking is managed by `ufw`.
 | 25586 | `g_mc_monitor` chat socket, loopback-only, same as above | Yes |
 | 3306 | MySQL/MariaDB, loopback-bound (`bind-address` in `config/prod/mariadb/50-server-custom.cnf`) | Yes |
 | _All others_ | | Yes |
+TODO: domain.name/dynmaps currently sends to 5391 via caddy. 5391 is blocked by the firewall. 
+

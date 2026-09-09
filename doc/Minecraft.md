@@ -30,6 +30,9 @@ If a mod file's name does not contain the mod-version, then this should be manua
 | [Fabric Essentials](https://modrinth.com/mod/melius-essentials)           | 1.4.11+26.2               | |
 | [Vanilla Permissions](https://modrinth.com/mod/vanilla-permissions)       | 0.3.6+26.1.2              | |
 | [Inv View](https://modrinth.com/mod/invview)                              | 1.4.21-26.2+              | |
+| [Dynmaps](https://github.com/webbukkit/dynmap)                            | Build of https://github.com/reusteur73/dynmap/commit/c043d6b48bd26c2568a406809030a2f23ba612dc | The current version is not supported, so we build from a fork. |
+
+TODO: We're currently sending website.dom/dynmaps to port 5391 as a temp solution.
 
 <details>
   <summary>Possible future mods</summary>
@@ -100,6 +103,8 @@ What I've done:
 
     Auto `chown` after sync for synced files? `sudo chown -R g_mc /var/lib/g_mc/config /var/lib/g_mc/mods/luckperms/`
         - What I did in prod: g_mc owns everything except from mods folder contents (however does own mods/luckperms) and doesn't own main jar either
+
+Move dynmaps webserver into nextjs webserver
 
 Afk updates:
     We need to update unplugged to support a max afk duration.
