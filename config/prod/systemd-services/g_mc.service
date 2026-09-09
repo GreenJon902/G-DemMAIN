@@ -21,7 +21,7 @@ OnFailure=g_service_failed@Minecraft-g_mc.service
 User=g_mc
 Group=g_mc
 WorkingDirectory=/var/lib/g_mc
-ExecStart=/usr/bin/java -Xms1G -Xmx3G \
+ExecStart=/usr/bin/java -Xms1G -Xmx4G \
 -XX:+UseG1GC \
 -XX:+ParallelRefProcEnabled \
 -XX:MaxGCPauseMillis=200 \
