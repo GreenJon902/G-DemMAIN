@@ -1,3 +1,6 @@
+TODO: We're currently sending website.dom/dynmaps to port 5391 as a temp solution.
+
+
 # Caddy
 
 Caddy is a reverse proxy in front of the website. 
