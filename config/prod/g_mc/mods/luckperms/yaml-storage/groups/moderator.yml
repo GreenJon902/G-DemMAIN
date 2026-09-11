@@ -1,6 +1,0 @@
-name: moderator
-parents:
-- helper
-suffixes:
-- <orange>[Mod]</>:
-    priority: 0

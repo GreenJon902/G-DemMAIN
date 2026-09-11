@@ -20,7 +20,5 @@ permissions:
 - minecraft.command.whitelist
 - styledchat
 parents:
-- moderator
-suffixes:
-- '[Admin]':
-    priority: 0
+- default
+

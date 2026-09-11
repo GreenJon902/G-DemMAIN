@@ -1,18 +1,7 @@
 {
   "homes": {
-    "defaultLimit": 2,
-    "homesLimits": [
-      {
-        "permission": "tier2",
-        "limit": 3,
-        "stacks": false
-      },
-      {
-        "permission": "tier3",
-        "limit": 4,
-        "stacks": false
-      }
-    ]
+    "defaultLimit": 4,
+    "homesLimits": []
   },
   "tpa": {
     "expiry": 30

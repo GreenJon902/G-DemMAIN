@@ -1,0 +1,56 @@
+%YAML 1.1
+---
+worlds:
+-   name: world
+    title: World
+    enabled: true
+    protected: false
+    showborder: true
+    sendposition: true
+    sendhealth: true
+    extrazoomout: 2
+    visibilitylimits:
+    -   x0: -14000
+        z0: -14000
+        x1: 14000
+        z1: 14000
+    hiddenlimits: [
+        ]
+    hidestyle: air
+    maps:
+    -   class: org.dynmap.hdmap.HDMap
+        name: flat
+        title: Flat
+        prefix: flat
+        perspective: iso_S_90_lowres
+        shader: stdtexture
+        lighting: default
+        image-format: default
+        mapzoomin: 1
+        mapzoomout: 5
+        boostzoom: 0
+        tilescale: 0
+        append_to_world: ''
+        protected: false
+        readonly: false
+    -   class: org.dynmap.hdmap.HDMap
+        name: sw
+        title: SW
+        prefix: sw
+        perspective: iso_SW_30_lowres
+        shader: stdtexture
+        lighting: default
+        image-format: default
+        mapzoomin: 1
+        mapzoomout: 5
+        boostzoom: 0
+        tilescale: 0
+        append_to_world: ''
+        protected: false
+        readonly: false
+-   name: DIM1
+    enabled: false
+    maps: []
+-   name: DIM-1
+    enabled: false
+    maps: []

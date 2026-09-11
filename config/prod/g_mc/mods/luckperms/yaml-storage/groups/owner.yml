@@ -1,6 +1,0 @@
-name: owner
-parents:
-- admin
-suffixes:
-- <dark_red>[<bold>Owner</>]</>:
-    priority: 0

@@ -1,6 +1,0 @@
-name: tier1
-parents:
-- default
-suffixes:
-- <gold>[Tier <bold>1</>]</>:
-    priority: 0

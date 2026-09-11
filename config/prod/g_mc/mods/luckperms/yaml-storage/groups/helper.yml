@@ -1,8 +1,0 @@
-name: helper
-permissions:
-- ledger.commands.inspect
-parents:
-- default
-suffixes:
-- '[Helper]':
-    priority: 0
