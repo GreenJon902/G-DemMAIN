@@ -1,5 +1,13 @@
 import Image from "next/image";
+import type { Metadata } from "next";
 import TextLink, { TEXT_LINK_WHITE } from "./ui/TextLink";
+
+export const metadata: Metadata = {
+    robots: {
+        // Indexing is opt-in (see root layout)
+        index: true
+    }
+};
 
 export default function Page() {
     // TODO: This page is kinda bad, it could be fixed

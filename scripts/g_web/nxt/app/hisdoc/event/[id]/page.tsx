@@ -21,13 +21,19 @@ import { colorToHex } from "../../lib/color";
 import { deleteEvent } from "../../actions";
 
 
-/** Sets the page title to the event's name. */
+/** Sets the page title to the event's name. Adds some OpenGraph data - used for preview where the link is sent. */
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
     const { id: idStr } = await params;
     const id = parseInt(idStr, 10);
     if (isNaN(id)) return {};
-    const event = await prisma().hd_event.findUnique({ where: { id }, select: { name: true } });
-    return { title: event?.name ?? "Event" };
+    const event = await prisma().hd_event.findUnique({ where: { id }, select: { name: true, description: true } });
+    return {
+        title: event?.name ?? "Event", 
+        openGraph: {
+            title: event?.name,
+            description: event?.description.replaceAll(/\s+/g, " ")  // Fix whitespace
+        }
+    };
 }
 
 /**
