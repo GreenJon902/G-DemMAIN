@@ -55,9 +55,9 @@ class ChatSocket:
     def connected(self):
         return self._writer is not None
 
-    async def send_to_socket(self, name, text):
+    async def send_to_socket(self, name, text, message_type="normal"):
         """Sends a chat message from Discord to Minecraft. Only call this while connected."""
-        outgoing = {"type": "message", "source": "Discord", "username": name, "message": text}
+        outgoing = {"type": "message", "source": "Discord", "username": name, "message": text, "message_type": message_type}
         print("Sending:", outgoing)
         self._writer.write((json.dumps(outgoing) + "\n").encode())
         await self._writer.drain()
@@ -156,18 +156,21 @@ async def on_message(client: discord.Client, message: discord.Message):
     """Relays messages sent in the configured Discord chat channel to Minecraft chat."""
     # webhook_id is set for messages posted by the chat-bridge webhook itself (see
     # get_or_create_webhook) - without this check we'd relay our own relayed messages right back.
-    # message.type is only MessageType.default for organic chat - Discord posts a real, relayable
-    # Message for "User used /command" too, which shouldn't be forwarded into Minecraft's chat
+    # message.type is only MessageType.default/reply for organic chat - Discord posts a real,
+    # relayable Message for "User used /command" too, which shouldn't be forwarded into Minecraft's
+    # chat
     if (message.author == client.user or message.webhook_id is not None
-            or message.channel.id != CHAT_CHANNEL_ID or message.type != discord.MessageType.default):
+            or message.channel.id != CHAT_CHANNEL_ID
+            or message.type not in (discord.MessageType.default, discord.MessageType.reply)):
         return
     if chat_socket is None or not chat_socket.connected:
         await message.channel.send("Couldn't reach the Minecraft server - is it down?")
         return
+    message_type = "reply" if message.type == discord.MessageType.reply else "normal"
     # clean_content resolves mentions/channels/roles to their readable form (e.g. "@Notch") instead
     # of raw IDs (e.g. "<@123456789012345678>"), which is what content would otherwise contain
     try:
-        await chat_socket.send_to_socket(message.author.display_name, message.clean_content)
+        await chat_socket.send_to_socket(message.author.display_name, message.clean_content, message_type)
     except Exception as e:
         print("Failed to relay message to Minecraft:", e)
         await message.channel.send("Failed to relay your message to Minecraft.")
