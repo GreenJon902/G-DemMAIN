@@ -1,5 +1,17 @@
 name: default
 permissions:
+- fabric-essentials.command.anvil
+- fabric-essentials.command.cartographytable
+- fabric-essentials.command.enderchest
+- fabric-essentials.command.grindstone
+- fabric-essentials.command.loom
 - fabric-essentials.command.mods
+- fabric-essentials.command.smithing
+- fabric-essentials.command.stonecutter
+- fabric-essentials.command.workbench
 - g_mc_monitor.heap
 - g_mc_monitor.tps
+- ledger.commands.inspect
+- ledger.commands.tp:
+    value: false
+

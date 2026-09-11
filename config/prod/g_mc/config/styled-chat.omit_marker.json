@@ -16,7 +16,7 @@
   "default": {
     "display_name": "${player}",
     "message_formats": {
-      "chat": "<%luckperms:prefix%%player:displayname%%luckperms:suffix%> ${message}",
+      "chat": "<%luckperms:prefix%%player:displayname%> ${message}",
       "joined_the_game": "<yellow><lang:multiplayer.player.joined:'${player}'></yellow>",
       "joined_after_name_change": "<yellow><lang:multiplayer.player.joined.renamed:'${player}':'${old_name}'></yellow>",
       "joined_for_first_time": "<yellow><lang:multiplayer.player.joined:'${player}'></yellow>",
@@ -78,18 +78,5 @@
     },
     "custom_message_types": {}
   },
-  "styles": [
-    {
-      "require": {
-        "type": "permission",
-        "permission": "minecraft:group.colourless"
-      },
-      "message_formats": {
-        "chat": "<clear><%luckperms:prefix%%player:displayname%%luckperms:suffix%> ${message}</clear>"
-      },
-      "formatting": {},
-      "emoticons": {},
-      "custom_message_types": {}
-    }
-  ]
+  "styles": []
 }
