@@ -41,7 +41,7 @@ The mod refuses to start if either is missing/blank.
 It controls what happens if the FUSE mount or the console/chat sockets fail to start: with the default `false`, either failure crashes startup the same way a missing required field does.
 Set it to a truthy value to instead just log the failure and keep running in a degraded state (the behaviour prior to this option existing) - useful for local/dev setups where FUSE or the socket ports aren't always available.
 
-`messageTemplates` (text templates used for chat-socket event/relay messages) exists as a Java-side-defaulted, optional field on the mod's in-memory config, but it is not expected to appear in the shipped config file.
+`messageTemplates` (text templates used for chat-socket event messages, plus `replyPrefix` - see [Chat socket protocol](#chat-socket-protocol)) exists as a Java-side-defaulted, optional field on the mod's in-memory config, but it is not expected to appear in the shipped config file.
 
 `socketBindAddress`/`consolePort`/`chatPort` are loopback-only by convention (`127.0.0.1` in both `config/prod` and `config/dev`).
 There is deliberately no firewall rule needed for them (unlike RCON's port 25575) since nothing outside the machine should ever need to reach them directly.
@@ -155,14 +155,13 @@ See [Socket handshake](#socket-handshake) for the transport/auth/history steps t
 
 ```json
 {"type": "message", "source": "Web", "username": "Notch", "message": "hello from the web"}
-{"type": "message", "source": "Discord", "username": "Notch", "message": "hello from discord"}
+{"type": "message", "source": "Discord", "username": "Notch", "message": "hello from discord", "message_type": "reply"}
 ```
 
 `source` identifies which bridge the message came from (e.g. `Web`, `Discord`) so players can tell where it originated - it's a free-form string, not validated against a fixed list.
-This is broadcast into the game via the `chatRelay` template (default `[{source}] <{username}>: {message}`, e.g. `[Web] <Notch>: hello from the web`) as a **system chat message**, not a signed player message - modern Minecraft requires real, connected player accounts to sign chat, so there is no way to make an arbitrary external username show up as a genuine player message.
-It will look like chat and appear in the normal chat log, but isn't cryptographically attributed to a player.
+`message_type` is optional (default `"normal"`; the only other accepted value is `"reply"` - anything else is dropped the same way a missing required field is) and is meant for a bridge client to flag that its message is a reply to another one. If this is set to `"reply"` then the `replyPrefix` will be added to the start of the line.
 
-If there are other clients connected, the same `{"type": "message", ...}` object (`source` as sent, unchanged) is also relayed straight back out to every other connected chat-socket client - but not back to the client that sent it - so e.g. a Discord bridge sees a message a Web bridge sent, and vice versa, without needing the game server to be reachable.
+If there are other clients connected, the same `{"type": "message", ...}` object (`source`/`message`/`message_type` as sent, unchanged) is also relayed straight back out to every other connected chat-socket client - but not back to the client that sent it - so e.g. a Discord bridge sees a message a Web bridge sent, and vice versa, without needing the game server to be reachable. `message_type` is passed through as-is here (and in history).
 
 ## In-game commands
 

@@ -42,7 +42,7 @@ public class MonitorConfig {
 		public String serverStarted = "Server started";
 		public String serverStopped = "Server stopped";
 		public String playerAdvancement = "{player} has made the advancement {advancement}";
-		/** Used when broadcasting an incoming socket message (from a source like "Web" or "Discord") into the game as a system-styled chat line. */
-		public String chatRelay = "[{source}] <{username}>: {message}";
+		/** Prepended to an incoming chat-socket message's text when that message's message_type is "reply". */
+		public String replyPrefix = "⮤ ";
 	}
 }

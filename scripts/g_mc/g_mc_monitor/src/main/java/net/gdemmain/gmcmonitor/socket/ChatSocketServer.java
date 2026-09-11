@@ -8,6 +8,7 @@ import net.gdemmain.gmcmonitor.ChatEvent;
 import net.gdemmain.gmcmonitor.GMcMonitor;
 import net.gdemmain.gmcmonitor.ServerHolder;
 import net.gdemmain.gmcmonitor.MonitorConfig;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 
@@ -27,6 +28,10 @@ public class ChatSocketServer extends SocketServer {
 
 	/** The "source" value used for real in-game chat messages, as opposed to a bridge client's own name. */
 	private static final String INGAME_SOURCE = "Minecraft";
+
+	/** message_type values for an incoming chat-socket message. */
+	private static final String MESSAGE_TYPE_NORMAL = "normal";  // No action
+	private static final String MESSAGE_TYPE_REPLY = "reply";    // Prepend with prefix string (from config)
 
 	private final MonitorConfig.MessageTemplates templates;
 	private final Deque<JsonObject> history = new ArrayDeque<>();
@@ -62,7 +67,9 @@ public class ChatSocketServer extends SocketServer {
 	protected void handleClientMessage(ClientConnection connection, String jsonLine) {
 		JsonObject json = JsonParser.parseString(jsonLine).getAsJsonObject();
 		String type = json.has("type") ? json.get("type").getAsString() : "";
-		if (!type.equals("message") || !json.has("source") || !json.has("username") || !json.has("message")) {
+		String messageType = json.has("message_type") ? json.get("message_type").getAsString() : MESSAGE_TYPE_NORMAL;  // Default is normal
+		if (!type.equals("message") || !json.has("source") || !json.has("username") || !json.has("message")
+				|| (!messageType.equals(MESSAGE_TYPE_NORMAL) && !messageType.equals(MESSAGE_TYPE_REPLY))) {
 			GMcMonitor.LOGGER.warn("Chat socket client {} sent an invalid message: {}", connection.getRemoteSocketAddress(), jsonLine);
 			return;
 		}
@@ -76,6 +83,7 @@ public class ChatSocketServer extends SocketServer {
 		outgoing.addProperty("source", source);
 		outgoing.addProperty("username", username);
 		outgoing.addProperty("message", message);
+		outgoing.addProperty("message_type", messageType);
 		recordHistory(outgoing);
 		broadcastExcept(GSON.toJson(outgoing), connection);
 
@@ -83,11 +91,22 @@ public class ChatSocketServer extends SocketServer {
 		if (server == null) {
 			return;
 		}
-		String formatted = templates.chatRelay
-				.replace("{source}", source)
-				.replace("{username}", username)
-				.replace("{message}", message);
-		server.execute(() -> server.getPlayerList().broadcastSystemMessage(Component.literal(formatted), false));
+        // Render message
+		Component chatLine = buildChatRelayMessage(source, username, message, messageType.equals(MESSAGE_TYPE_REPLY));
+		server.execute(() -> server.getPlayerList().broadcastSystemMessage(chatLine, false));
+	}
+
+	/** Builds the colored "[source] username: message" system chat line for an incoming chat-socket message. */
+	private Component buildChatRelayMessage(String source, String username, String message, boolean reply) {
+		Component main = Component.literal("[").withStyle(ChatFormatting.DARK_BLUE)
+				.append(Component.literal(source).withStyle(ChatFormatting.BLUE))
+				.append(Component.literal("] ").withStyle(ChatFormatting.DARK_BLUE))
+				.append(Component.literal(username).withStyle(ChatFormatting.WHITE))
+				.append(Component.literal(": " + message).withStyle(ChatFormatting.WHITE));
+        // Add the 'reply prefix' if required
+        return (reply) ? 
+            Component.literal(templates.replyPrefix).withStyle(ChatFormatting.GRAY).append(main) : 
+            main;
 	}
 
 	/** Relays a real in-game chat message out to clients. */
