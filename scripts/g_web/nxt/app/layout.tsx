@@ -9,12 +9,16 @@ import type { Metadata, Viewport } from "next";
 
 export const dynamic = "force-dynamic";  // TODO: Find a better fix this
 
-// Site-wide title template — pages set their own short title and get "| G-Dem SMP" appended.
-// HisDoc/Panel override this with their own template for everything under their own layout.
 export const metadata: Metadata = {
+    // Site-wide title template — pages set their own short title and get "| G-Dem SMP" appended.
+    // HisDoc/Panel override this with their own template for everything under their own layout.
     title: {
         template: "%s | G-Dem SMP",
         default: "G-Dem SMP"
+    },
+    robots: {
+        // We disable indexing for everything, then enable it page-by-page
+        index: false
     }
 };
 

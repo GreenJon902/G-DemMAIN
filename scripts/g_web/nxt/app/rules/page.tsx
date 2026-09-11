@@ -2,7 +2,13 @@ import type { Metadata } from "next";
 import PageSection from "@/app/ui/PageSection";
 import RuleSection from "./ui/RuleSection";
 
-export const metadata: Metadata = { title: "Rules" };
+export const metadata: Metadata = {
+    title: "Rules",
+    robots: {
+        // Indexing is opt-in (see root layout)
+        index: true
+    }
+};
 
 export default function Page() {
     return (
