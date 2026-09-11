@@ -4,6 +4,7 @@ import RuleSection from "./ui/RuleSection";
 
 export const metadata: Metadata = {
     title: "Rules",
+    description: "Rules for the G-Dem SMP. Pls obey these. Thanks <3.",
     robots: {
         // Indexing is opt-in (see root layout)
         index: true

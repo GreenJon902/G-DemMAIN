@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import TextLink, { TEXT_LINK_WHITE } from "./ui/TextLink";
 
 export const metadata: Metadata = {
+    description: "Wag 1 fam\!",
     robots: {
         // Indexing is opt-in (see root layout)
         index: true
