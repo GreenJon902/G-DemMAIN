@@ -1,7 +1,7 @@
 import json
 import os
 
-from colors import PATH_COL, RESET
+from colors import PATH_COL, RESET, DIFF_NOTE
 from constants import BINARY_EXTENSIONS, JSON_EXTENSIONS, TEXT_EXTENSIONS, TEXT_WILDCARD_TOKEN
 from diffing import json_matches, line_diff, substitute_wildcards, text_matches, drop_wildcard_lines
 from exceptions import AlreadyUpToDate, Skipped, Problem
@@ -74,7 +74,9 @@ def compare(scf):
         return True, None
     # Files are different
     if is_binary:  # We can't (easily) show a (useful) diff for binary
-        return False, [f"Binary files {scf.dest_path} ({len(dest_contents)} bytes) and {scf.source_path} ({len(scf.contents)} bytes) differ"]
+        return False, [f"{DIFF_NOTE}Binary files {scf.dest_path} ({len(dest_contents)} bytes) and {scf.source_path} ({len(scf.contents)} bytes) differ{RESET}"]
+    if dest_contents.rstrip() == source_display_contents.rstrip():
+        return False, [f"{DIFF_NOTE}Files have differing trailing whitespace{RESET}"] 
 
     return False, line_diff(dest_contents.splitlines(), source_display_contents.splitlines(), scf.dest_path, scf.source_path)  # TODO: Proper JSON diff for json files
 

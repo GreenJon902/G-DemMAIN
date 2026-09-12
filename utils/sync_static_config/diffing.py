@@ -112,7 +112,7 @@ def text_matches(source_lines, dest_lines):
 
 def drop_wildcard_lines(contents):
     """ Replaces every TEXT_WILDCARD_DROP_TOKEN line with TEXT_DROPPED_LINE (see _get_text_wildcard_token) before it's written. """
-    lines = contents.splitlines()
+    lines = contents.split("\n")  # Split by "\n" to preserve whitespace exactly (splitlines sometimes drops trailing lines)
     return "\n".join(
         (line if _get_text_wildcard_token(line) != TEXT_WILDCARD_DROP_TOKEN else TEXT_DROPPED_LINE) 
         for line in lines
