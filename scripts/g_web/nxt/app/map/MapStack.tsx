@@ -82,9 +82,10 @@ export default function MapStack({
             });
         }
 
-        // Recomputes the viewport size whenever it changes (initial layout, window resize, etc) and re-renders
-        const resizeObserver = new ResizeObserver(() => {
-            ({ width: vpWidth, height: vpHeight } = root.getBoundingClientRect());
+        // Recomputes the viewport size whenever it changes (initial layout, window resize, etc) and re-renders.
+        const resizeObserver = new ResizeObserver(([entry]) => {
+            vpWidth = entry.contentRect.width;  // These are unaffected by css scale
+            vpHeight = entry.contentRect.height;
             render();
         });
         resizeObserver.observe(root);
