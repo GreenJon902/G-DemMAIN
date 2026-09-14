@@ -49,7 +49,7 @@ export default function MapOverlay({
                     type="button"
                     title={visible ? "Hide overlay" : "Show overlay"}
                     onClick={() => setVisible(!visible)}
-                    className={`pointer-events-auto absolute bottom-0 right-0 rounded-md p-1 ${visible ? "border border-gray-500 bg-gray-700 hover:bg-gray-600" : "border border-transparent opacity-0 hover:opacity-100"}`}
+                    className={`pointer-events-auto absolute right-0 bottom-0 rounded-md p-1 ${visible ? "border border-gray-500 bg-gray-700 hover:bg-gray-600" : "border border-transparent opacity-0 hover:opacity-100"}`}
                 >
                     {visible ? <EyeIcon className="size-5" /> : <EyeSlashIcon className="size-5" />}
                 </button>
