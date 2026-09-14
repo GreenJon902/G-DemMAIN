@@ -6,22 +6,27 @@ const TILE_SIZE = 128;  // Width and height of a tile in pixels
 // TODO: Support lower-res / prefixed tiles
 /**
  * Builds the request URL for a single tile image, given its tile coordinates.
+ * @param prefixZCount - The number of zs in the prefix.
  */
-function tileUrl(tileX: number, tileY: number): string {
-    return `map/tiles/${tileX}_${tileY}.jpg`;
+function tileUrl(prefixZCount: number, tileX: number, tileY: number): string {
+    const prefix = "z".repeat(prefixZCount) + ((prefixZCount > 0) ? "_" : "");
+    return `map/tiles/${prefix}${tileX}_${tileY}.jpg`;
 }
 
 /**
- * Converts a block-coordinate bounding box into an inclusive tile-coordinate bounding box.
+ * Converts a block-coordinate bounding box into an inclusive tile(I,J)-coordinate bounding box.
+ * Tile(I,J) is the coordinate system of the tile grid for the given prefixZCount, i.e. it treats that zoom level's tiles as if they were the base/unzoomed tiles - each I,J step covers 2**prefixZCount base tiles.
  * The block bbox can be in fractions of blocks, the returned bbox will be in integers.
  */
-function blockBBoxToTileBBox(bbox: BlockBoundingBox): { tileLeft: number, tileTop: number, tileRight: number, tileBottom: number } {
+function blockBBoxToTileBBox(bbox: BlockBoundingBox, prefixZCount: number): { tileLeft: number, tileTop: number, tileRight: number, tileBottom: number } {
+    const tileBlockEdge = TILE_SIZE * 2**prefixZCount / PIXELS_PER_BLOCK_EDGE;  // Number of blocks covered by one tile at this zoom level
+
     // If we floor all of these, then the displayed tiles will cover at least the entire viewport
     return {
-        tileLeft: Math.floor(bbox.left * PIXELS_PER_BLOCK_EDGE / TILE_SIZE),
-        tileTop: Math.floor(bbox.top * PIXELS_PER_BLOCK_EDGE / TILE_SIZE),
-        tileRight: Math.floor(bbox.right * PIXELS_PER_BLOCK_EDGE / TILE_SIZE),
-        tileBottom: Math.floor(bbox.bottom * PIXELS_PER_BLOCK_EDGE / TILE_SIZE)
+        tileLeft: Math.floor(bbox.left / tileBlockEdge),
+        tileTop: Math.floor(bbox.top / tileBlockEdge),
+        tileRight: Math.floor(bbox.right / tileBlockEdge),
+        tileBottom: Math.floor(bbox.bottom / tileBlockEdge)
     };
 }
 
@@ -33,13 +38,21 @@ export const createTileLayer: LayerFactory = (container) => {
 
     return {
         /** Compares current tiles to those in view, loads any that need to be loaded and drops those that are now hidden. */
-        update(bbox) {
-            const { tileLeft, tileTop, tileRight, tileBottom } = blockBBoxToTileBBox(bbox);
+        update(bbox, zoom) {
+            // Calculate the number of "z"s from the zoom. Each "z" level halfs the number of pixels per block edge
+            let prefixZCount = Math.floor(Math.log2(PIXELS_PER_BLOCK_EDGE / zoom));
+            prefixZCount = Math.min(7, Math.max(0, prefixZCount));  // TODO: Min and max prefix should not be magic numbers
+
+            const { tileLeft, tileTop, tileRight, tileBottom } = blockBBoxToTileBBox(bbox, prefixZCount);
 
             const wanted = new Set<string>();  // "tileX_tileY". List of tiles that should be shown for this bounding box
-            for (let tileX = tileLeft; tileX <= tileRight; tileX++) {
-                for (let tileY = tileBottom; tileY <= tileTop; tileY++) {
-                    const key = `${tileX}_${tileY}`;
+            for (let tileI = tileLeft; tileI <= tileRight; tileI++) {
+                for (let tileJ = tileBottom; tileJ <= tileTop; tileJ++) {
+                    // Convert back from tile(I,J) into the base/unzoomed tile(X,Y) used for naming and positioning
+                    const tileX = tileI * 2**prefixZCount;
+                    const tileY = tileJ * 2**prefixZCount;
+
+                    const key = `${prefixZCount}_${tileX}_${tileY}`;
                     wanted.add(key);
                     if (tiles.has(key)) continue;  // If already redered then no action
 
@@ -48,14 +61,14 @@ export const createTileLayer: LayerFactory = (container) => {
                     img.style.position = "absolute";
                     img.style.left = `${tileX * TILE_SIZE / PIXELS_PER_BLOCK_EDGE}px`;
                     img.style.bottom = `${tileY * TILE_SIZE / PIXELS_PER_BLOCK_EDGE}px`;
-                    img.style.width = `${TILE_SIZE / PIXELS_PER_BLOCK_EDGE}px`;
-                    img.style.height = `${TILE_SIZE / PIXELS_PER_BLOCK_EDGE}px`;
+                    img.style.width = `${TILE_SIZE / PIXELS_PER_BLOCK_EDGE * 2**prefixZCount}px`;
+                    img.style.height = `${TILE_SIZE / PIXELS_PER_BLOCK_EDGE * 2**prefixZCount}px`;
                     // Disable user interaction with tiles, otherwise drag is broken
                     img.draggable = false;
                     img.style.userSelect = "none";
                     // Pan/zoom is unclamped, so out-of-range tiles 404 - hide rather than show a broken-image icon
                     img.onerror = () => { img.style.display = "none"; };
-                    img.src = tileUrl(tileX, tileY);
+                    img.src = tileUrl(prefixZCount, tileX, tileY);
 
                     container.appendChild(img);
                     tiles.set(key, img);

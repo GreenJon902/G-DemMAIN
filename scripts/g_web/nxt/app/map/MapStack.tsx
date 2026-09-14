@@ -70,7 +70,7 @@ export default function MapStack({
             // Transform root div so viewport is looking at correct location in world space
             root!.style.transform = `scale(${panZoom.zoom}) translate(${vpWidth / 2 - panZoom.x}px, ${-vpHeight / 2 + panZoom.y}px)`;
             // Update layers (e.g. loading tiles that are now visible)
-            for (const layer of layers) layer.update(bbox);
+            for (const layer of layers) layer.update(bbox, panZoom.zoom);
         }
 
         // Recomputes the viewport size whenever it changes (initial layout, window resize, etc) and re-renders
@@ -81,6 +81,7 @@ export default function MapStack({
         resizeObserver.observe(root);
 
         // Zoom using the scroll wheel. Just zoom around the centre
+        // TODO: Zoom around the cursor
         function onWheel(event: WheelEvent) {
             event.preventDefault();
             panZoom.zoom = panZoom.zoom * Math.exp(-event.deltaY * ZOOM_SPEED);  
