@@ -55,22 +55,31 @@ export default function MapStack({
             return { container, ...createLayer(container) };
         });  // Stores [(layerDiv, layerCallbacks), ...]
 
-        /** Applies the current pan/zoom to the container's transform and updates each layer. */
+        let updateFrameId: number | null = null;  // rAF id of a pending layer.update() pass, if any
+        let pendingBBox: BlockBoundingBox | null = null;  // Latest bbox to hand to layers once updateFrameId fires
+        /**
+         * Applies the current pan/zoom transformation to the conainer's transform, however uses requestAnimationFrame to schedule layer updates as these are more expensive.
+         */
         function render() {
             const blockWidth = vpWidth / panZoom.zoom;
             const blockHeight = vpHeight / panZoom.zoom;
             // Calculate the bounding box of blocks viewable in the viewport
             const blockLeft = -blockWidth / 2 + panZoom.x;
             const blockTop = blockHeight / 2 + panZoom.y;
-            const bbox: BlockBoundingBox = {
+            pendingBBox = {
                 left: blockLeft, top: blockTop,
                 right: blockLeft + blockWidth, bottom: blockTop - blockHeight
             };
 
             // Transform root div so viewport is looking at correct location in world space
             root!.style.transform = `scale(${panZoom.zoom}) translate(${vpWidth / 2 - panZoom.x}px, ${-vpHeight / 2 + panZoom.y}px)`;
-            // Update layers (e.g. loading tiles that are now visible)
-            for (const layer of layers) layer.update(bbox, panZoom.zoom);
+
+            if (updateFrameId !== null) return;  // An update is already scheduled - it'll pick up pendingBBox above
+            updateFrameId = requestAnimationFrame(() => {
+                updateFrameId = null;
+                // Update layers (e.g. loading tiles that are now visible)
+                for (const layer of layers) layer.update(pendingBBox!, panZoom.zoom);
+            });
         }
 
         // Recomputes the viewport size whenever it changes (initial layout, window resize, etc) and re-renders
@@ -115,6 +124,7 @@ export default function MapStack({
 
         return () => {
             // Remove all our bindings on unmount
+            if (updateFrameId !== null) cancelAnimationFrame(updateFrameId);
             resizeObserver.disconnect();
             root.removeEventListener("wheel", onWheel);
             root.removeEventListener("pointerdown", onPointerDown);

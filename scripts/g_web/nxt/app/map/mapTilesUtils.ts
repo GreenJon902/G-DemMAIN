@@ -39,6 +39,8 @@ export const createTileLayer: LayerFactory = (container) => {
     return {
         /** Compares current tiles to those in view, loads any that need to be loaded and drops those that are now hidden. */
         update(bbox, zoom) {
+            // TODO: Load lower res / higher-prefix tiles first, then lazily load smaller tiles? And don't remove higher-prefix tiles until lower and loaded
+
             // Calculate the number of "z"s from the zoom. Each "z" level halfs the number of pixels per block edge
             let prefixZCount = Math.floor(Math.log2(PIXELS_PER_BLOCK_EDGE / zoom));
             prefixZCount = Math.min(7, Math.max(0, prefixZCount));  // TODO: Min and max prefix should not be magic numbers
