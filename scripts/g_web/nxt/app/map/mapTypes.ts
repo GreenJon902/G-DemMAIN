@@ -11,3 +11,7 @@ export type LayerFactory = (container: HTMLDivElement) => {
     update: (bbox: BlockBoundingBox, zoom: number) => void,  // The viewable bbox has changed, so ensure content that should be visible is visible. Zoom is the same as in PanZoom
     destroy?: () => void
 };
+
+
+// Useful when checking tile loading and that
+export const DEBUG_MODE = true;

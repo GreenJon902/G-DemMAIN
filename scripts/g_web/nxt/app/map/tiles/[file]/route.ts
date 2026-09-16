@@ -16,6 +16,12 @@ const REGION_SIZE = 32;  // Tiles per region edge
  * This expects the file name to be of the form `[z+_]\d+_\d+.jpg`, and infers the region folder it lives in from the tile's x/y coordinates.
  *
  * Positive x is horizontal from left to right, and positive y is vertical from bottom to top.
+ *
+ * The coordinates refer to the bottom-left of the top-left unzoomed tile in the given zoomed tile. So if you have a tile called zz_x_y.jpg, that x,y refers to the bottom left of the A in:
+ *   ABBB
+ *   BBBB
+ *   BBBB
+ *   BBBB
  */
 export async function GET(
     _request: NextRequest,

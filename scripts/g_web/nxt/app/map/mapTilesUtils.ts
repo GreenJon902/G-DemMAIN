@@ -1,4 +1,4 @@
-import type { BlockBoundingBox, LayerFactory } from "./mapTypes";
+import { DEBUG_MODE, type BlockBoundingBox, type LayerFactory } from "./mapTypes";
 
 const PIXELS_PER_BLOCK_EDGE = 4;  // Number of pixels per block edge in a base/unzoomed tile  // TODO: Load this from config as it depends on dynmaps config
 const TILE_SIZE = 128;  // Width and height of a tile in pixels
@@ -6,6 +6,7 @@ const TILE_SIZE = 128;  // Width and height of a tile in pixels
 // TODO: Support lower-res / prefixed tiles
 /**
  * Builds the request URL for a single tile image, given its tile coordinates.
+ * tileX/tileY are passed straight into the filename, so they use dynmap's own naming convention - the bottom-left of the top-left unzoomed sub-tile, not the bottom-left of the tile itself (see tiles/[file]/route.ts).
  * @param prefixZCount - The number of zs in the prefix.
  */
 function tileUrl(prefixZCount: number, tileX: number, tileY: number): string {
@@ -14,9 +15,9 @@ function tileUrl(prefixZCount: number, tileX: number, tileY: number): string {
 }
 
 /**
- * Converts a block-coordinate bounding box into an inclusive tile(I,J)-coordinate bounding box.
- * Tile(I,J) is the coordinate system of the tile grid for the given prefixZCount, i.e. it treats that zoom level's tiles as if they were the base/unzoomed tiles - each I,J step covers 2**prefixZCount base tiles.
- * The block bbox can be in fractions of blocks, the returned bbox will be in integers.
+ * Gets the bounding box of tile indexes (we call this I,J, not X,Y) for the given bbox. The (I,J) can be understood as tile coordinates if the zoom was 1. These must be multiplied by the number of contained unzoomed tiles before they will relate to an actual tile file.
+ * The block bbox can be in fractions of blocks, the returned bbox will be in integers. The returned numbers are inclusive (so boundary tiles should be drawn too).
+ * This accounts for the fact that tile coordinates are not the bottom-left of a tile (see tiles/[file]/route.ts).
  */
 function blockBBoxToTileBBox(bbox: BlockBoundingBox, prefixZCount: number): { tileLeft: number, tileTop: number, tileRight: number, tileBottom: number } {
     const tileBlockEdge = TILE_SIZE * 2**prefixZCount / PIXELS_PER_BLOCK_EDGE;  // Number of blocks covered by one tile at this zoom level
@@ -24,9 +25,9 @@ function blockBBoxToTileBBox(bbox: BlockBoundingBox, prefixZCount: number): { ti
     // If we floor all of these, then the displayed tiles will cover at least the entire viewport
     return {
         tileLeft: Math.floor(bbox.left / tileBlockEdge),
-        tileTop: Math.floor(bbox.top / tileBlockEdge),
+        tileTop: Math.floor(bbox.top / tileBlockEdge + (1-2**-prefixZCount)),  // Shifts up by (1 - 2**-prefixZCount) tiles to correct for the naming-coordinate offset described above        
         tileRight: Math.floor(bbox.right / tileBlockEdge),
-        tileBottom: Math.floor(bbox.bottom / tileBlockEdge)
+        tileBottom: Math.floor(bbox.bottom / tileBlockEdge + (1-2**-prefixZCount))
     };
 }
 
@@ -62,15 +63,21 @@ export const createTileLayer: LayerFactory = (container) => {
                     const img = document.createElement("img");
                     img.style.position = "absolute";
                     img.style.left = `${tileX * TILE_SIZE / PIXELS_PER_BLOCK_EDGE}px`;
-                    img.style.bottom = `${tileY * TILE_SIZE / PIXELS_PER_BLOCK_EDGE}px`;
+                    img.style.bottom = `${tileY * TILE_SIZE / PIXELS_PER_BLOCK_EDGE - (2**prefixZCount-1) * TILE_SIZE / PIXELS_PER_BLOCK_EDGE}px`;  // tileY names the bottom of the top-left unzoomed sub-tile, not the bottom of the whole rendered tile (see tiles/[file]/route.ts) - shift down by the height of the (2**prefixZCount - 1) sub-tile rows below it to reach the tile's actual bottom
                     img.style.width = `${TILE_SIZE / PIXELS_PER_BLOCK_EDGE * 2**prefixZCount}px`;
                     img.style.height = `${TILE_SIZE / PIXELS_PER_BLOCK_EDGE * 2**prefixZCount}px`;
                     // Disable user interaction with tiles, otherwise drag is broken
                     img.draggable = false;
                     img.style.userSelect = "none";
                     // Pan/zoom is unclamped, so out-of-range tiles 404 - hide rather than show a broken-image icon
-                    img.onerror = () => { img.style.display = "none"; };
+                    //img.onerror = () => { img.style.display = "none"; };
                     img.src = tileUrl(prefixZCount, tileX, tileY);
+
+                    // Debug lines
+                    if (DEBUG_MODE) {
+                        img.style.border = "solid red 1px";
+                        img.style.opacity = "25%";
+                    }
 
                     container.appendChild(img);
                     tiles.set(key, img);

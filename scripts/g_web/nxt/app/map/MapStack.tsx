@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import MapOverlay from "./MapOverlay";
 import { createTileLayer } from "./mapTilesUtils";
-import type { BlockBoundingBox, LayerFactory } from "./mapTypes";
+import { DEBUG_MODE, type BlockBoundingBox, type LayerFactory } from "./mapTypes";
 
 // Everything rendered inside the panned/zoomed container, in registration order. Layers are drawn
 // via direct DOM mutation rather than JSX (see MapStack's doc comment below), so adding a future
@@ -140,7 +140,7 @@ export default function MapStack({
 
 
     return (
-        <div className="relative flex-1 overflow-clip">
+        <div className={`relative flex-1 ${(DEBUG_MODE) ? "scale-75 border border-orange-500" : "overflow-clip"}`}>
             {/* Panable/zoomable content. select-none as otherwise drag is broken */}
             <div ref={mapContainer} className="absolute size-full select-none">
 
