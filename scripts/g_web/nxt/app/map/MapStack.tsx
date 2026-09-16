@@ -39,12 +39,13 @@ export default function MapStack({
 
     // Panning and zooming handling code
     const mapContainer = useRef<HTMLDivElement>(null);  // This is the object that gets panned and zoomed, this contains the tiles, markers, etc.
+    const panZoomRef = useRef<PanZoom>(null);  // Stores panZoom between taredown and build-up of the effect, as this occurs when the map or markers change. This should not be used directly as it is only updated on taredown
 
     useEffect(() => {
         const root = mapContainer.current;
         if (!root) return;
 
-        const panZoom: PanZoom = { x: 0, y: 0, zoom: 4 };
+        const panZoom: PanZoom = panZoomRef.current ?? { x: 0, y: 0, zoom: 1 };
         let vpWidth = 0, vpHeight = 0;  // Kept up to date by the ResizeObserver below, so render() doesn't force a layout read on every wheel/pointer event
 
         // Create each layer's own container div
@@ -52,7 +53,7 @@ export default function MapStack({
             const container = document.createElement("div");
             container.className = "absolute inset-0";
             root.appendChild(container);
-            return { container, ...createLayer(container) };
+            return { container, ...createLayer(container, { map: selectedMap }) };
         });  // Stores [(layerDiv, layerCallbacks), ...]
 
         let updateFrameId: number | null = null;  // rAF id of a pending layer.update() pass, if any
@@ -135,8 +136,10 @@ export default function MapStack({
                 layer.destroy?.();  // Call destroy if it exists
                 layer.container.remove();
             }
+            // Track panZoomRef so if this taredown is due to map changing, we stay in same location
+            panZoomRef.current = panZoom;
         };
-    }, []);
+    }, [selectedMap]);
 
 
     return (

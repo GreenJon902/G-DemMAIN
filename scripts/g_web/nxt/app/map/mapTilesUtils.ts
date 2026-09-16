@@ -6,12 +6,13 @@ const TILE_SIZE = 128;  // Width and height of a tile in pixels
 // TODO: Support lower-res / prefixed tiles
 /**
  * Builds the request URL for a single tile image, given its tile coordinates.
- * tileX/tileY are passed straight into the filename, so they use dynmap's own naming convention - the bottom-left of the top-left unzoomed sub-tile, not the bottom-left of the tile itself (see tiles/[file]/route.ts).
+ * tileX/tileY are passed straight into the filename, so they use dynmap's own naming convention - the bottom-left of the top-left unzoomed sub-tile, not the bottom-left of the tile itself (see tiles/[map]/[file]/route.ts).
+ * @param map - Name of the dynmap map the tile belongs to, e.g. "flat" or "iso".
  * @param prefixZCount - The number of zs in the prefix.
  */
-function tileUrl(prefixZCount: number, tileX: number, tileY: number): string {
+function tileUrl(map: string, prefixZCount: number, tileX: number, tileY: number): string {
     const prefix = "z".repeat(prefixZCount) + ((prefixZCount > 0) ? "_" : "");
-    return `map/tiles/${prefix}${tileX}_${tileY}.jpg`;
+    return `map/tiles/${map}/${prefix}${tileX}_${tileY}.jpg`;
 }
 
 /**
@@ -34,7 +35,7 @@ function blockBBoxToTileBBox(bbox: BlockBoundingBox, prefixZCount: number): { ti
 /**
  * Creates callbacks for the tile layer.
  */
-export const createTileLayer: LayerFactory = (container) => {
+export const createTileLayer: LayerFactory = (container, meta) => {
     const tiles = new Map<string, HTMLImageElement>();  // Keyed by "tileX_tileY"
 
     return {
@@ -71,7 +72,7 @@ export const createTileLayer: LayerFactory = (container) => {
                     img.style.userSelect = "none";
                     // Pan/zoom is unclamped, so out-of-range tiles 404 - hide rather than show a broken-image icon
                     //img.onerror = () => { img.style.display = "none"; };
-                    img.src = tileUrl(prefixZCount, tileX, tileY);
+                    img.src = tileUrl(meta.map, prefixZCount, tileX, tileY);
 
                     // Debug lines
                     if (DEBUG_MODE) {
