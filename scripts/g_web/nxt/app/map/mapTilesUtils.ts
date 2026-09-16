@@ -96,6 +96,8 @@ export const createTileLayer: LayerFactory = (container, meta) => {
                 img.style.bottom = `${tileY * TILE_SIZE / PIXELS_PER_BLOCK_EDGE - (2**prefixZCount-1) * TILE_SIZE / PIXELS_PER_BLOCK_EDGE}px`;  // tileY names the bottom of the top-left unzoomed sub-tile, not the bottom of the whole rendered tile (see tiles/[file]/route.ts) - shift down by the height of the (2**prefixZCount - 1) sub-tile rows below it to reach the tile's actual bottom
                 img.style.width = `${TILE_SIZE / PIXELS_PER_BLOCK_EDGE * 2**prefixZCount}px`;
                 img.style.height = `${TILE_SIZE / PIXELS_PER_BLOCK_EDGE * 2**prefixZCount}px`;
+                img.style.maxWidth = "none";  // Tailwind sets an undesirable default value, so reset that here. This ensures the image is the specified size
+                img.style.maxHeight = "none";
 
                 // We have tiles fade in and out
                 img.style.opacity = (meta.debug) ? DEBUG_PLACEHOLDER_OPACITY : "0%";
