@@ -40,11 +40,13 @@ export default function MapStack({
 
     // Panning and zooming handling code
     const mapContainer = useRef<HTMLDivElement>(null);  // This is the object that gets panned and zoomed, this contains the tiles, markers, etc.
+    const viewport = useRef<HTMLDivElement>(null);  // Wraps mapContainer - always fills screen so is always mouse collidable
     const panZoomRef = useRef<PanZoom>(null);  // Stores panZoom between taredown and build-up of the effect, as this occurs when the map or markers change. This should not be used directly as it is only updated on taredown
 
     useEffect(() => {
         const root = mapContainer.current;
-        if (!root) return;
+        const viewportElement = viewport.current;
+        if (!root || !viewportElement) return;
 
         const panZoom: PanZoom = panZoomRef.current ?? { x: 0, y: 0, zoom: 1 };
         let vpWidth = 0, vpHeight = 0;  // Kept up to date by the ResizeObserver below, so render() doesn't force a layout read on every wheel/pointer event
@@ -90,7 +92,7 @@ export default function MapStack({
             vpHeight = entry.contentRect.height;
             render();
         });
-        resizeObserver.observe(root);
+        resizeObserver.observe(viewportElement);
 
         // Zoom using the scroll wheel. Just zoom around the centre
         // TODO: Zoom around the cursor
@@ -105,7 +107,7 @@ export default function MapStack({
 
         function onPointerDown(event: PointerEvent) {
             dragStart = { pointerId: event.pointerId, clientX: event.clientX, clientY: event.clientY, panX: panZoom.x, panY: panZoom.y };
-            root!.setPointerCapture(event.pointerId);
+            viewportElement!.setPointerCapture(event.pointerId);
         }
         function onPointerMove(event: PointerEvent) {
             if (!dragStart || event.pointerId !== dragStart.pointerId) return;
@@ -116,23 +118,23 @@ export default function MapStack({
         }
         function onPointerUp(event: PointerEvent) {
             if (!dragStart || event.pointerId !== dragStart.pointerId) return;
-            root!.releasePointerCapture(event.pointerId);
+            viewportElement!.releasePointerCapture(event.pointerId);
             dragStart = null;
         }
 
-        root.addEventListener("wheel", onWheel, { passive: false });  // passive: false since we call preventDefault() to stop page scroll
-        root.addEventListener("pointerdown", onPointerDown);
-        root.addEventListener("pointermove", onPointerMove);
-        root.addEventListener("pointerup", onPointerUp);
+        viewportElement.addEventListener("wheel", onWheel, { passive: false });  // passive: false since we call preventDefault() to stop page scroll
+        viewportElement.addEventListener("pointerdown", onPointerDown);
+        viewportElement.addEventListener("pointermove", onPointerMove);
+        viewportElement.addEventListener("pointerup", onPointerUp);
 
         return () => {
             // Remove all our bindings on unmount
             if (updateFrameId !== null) cancelAnimationFrame(updateFrameId);
             resizeObserver.disconnect();
-            root.removeEventListener("wheel", onWheel);
-            root.removeEventListener("pointerdown", onPointerDown);
-            root.removeEventListener("pointermove", onPointerMove);
-            root.removeEventListener("pointerup", onPointerUp);
+            viewportElement.removeEventListener("wheel", onWheel);
+            viewportElement.removeEventListener("pointerdown", onPointerDown);
+            viewportElement.removeEventListener("pointermove", onPointerMove);
+            viewportElement.removeEventListener("pointerup", onPointerUp);
             for (const layer of layers) {
                 layer.destroy?.();  // Call destroy if it exists
                 layer.container.remove();
@@ -145,9 +147,12 @@ export default function MapStack({
 
     return (
         <div className={`relative flex-1 ${debugMode ? "scale-75 border border-orange-500" : "overflow-clip"}`}>
-            {/* Panable/zoomable content. select-none as otherwise drag is broken */}
-            <div ref={mapContainer} className="absolute size-full select-none">
+            {/** Viewport is used for collisions as it always takes up the whole screen. */}
+            <div ref={viewport} className="absolute inset-0 touch-none select-none">
+                {/* Panable/zoomable content */}
+                <div ref={mapContainer} className="absolute size-full">
 
+                </div>
             </div>
             {/* Fixed overlay */}
             <MapOverlay
