@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import MapOverlay from "./MapOverlay";
 import { createTileLayer } from "./mapTilesUtils";
-import { DEBUG_MODE, type BlockBoundingBox, type LayerFactory } from "./mapTypes";
+import { type BlockBoundingBox, type LayerFactory } from "./mapTypes";
 
 // Everything rendered inside the panned/zoomed container, in registration order. Layers are drawn
 // via direct DOM mutation rather than JSX (see MapStack's doc comment below), so adding a future
@@ -36,6 +36,7 @@ export default function MapStack({
     // Settings - configured by overlay
     const [enabledMarkers, setEnabledMarkers] = useState(defaultEnabledMarkers);
     const [selectedMap, setSelectedMap] = useState(defaultSelectedMap);
+    const [debugMode, setDebugMode] = useState(false);
 
     // Panning and zooming handling code
     const mapContainer = useRef<HTMLDivElement>(null);  // This is the object that gets panned and zoomed, this contains the tiles, markers, etc.
@@ -53,7 +54,7 @@ export default function MapStack({
             const container = document.createElement("div");
             container.className = "absolute inset-0";
             root.appendChild(container);
-            return { container, ...createLayer(container, { map: selectedMap }) };
+            return { container, ...createLayer(container, { map: selectedMap, debug: debugMode }) };
         });  // Stores [(layerDiv, layerCallbacks), ...]
 
         let updateFrameId: number | null = null;  // rAF id of a pending layer.update() pass, if any
@@ -139,11 +140,11 @@ export default function MapStack({
             // Track panZoomRef so if this taredown is due to map changing, we stay in same location
             panZoomRef.current = panZoom;
         };
-    }, [selectedMap]);
+    }, [selectedMap, debugMode]);
 
 
     return (
-        <div className={`relative flex-1 ${(DEBUG_MODE) ? "scale-75 border border-orange-500" : "overflow-clip"}`}>
+        <div className={`relative flex-1 ${debugMode ? "scale-75 border border-orange-500" : "overflow-clip"}`}>
             {/* Panable/zoomable content. select-none as otherwise drag is broken */}
             <div ref={mapContainer} className="absolute size-full select-none">
 
@@ -155,6 +156,7 @@ export default function MapStack({
                 markerOptions={markerOptions}
                 mapState={[selectedMap, setSelectedMap]}
                 mapOptions={mapOptions}
+                debugState={[debugMode, setDebugMode]}
             />
         </div>
     );
