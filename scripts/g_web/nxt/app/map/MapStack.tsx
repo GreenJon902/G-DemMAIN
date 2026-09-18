@@ -3,12 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import MapOverlay from "./MapOverlay";
 import { createTileLayer } from "./mapTilesUtils";
-import { type BlockBoundingBox, type LayerFactory } from "./mapTypes";
+import { createMarkerLayer } from "./mapMarkersUtils";
+import { type LayerFactory, type MapView } from "./mapTypes";
+import type { MarkersData } from "./markersData";
 
-// Everything rendered inside the panned/zoomed container, in registration order. Layers are drawn
-// via direct DOM mutation rather than JSX (see MapStack's doc comment below), so adding a future
-// marker layer is just appending another factory here
-const LAYER_FACTORIES: LayerFactory[] = [createTileLayer];
+// Everything rendered in the map, in registration order (later factories
+// paint on top of earlier ones). Layers are drawn via direct DOM mutation rather than JSX (see
+// MapStack's doc comment below)
+const LAYER_FACTORIES: LayerFactory[] = [createTileLayer, createMarkerLayer];
 
 const ZOOM_SPEED = 0.001;  // Larger = more zoom change per wheel-scrolled pixel
 
@@ -23,20 +25,29 @@ type PanZoom = {
     zoom: number
 }
 
+// Everything the overlay can configure
+type MapViewState = {
+    selectedMap: string,
+    debugMode: boolean,
+    selectedMarkers: Array<string>
+};
+
 /**
  * This component assembles and holds all the components of the map, and handles zooming and panning.
  * For some children, JSX ends here (and we instead do direct DOM mutation) for efficiency - so we don't need to go through REACT for every frame when panning.
  */
 export default function MapStack({
-    defaultEnabledMarkers, markerOptions, defaultSelectedMap, mapOptions
+    defaultEnabledMarkers, markersData, defaultSelectedMap, mapOptions
 }: {
-    defaultEnabledMarkers: Array<string>, markerOptions: Array<string>,
+    defaultEnabledMarkers: Array<string>, markersData: MarkersData,
     defaultSelectedMap: string, mapOptions: Array<string>
 }) {
     // Settings - configured by overlay
-    const [enabledMarkers, setEnabledMarkers] = useState(defaultEnabledMarkers);
-    const [selectedMap, setSelectedMap] = useState(defaultSelectedMap);
-    const [debugMode, setDebugMode] = useState(false);
+    const [viewState, setViewState] = useState<MapViewState>({
+        selectedMap: defaultSelectedMap,
+        debugMode: false,
+        selectedMarkers: defaultEnabledMarkers
+    });
 
     // Panning and zooming handling code
     const mapContainer = useRef<HTMLDivElement>(null);  // This is the object that gets panned and zoomed, this contains the tiles, markers, etc.
@@ -56,13 +67,14 @@ export default function MapStack({
             const container = document.createElement("div");
             container.className = "absolute inset-0";
             root.appendChild(container);
-            return { container, ...createLayer(container, { map: selectedMap, debug: debugMode }) };
+            return { container, ...createLayer(container, { map: viewState.selectedMap, debug: viewState.debugMode, markersData, selectedMarkers: viewState.selectedMarkers }) };
         });  // Stores [(layerDiv, layerCallbacks), ...]
 
         let updateFrameId: number | null = null;  // rAF id of a pending layer.update() pass, if any
-        let pendingBBox: BlockBoundingBox | null = null;  // Latest bbox to hand to layers once updateFrameId fires
+        let pendingView: MapView | null = null;  // Latest view to hand to layers once updateFrameId fires
         /**
-         * Applies the current pan/zoom transformation to the conainer's transform, however uses requestAnimationFrame to schedule layer updates as these are more expensive.
+         * Builds the current view from the pan/zoom and schedules a layer update with requestAnimationFrame.
+         * Run these all on the same animation frame so layers move in sync.
          */
         function render() {
             const blockWidth = vpWidth / panZoom.zoom;
@@ -70,19 +82,20 @@ export default function MapStack({
             // Calculate the bounding box of blocks viewable in the viewport
             const blockLeft = -blockWidth / 2 + panZoom.x;
             const blockTop = blockHeight / 2 + panZoom.y;
-            pendingBBox = {
-                left: blockLeft, top: blockTop,
-                right: blockLeft + blockWidth, bottom: blockTop - blockHeight
+            pendingView = {
+                bbox: {
+                    left: blockLeft, top: blockTop,
+                    right: blockLeft + blockWidth, bottom: blockTop - blockHeight
+                },
+                x: panZoom.x, y: panZoom.y, zoom: panZoom.zoom,
+                vpWidth, vpHeight
             };
 
-            // Transform root div so viewport is looking at correct location in world space
-            root!.style.transform = `scale(${panZoom.zoom}) translate(${vpWidth / 2 - panZoom.x}px, ${-vpHeight / 2 + panZoom.y}px)`;
-
-            if (updateFrameId !== null) return;  // An update is already scheduled - it'll pick up pendingBBox above
+            if (updateFrameId !== null) return;  // An update is already scheduled - it'll pick up pendingView above
             updateFrameId = requestAnimationFrame(() => {
                 updateFrameId = null;
-                // Update layers (e.g. loading tiles that are now visible)
-                for (const layer of layers) layer.update(pendingBBox!, panZoom.zoom);
+                // Update layers (e.g. repositioning them and loading tiles that are now visible)
+                for (const layer of layers) layer.update(pendingView!);
             });
         }
 
@@ -142,11 +155,11 @@ export default function MapStack({
             // Track panZoomRef so if this taredown is due to map changing, we stay in same location
             panZoomRef.current = panZoom;
         };
-    }, [selectedMap, debugMode]);
+    }, [viewState, markersData]);
 
 
     return (
-        <div className={`relative flex-1 ${debugMode ? "scale-75 border border-orange-500" : "overflow-clip"}`}>
+        <div className={`relative flex-1 ${viewState.debugMode ? "scale-75 border border-orange-500" : "overflow-clip"}`}>
             {/** Viewport is used for collisions as it always takes up the whole screen. */}
             <div ref={viewport} className="absolute inset-0 touch-none select-none">
                 {/* Panable/zoomable content */}
@@ -157,11 +170,12 @@ export default function MapStack({
             {/* Fixed overlay */}
             <MapOverlay
                 className="absolute size-full"
-                markerState={[enabledMarkers, setEnabledMarkers]}
-                markerOptions={markerOptions}
-                mapState={[selectedMap, setSelectedMap]}
+                markerState={[viewState.selectedMarkers, (selectedMarkers) => setViewState(s => ({ ...s, selectedMarkers }))]} // TODO: Move these calls into MapOverlay
+                markerOptions={Object.keys(markersData)}
+                markersData={markersData}
+                mapState={[viewState.selectedMap, (selectedMap) => setViewState(s => ({ ...s, selectedMap }))]}
                 mapOptions={mapOptions}
-                debugState={[debugMode, setDebugMode]}
+                debugState={[viewState.debugMode, (debugMode) => setViewState(s => ({ ...s, debugMode }))]}
             />
         </div>
     );

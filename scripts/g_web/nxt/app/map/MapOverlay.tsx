@@ -1,7 +1,8 @@
-import { Dispatch, SetStateAction, useState, ReactNode } from "react";
+import { useState, ReactNode } from "react";
 import { BeakerIcon, EyeIcon, EyeSlashIcon } from "@heroicons/react/20/solid";
 import RadioButtons from "../ui/RadioButtons";
 import CheckboxList from "../ui/CheckboxList";
+import type { MarkersData } from "./markersData";
 
 /**
  *  A component of the overlay, so one specific option.
@@ -54,14 +55,15 @@ function CornerToggle({
  * The map overlay - settings for which map you're looking at and which markers are selected.
  */
 export default function MapOverlay({
-    className, markerState, markerOptions, mapState, mapOptions, debugState  // TODO: Document these two
+    className, markerState, markerOptions, markersData, mapState, mapOptions, debugState  // TODO: Document these two
 }: {
     className: string,
-    markerState: [ Array<string>, Dispatch<SetStateAction<Array<string>>> ],
+    markerState: [ Array<string>, (markers: Array<string>) => void ],
     markerOptions: Array<string>,
-    mapState: [ string, Dispatch<SetStateAction<string>> ],
+    markersData: MarkersData,
+    mapState: [ string, (map: string) => void ],
     mapOptions: Array<string>,
-    debugState: [ boolean, Dispatch<SetStateAction<boolean>> ]
+    debugState: [ boolean, (debug: boolean) => void ]
 }) {
     const [enabledMarkers, setEnabledMarkers] = markerState;
     const [selectedMap, setSelectedMap] = mapState;
@@ -103,7 +105,7 @@ export default function MapOverlay({
                                 choices={markerOptions}
                                 selected={enabledMarkers}
                                 setter={setEnabledMarkers}
-                                nameConv={m => m}
+                                nameConv={m => markersData[m]?.label ?? m}
                             />
                         </OverlayElement>
                         {/** Map selector */}

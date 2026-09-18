@@ -39,7 +39,7 @@ function blockBBoxToTileBBox(bbox: BlockBoundingBox, prefixZCount: number): { ti
 /**
  * Creates callbacks for the tile layer.
  */
-export const createTileLayer: LayerFactory = (container, meta) => {
+export const createTileLayer: LayerFactory = (container, data) => {
     const tiles = new Map<string, HTMLImageElement>();  // Keyed by "tileX_tileY"
     let latestWanted = new Set<string>();  // The wanted set from the most recent update() call
     let pendingLoads = 0;  // Number of newly-added tiles still waiting to load/error
@@ -89,7 +89,7 @@ export const createTileLayer: LayerFactory = (container, meta) => {
                 wanted.add(key);
                 if (tiles.has(key)) continue;  // If already redered then no action
 
-                // Render the tile to the location in the minecraft world - the parent will translate this into view
+                // Render the tile to the location in the minecraft world - update() translates the container into view
                 const img = document.createElement("img");
                 img.style.position = "absolute";
                 img.style.left = `${tileX * TILE_SIZE / PIXELS_PER_BLOCK_EDGE}px`;
@@ -100,14 +100,14 @@ export const createTileLayer: LayerFactory = (container, meta) => {
                 img.style.maxHeight = "none";
 
                 // We have tiles fade in and out
-                img.style.opacity = (meta.debug) ? DEBUG_PLACEHOLDER_OPACITY : "0%";
+                img.style.opacity = (data.debug) ? DEBUG_PLACEHOLDER_OPACITY : "0%";
                 img.style.transition = "opacity 0.5s";
 
                 // Disable user interaction with tiles, otherwise drag is broken
                 img.draggable = false;
                 img.style.userSelect = "none";
 
-                if (meta.debug) {
+                if (data.debug) {
                     img.style.border = "solid red 1px";
                 }
 
@@ -118,14 +118,14 @@ export const createTileLayer: LayerFactory = (container, meta) => {
                 };
                 img.onload = () => {
                     settle();
-                    img.style.opacity = meta.debug ? DEBUG_LOADED_OPACITY : "100%";  // Set tile to fade in
+                    img.style.opacity = data.debug ? DEBUG_LOADED_OPACITY : "100%";  // Set tile to fade in
                 };
                 img.onerror = () => {
                     // Pan/zoom is unclamped, so out-of-range tiles 404 - hide rather than show a broken-image icon
-                    if (!meta.debug) img.style.display = "none";
+                    if (!data.debug) img.style.display = "none";
                     settle();
                 };
-                img.src = tileUrl(meta.map, prefixZCount, tileX, tileY);
+                img.src = tileUrl(data.map, prefixZCount, tileX, tileY);
 
                 container.appendChild(img);
                 tiles.set(key, img);
@@ -138,9 +138,12 @@ export const createTileLayer: LayerFactory = (container, meta) => {
     }
 
     return {
-        /** Compares current tiles to those in view, loads any newly-visible ones and drops those that are now hidden. */
-        update(bbox, zoom) {
+        /** Moves the tile container into view, then compares current tiles to those in view, loads any newly-visible ones and drops those that are now hidden. */
+        update({ bbox, x, y, zoom, vpWidth, vpHeight }) {
             // TODO: Load lower res / higher-prefix tiles first, then lazily load smaller tiles? And don't remove higher-prefix tiles until lower and loaded
+
+            // Transform the container so the viewport is looking at the correct location in world space
+            container.style.transform = `scale(${zoom}) translate(${vpWidth / 2 - x}px, ${-vpHeight / 2 + y}px)`;
 
             // Calculate the number of "z"s from the zoom. Each "z" level halfs the number of pixels per block edge
             let prefixZCount = Math.floor(Math.log2(PIXELS_PER_BLOCK_EDGE / zoom));
