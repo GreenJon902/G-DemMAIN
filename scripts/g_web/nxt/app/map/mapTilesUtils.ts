@@ -1,4 +1,4 @@
-import { type BlockBoundingBox, type LayerFactory } from "./mapTypes";
+import { type BlockBoundingBox, type LayerFactory, type MapView } from "./mapTypes";
 
 const PIXELS_PER_BLOCK_EDGE = 4;  // Number of pixels per block edge in a base/unzoomed tile  // TODO: Load this from config as it depends on dynmaps config
 const TILE_SIZE = 128;  // Width and height of a tile in pixels
@@ -41,6 +41,19 @@ function blockBBoxToTileBBox(bbox: BlockBoundingBox, prefixZCount: number): { ti
  */
 export const createTileLayer: LayerFactory = (container, data) => {
     const tiles = new Map<string, HTMLImageElement>();  // Keyed by "tileX_tileY"
+    const geometry = new WeakMap<HTMLImageElement, { left: number, bottom: number, size: number }>();  // Maps from a tile-element to its desired bottom-left coordinates (in block-space) (not necessarily tile-x,y). Contains all tiles which are in the containing div
+    let latestView: MapView | null = null;  // The view from the most recent update() call
+
+    /**
+     * Positions and sizes a tile in screen pixels for the given view.
+     * We do it like this as if we set the tile size to be really large and then zoom out the container div then it uses too much RAM.
+     */
+    function placeTile(img: HTMLImageElement, view: MapView) {
+        const { left, bottom, size } = geometry.get(img)!;
+        img.style.left = `${view.vpWidth / 2 + view.zoom * (left - view.x)}px`;
+        img.style.top = `${view.vpHeight / 2 - view.zoom * (bottom + size - view.y)}px`;  // Screen-down is block-negative-y, so the top edge is the bottom edge plus the size
+        img.style.width = img.style.height = `${view.zoom * size}px`;
+    }
     let latestWanted = new Set<string>();  // The wanted set from the most recent update() call
     let pendingLoads = 0;  // Number of newly-added tiles still waiting to load/error
 
@@ -89,13 +102,15 @@ export const createTileLayer: LayerFactory = (container, data) => {
                 wanted.add(key);
                 if (tiles.has(key)) continue;  // If already redered then no action
 
-                // Render the tile to the location in the minecraft world - update() translates the container into view
+                // Render the tile to the location in the minecraft world, placeTile() converts this to screen pixels
                 const img = document.createElement("img");
                 img.style.position = "absolute";
-                img.style.left = `${tileX * TILE_SIZE / PIXELS_PER_BLOCK_EDGE}px`;
-                img.style.bottom = `${tileY * TILE_SIZE / PIXELS_PER_BLOCK_EDGE - (2**prefixZCount-1) * TILE_SIZE / PIXELS_PER_BLOCK_EDGE}px`;  // tileY names the bottom of the top-left unzoomed sub-tile, not the bottom of the whole rendered tile (see tiles/[file]/route.ts) - shift down by the height of the (2**prefixZCount - 1) sub-tile rows below it to reach the tile's actual bottom
-                img.style.width = `${TILE_SIZE / PIXELS_PER_BLOCK_EDGE * 2**prefixZCount}px`;
-                img.style.height = `${TILE_SIZE / PIXELS_PER_BLOCK_EDGE * 2**prefixZCount}px`;
+                geometry.set(img, {
+                    left: tileX * TILE_SIZE / PIXELS_PER_BLOCK_EDGE,
+                    bottom: tileY * TILE_SIZE / PIXELS_PER_BLOCK_EDGE - (2**prefixZCount-1) * TILE_SIZE / PIXELS_PER_BLOCK_EDGE,  // tileY names the bottom of the top-left unzoomed sub-tile, not the bottom of the whole rendered tile (see tiles/[file]/route.ts) - shift down by the height of the (2**prefixZCount - 1) sub-tile rows below it to reach the tile's actual bottom
+                    size: TILE_SIZE / PIXELS_PER_BLOCK_EDGE * 2**prefixZCount
+                });
+                placeTile(img, latestView!);
                 img.style.maxWidth = "none";  // Tailwind sets an undesirable default value, so reset that here. This ensures the image is the specified size
                 img.style.maxHeight = "none";
 
@@ -138,12 +153,14 @@ export const createTileLayer: LayerFactory = (container, data) => {
     }
 
     return {
-        /** Moves the tile container into view, then compares current tiles to those in view, loads any newly-visible ones and drops those that are now hidden. */
-        update({ bbox, x, y, zoom, vpWidth, vpHeight }) {
+        /** Repositions all tiles for the view, then compares current tiles to those in view, loads any newly-visible ones and drops those that are now hidden. */
+        update(view) {
+            const { bbox, zoom } = view;
             // TODO: Load lower res / higher-prefix tiles first, then lazily load smaller tiles? And don't remove higher-prefix tiles until lower and loaded
 
-            // Transform the container so the viewport is looking at the correct location in world space
-            container.style.transform = `scale(${zoom}) translate(${vpWidth / 2 - x}px, ${-vpHeight / 2 + y}px)`;
+            // Place every tile, including fading-out ones, so the viewport is looking at the correct location in world space
+            latestView = view;
+            for (const child of container.children) placeTile(child as HTMLImageElement, view);
 
             // Calculate the number of "z"s from the zoom. Each "z" level halfs the number of pixels per block edge
             let prefixZCount = Math.floor(Math.log2(PIXELS_PER_BLOCK_EDGE / zoom));
