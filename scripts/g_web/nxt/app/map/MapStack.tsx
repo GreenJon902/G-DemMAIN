@@ -13,6 +13,13 @@ import type { MarkersData } from "./markersData";
 const LAYER_FACTORIES: LayerFactory[] = [createTileLayer, createMarkerLayer];
 
 const ZOOM_SPEED = 0.001;  // Larger = more zoom change per wheel-scrolled pixel
+const MIN_ZOOM = 0.03;  // Roughly where the coarsest tiles (prefix 7) are 128 screen pixels wide. Zooming out further would keep loading more of those tiles, until the browser runs out of memory
+const MAX_ZOOM = 32;
+
+/** Limits a zoom value to the supported range. */
+function clampZoom(zoom: number): number {
+    return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom));
+}
 
 /**
  * Stores the pan and zoom information for the map viewer for the client.
@@ -107,38 +114,85 @@ export default function MapStack({
         });
         resizeObserver.observe(viewportElement);
 
-        // Zoom using the scroll wheel. Just zoom around the centre
-        // TODO: Zoom around the cursor
+        // Zoom using the scroll wheel, around the cursor
         function onWheel(event: WheelEvent) {
             event.preventDefault();
-            panZoom.zoom = panZoom.zoom * Math.exp(-event.deltaY * ZOOM_SPEED);  
+            // Offset of the cursor from the viewport centre in client pixels, and the block under it, which must stay under the cursor after zooming (y is flipped, since screen-down is block-negative-y)
+            const rect = viewportElement!.getBoundingClientRect();
+            const offsetX = event.clientX - (rect.left + rect.width / 2);
+            const offsetY = event.clientY - (rect.top + rect.height / 2);
+            const blockX = panZoom.x + offsetX / panZoom.zoom;
+            const blockY = panZoom.y - offsetY / panZoom.zoom;
+
+            panZoom.zoom = clampZoom(panZoom.zoom * Math.exp(-event.deltaY * ZOOM_SPEED));
+            panZoom.x = blockX - offsetX / panZoom.zoom;
+            panZoom.y = blockY + offsetY / panZoom.zoom;
             render();
         }
 
-        // Drag-to-pan, using pointer capture so the drag continues even if the cursor leaves the container mid-drag
-        let dragStart: { pointerId: number, clientX: number, clientY: number, panX: number, panY: number } | null = null;
+        // Drag-to-pan and pinch-to-zoom
+        const pointers = new Map<number, { x: number, y: number }>();  // Current client position of each active pointer
+        /**
+         * Snapshot taken whenever the set of pointers changes. The block under the gesture's centre at this moment is kept under the centre as it moves, which gives both panning and zooming around the pinch.
+         * The centre is in client pixels, the block is (blockX, blockY) in block coordinates.
+         */
+        let gesture: { zoom: number, dist: number, vpCentreX: number, vpCentreY: number, blockX: number, blockY: number } | null = null;
+
+        /** Gets the centre and separation (0 for a single pointer) of the pointers driving the gesture, or null if there are none. */
+        function pointerMetrics(): { centreX: number, centreY: number, dist: number } | null {
+            const [a, b] = pointers.values();
+            if (!a) return null;
+            if (!b) return { centreX: a.x, centreY: a.y, dist: 0 };
+            return { centreX: (a.x + b.x) / 2, centreY: (a.y + b.y) / 2, dist: Math.hypot(a.x - b.x, a.y - b.y) };
+        }
+
+        /** Starts a fresh gesture baseline from the current pointers and pan/zoom. Call whenever a pointer is added or removed. */
+        function rebaseGesture() {
+            const metrics = pointerMetrics();
+            if (!metrics) { gesture = null; return; } // If no pointers then kill the gesture
+            const rect = viewportElement!.getBoundingClientRect();
+            // Offset of the gesture centre from the viewport centre, in client pixels. Screen pixels -> blocks: divide by zoom; y is flipped, since screen-down is block-negative-y
+            const vpCentreX = rect.left + rect.width / 2;
+            const vpCentreY = rect.top + rect.height / 2;
+            const offsetX = metrics.centreX - vpCentreX;
+            const offsetY = metrics.centreY - vpCentreY;
+            gesture = {
+                zoom: panZoom.zoom, dist: metrics.dist,
+                vpCentreX, vpCentreY,
+                blockX: panZoom.x + offsetX / panZoom.zoom,
+                blockY: panZoom.y - offsetY / panZoom.zoom
+            };
+        }
 
         function onPointerDown(event: PointerEvent) {
-            dragStart = { pointerId: event.pointerId, clientX: event.clientX, clientY: event.clientY, panX: panZoom.x, panY: panZoom.y };
+            pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
             viewportElement!.setPointerCapture(event.pointerId);
+            rebaseGesture();
         }
         function onPointerMove(event: PointerEvent) {
-            if (!dragStart || event.pointerId !== dragStart.pointerId) return;
-            // Screen pixels -> blocks: divide by zoom; y is flipped, since screen-down is block-negative-y
-            panZoom.x = dragStart.panX - (event.clientX - dragStart.clientX) / panZoom.zoom;
-            panZoom.y = dragStart.panY + (event.clientY - dragStart.clientY) / panZoom.zoom;
+            if (!pointers.has(event.pointerId) || !gesture) return;
+            pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+            const metrics = pointerMetrics()!;
+
+            // Pinching scales the zoom by how much the fingers have spread
+            if (gesture.dist > 0 && metrics.dist > 0) panZoom.zoom = clampZoom(gesture.zoom * metrics.dist / gesture.dist);
+
+            // Place the baseline block back under the (moved) gesture centre, i.e. choose the pan so the block sits at the centre's offset from the viewport centre
+            panZoom.x = gesture.blockX - (metrics.centreX - gesture.vpCentreX) / panZoom.zoom;
+            panZoom.y = gesture.blockY + (metrics.centreY - gesture.vpCentreY) / panZoom.zoom;
             render();
         }
-        function onPointerUp(event: PointerEvent) {
-            if (!dragStart || event.pointerId !== dragStart.pointerId) return;
+        function onPointerEnd(event: PointerEvent) {
+            if (!pointers.delete(event.pointerId)) return;
             viewportElement!.releasePointerCapture(event.pointerId);
-            dragStart = null;
+            rebaseGesture();  // e.g. lifting one finger of a pinch continues as a pan with the other, without jumping
         }
 
         viewportElement.addEventListener("wheel", onWheel, { passive: false });  // passive: false since we call preventDefault() to stop page scroll
         viewportElement.addEventListener("pointerdown", onPointerDown);
         viewportElement.addEventListener("pointermove", onPointerMove);
-        viewportElement.addEventListener("pointerup", onPointerUp);
+        viewportElement.addEventListener("pointerup", onPointerEnd);
+        viewportElement.addEventListener("pointercancel", onPointerEnd);
 
         return () => {
             // Remove all our bindings on unmount
@@ -147,7 +201,8 @@ export default function MapStack({
             viewportElement.removeEventListener("wheel", onWheel);
             viewportElement.removeEventListener("pointerdown", onPointerDown);
             viewportElement.removeEventListener("pointermove", onPointerMove);
-            viewportElement.removeEventListener("pointerup", onPointerUp);
+            viewportElement.removeEventListener("pointerup", onPointerEnd);
+            viewportElement.removeEventListener("pointercancel", onPointerEnd);
             for (const layer of layers) {
                 layer.destroy?.();  // Call destroy if it exists
                 layer.container.remove();
