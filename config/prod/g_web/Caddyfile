@@ -5,19 +5,6 @@
 }
 
 {$DOMAIN_NAME} {
-	# Currently we host the dynmaps website inside of java, so send appropriate traffic there ---
-	# Entry point: DOMAIN/map -> Dynmap's index.html, config.js, etc.
-	# handle_path strips the /map prefix before forwarding.
-	handle_path /map/* {
-		reverse_proxy 127.0.0.1:5391
-	}
-	handle_path /map {
-		reverse_proxy 127.0.0.1:5391
-	}
-	# TODO: This doesn't really worl rn, but I'll go with it
-	# ------------------
-
-
 	# Console websocket - matched first so it never falls through to the catch-all below
 	handle /ws/* {
 		reverse_proxy 127.0.0.1:3001
