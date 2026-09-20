@@ -3,6 +3,7 @@
   "mcLogFolder": "scripts/g_web/devData/logs",
   "monitorFolder": "scripts/g_monitor",
   "minecraftCacheFile": "scripts/g_web/devData/minecraft-cache.json",
+  "dynmapFolder": "scripts/g_mc/g_mc_monitor/run/dynmap",
   "mccwssPort": 8001,
   "mccwssTail": ":8001",
   "gWebDatabasePort": 3306,
