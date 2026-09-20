@@ -3,6 +3,7 @@ import { BeakerIcon, EyeIcon, EyeSlashIcon } from "@heroicons/react/20/solid";
 import RadioButtons from "../ui/RadioButtons";
 import CheckboxList from "../ui/CheckboxList";
 import type { MarkersData } from "./markersData";
+import type { MapInfo } from "./mapsData";
 
 /**
  *  A component of the overlay, so one specific option.
@@ -62,7 +63,7 @@ export default function MapOverlay({
     markerOptions: Array<string>,
     markersData: MarkersData,
     mapState: [ string, (map: string) => void ],
-    mapOptions: Array<string>,
+    mapOptions: Array<MapInfo>,
     debugState: [ boolean, (debug: boolean) => void ]
 }) {
     const [enabledMarkers, setEnabledMarkers] = markerState;
@@ -111,10 +112,10 @@ export default function MapOverlay({
                         {/** Map selector */}
                         <OverlayElement title="Map" position="right-0">
                             <RadioButtons
-                                choices={mapOptions}
+                                choices={mapOptions.map(m => m.name)}
                                 selected={selectedMap}
                                 setter={setSelectedMap}
-                                nameConv={m => m}
+                                nameConv={m => mapOptions.find(o => o.name === m)?.title ?? m}
                             />
                         </OverlayElement>
                     </>

@@ -1,6 +1,6 @@
 import { type LayerFactory } from "./mapTypes";
 
-const MARKER_ICON_SIZE = 16;  // Rendered icon size in screen pixels (icons don't scale with zoom) - TODO: dynmap's real per-icon size isn't loaded yet, this is a guess
+const MARKER_ICON_SIZE = 16;  // Rendered icon size in screen pixels (icons don't scale with zoom) 
 const DEFAULT_ICON = "default";  // Fallback icon name when a marker and its set both lack one
 
 const SVG_NS = "http://www.w3.org/2000/svg";

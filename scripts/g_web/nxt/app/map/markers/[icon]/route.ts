@@ -2,9 +2,7 @@ import "server-only";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
-
-// TODO: Load this from config once the dynmap output location is configurable
-const MARKERS_DIR = "/home/greenjon902/Desktop/G-DemMAIN/scripts/g_web/devData/dynmap/_markers_";
+import { C } from "@g/com/lib/config";
 
 // Matches marker icon file names, e.g. "bighouse.png" (and ensures it is not malicious)
 const ICON_FILE_PATTERN = /^[a-zA-Z0-9_-]+\.png$/;
@@ -27,7 +25,7 @@ export async function GET(
     // Load data, else return 404
     let data: Buffer;
     try {
-        data = await fs.readFile(path.join(MARKERS_DIR, icon));
+        data = await fs.readFile(path.join(C().DYNMAP_MARKER_ICONS_FOLDER, icon));
     } catch {
         return NextResponse.json({ error: "Icon not found" }, { status: 404 });
     }

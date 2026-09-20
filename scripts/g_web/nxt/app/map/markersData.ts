@@ -2,9 +2,7 @@ import "server-only";
 import fs from "node:fs/promises";
 import { parse } from "yaml";
 import * as z from "zod";
-
-// TODO: Load this from config once the dynmap output location is configurable
-const MARKERS_YML_PATH = "/home/greenjon902/Desktop/G-DemMAIN/scripts/g_web/devData/dynmap/markers.yml";
+import { C } from "@g/com/lib/config";
 
 const zColor = z.number();  // Decimal RGB, e.g. 16711680 == 0xff0000
 
@@ -62,6 +60,6 @@ export type MarkersData = Record<string, MarkerSet>;
 
 /** Loads and validates the dynmap markers file, keeping only the fields the map viewer renders. */
 export async function loadMarkersData(): Promise<MarkersData> {
-    const raw = await fs.readFile(MARKERS_YML_PATH, "utf-8");
+    const raw = await fs.readFile(C().DYNMAP_MARKERS_FILE, "utf-8");
     return zMarkersFile.parse(parse(raw)).sets;
 }

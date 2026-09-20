@@ -2,9 +2,7 @@ import "server-only";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
-
-// TODO: Load this from config once dynmap output location is configurable
-const TILES_DIR = "/home/greenjon902/Desktop/G-DemMAIN/scripts/g_web/devData/dynmap/tiles";
+import { C } from "@g/com/lib/config";
 
 // Matches dynmap map names, e.g. "flat" or "iso" (and ensures it is not malicious)
 const MAP_NAME_PATTERN = /^[a-zA-Z0-9_-]+$/;
@@ -48,7 +46,7 @@ export async function GET(
 
     // We can infer the region from the tile(X,Y)
     const region = `${Math.floor(tileX / REGION_SIZE)}_${Math.floor(tileY / REGION_SIZE)}`;
-    const filePath = path.join(TILES_DIR, map, region, file);
+    const filePath = path.join(C().DYNMAP_TILES_FOLDER, map, region, file);
 
     // Load data, else return 404
     let data: Buffer;

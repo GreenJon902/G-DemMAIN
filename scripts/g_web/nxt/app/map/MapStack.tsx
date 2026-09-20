@@ -6,6 +6,7 @@ import { createTileLayer } from "./mapTilesUtils";
 import { createMarkerLayer } from "./mapMarkersUtils";
 import { type LayerFactory, type MapView } from "./mapTypes";
 import type { MarkersData } from "./markersData";
+import type { MapInfo } from "./mapsData";
 
 // Everything rendered in the map, in registration order (later factories
 // paint on top of earlier ones). Layers are drawn via direct DOM mutation rather than JSX (see
@@ -13,7 +14,7 @@ import type { MarkersData } from "./markersData";
 const LAYER_FACTORIES: LayerFactory[] = [createTileLayer, createMarkerLayer];
 
 const ZOOM_SPEED = 0.001;  // Larger = more zoom change per wheel-scrolled pixel
-const MIN_ZOOM = 0.03;  // Roughly where the coarsest tiles (prefix 7) are 128 screen pixels wide. Zooming out further would keep loading more of those tiles, until the browser runs out of memory
+const MIN_ZOOM = 0.03;  
 const MAX_ZOOM = 32;
 
 /** Limits a zoom value to the supported range. */
@@ -47,7 +48,7 @@ export default function MapStack({
     defaultEnabledMarkers, markersData, defaultSelectedMap, mapOptions
 }: {
     defaultEnabledMarkers: Array<string>, markersData: MarkersData,
-    defaultSelectedMap: string, mapOptions: Array<string>
+    defaultSelectedMap: string, mapOptions: Array<MapInfo>
 }) {
     // Settings - configured by overlay
     const [viewState, setViewState] = useState<MapViewState>({
