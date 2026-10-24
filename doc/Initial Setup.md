@@ -72,7 +72,7 @@ You can use `/usr/bin/node /var/lib/g_web/node_modules/prisma/build/index.js mig
 
 10. Build the website
 Ensure the g_web user is created.
-Node is installed via [nvm](https://github.com/nvm-sh/nvm) rather than apt - install nvm for the g_web user, then `nvm install <version>` (or `nvm use <version>` if already installed).
+We use the distribution's copy of Node (managed by apt).
 ```
 sudo rsync -av --delete /opt/infra/scripts/g_web/ /var/lib/g_web
 cd /var/lib/g_web
@@ -83,6 +83,8 @@ sudo -u g_web HOME=/var/lib/g_web npm prune --omit=dev
 sudo chown -R g_web:g_web /var/lib/g_web
 ```
 TODO: `npm ci --omit=dev` crashes, which is why this installs full dependencies first (`npm ci`), builds, then prunes dev dependencies afterwards (`npm prune --omit=dev`) instead of installing without them directly.
+
+You may need to run `npm install-scripts approve <packages> ...` to allow lifecycle scripts for certain packages.
 
 11. Set up the Discord bot
 See `G-DemMAIN Discord Bot.md`. We need the bot created/configured on Discord's side and invited to the server.
