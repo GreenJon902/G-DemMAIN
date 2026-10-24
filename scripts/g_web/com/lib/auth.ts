@@ -267,7 +267,7 @@ export class SessionAccessor {
 
         if (!(await otplibVerify({ token: code, secret: user.tfa_secret, epochTolerance: TFA_EPOCH_TOLERANCE })).valid) return false;
 
-        session.data.sudoVerifiedAt = Date.now();
+        session.data!.sudoVerifiedAt = Date.now();
         await session.save();
         return true;
     }
@@ -300,7 +300,7 @@ export class SessionAccessor {
         const [sessionData, session] = await this.#getIronSession();
         if (sessionData === null) throw new Error("exitSudo called with no active session");
 
-        session.data.sudoVerifiedAt = null;
+        session.data!.sudoVerifiedAt = null;
         await session.save();
     }
 
