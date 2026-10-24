@@ -20,7 +20,7 @@
     "schema:pull": "npx prisma db pull"
   },
   "devDependencies": {
-    "@types/node": "^24.19.2",
+    "@types/node": "^22.20.5",
     "@types/pg": "^8.20.0",
     "prisma": "^7.8.0",
     "type-fest": "^5.7.0",
