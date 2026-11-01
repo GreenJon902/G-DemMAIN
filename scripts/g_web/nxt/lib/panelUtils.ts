@@ -324,12 +324,26 @@ export type DiskUsage = Map<string, { filesystem: string, total: number, used: n
 /**
  * Gets the current disk usage for every mounted filesystem, by shelling out to `df`.
  * This is queried live rather than through monitor.py, as it needs no special permissions and would otherwise show data up to a whole retention interval stale.
+ *
+ * For errors with exit code 1, we pipe to console.err, otherwise it is thrown.
+ * (This is a temporary fix as disk usage for non-physical drives may soon be removed).
  */
 export async function getDiskUsage(): Promise<DiskUsage> {
     await requirePermission("panel", "viewer");
 
     const execFileAsync = promisify(execFile);
-    const { stdout } = await execFileAsync("/usr/bin/df", ["-B1", "--output=source,target,size,avail"]);
+    let stdout: string;
+    let partialError: unknown = null;  // Set if df exited with code 1 but gave usable output
+    try {
+        // TODO: Instead of listing all mount points, only get non-virtual drives - we could also indicate the share of size between different components (a stacked bar chart between g_mc, g_web, mysql, etc)
+        ({ stdout } = await execFileAsync("/usr/bin/df", ["-B1", "--output=source,target,size,avail"]));
+    } catch (e) {
+        const err = e as { code?: unknown, stdout?: unknown, stderr?: unknown };
+        if (err.code !== 1 || typeof err.stdout !== "string") throw e;
+        console.error(`df reported errors, using the mounts it could read:\n${err.stderr}`);
+        stdout = err.stdout;
+        partialError = e;
+    }
     if (!RE_DISK_USAGE_HEADERS.test(stdout)) throw new Error(`Header of df output is incorrect: \n${stdout}`);
 
     const usage: DiskUsage = new Map();
@@ -337,6 +351,7 @@ export async function getDiskUsage(): Promise<DiskUsage> {
         const { filesystem, mountpoint, total, available } = match.groups!;
         usage.set(mountpoint, { filesystem, total: Number(total), used: Number(total) - Number(available) });
     }
+    if (partialError !== null && usage.size === 0) throw partialError;  // Nothing usable, so class this as a failure
     return usage;
 }
 
