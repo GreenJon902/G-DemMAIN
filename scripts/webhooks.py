@@ -105,7 +105,7 @@ def generate_syswarn(resource, used_fraction, threshold_fraction):
     }
 
 CHECKMCCOLOR = 16753920
-def generate_checkmc(source_path, dest_path, problems, failed_files):
+def generate_checkmc_config(source_path, dest_path, problems, failed_files):
     # Generate the json for a message about g_check_mc finding source_path and dest_path out of sync.
     # problems and failed_files are lists of human-readable strings.
     problems_text = "\n".join([f"- {p}" for p in problems[:6]]) if problems else "(None)"
@@ -125,6 +125,26 @@ def generate_checkmc(source_path, dest_path, problems, failed_files):
                 "fields": [
                     {"name": "Errors", "value": problems_text, "inline": False},
                     {"name": "Failed files", "value": failed_files_text, "inline": False}
+                ],
+                "color": CHECKMCCOLOR
+                }]
+    }
+
+def generate_checkmc_jdk(packages):
+    # Generate the json for a message about g_check_mc finding a JDK update is available.
+    # packages is a list of {"package", "installed", "candidate"} dicts.
+    packages_text = "\n".join([f"- `{p['package']}`: {p['installed']} → {p['candidate']}" for p in packages]) if packages else "(None)"
+    if len(packages_text) > 700:
+        packages_text = packages_text[:697] + "..."
+
+    return {
+            "username": "G-DemMAIN",
+            "embeds": [{
+                "title": ":warning: A Java update is available :warning:",
+                "description": "**You must stop `g_mc` BEFORE updating Java, and start it again afterwards.** Updating Java underneath a running server breaks its process spawning, so the monitor mount cannot be unmounted cleanly.\n\n"
+                               "```\nsystemctl stop g_mc &&\napt update && apt upgrade &&\nsystemctl start g_mc\n```\n",
+                "fields": [
+                    {"name": "Upgradable packages", "value": packages_text, "inline": False}
                 ],
                 "color": CHECKMCCOLOR
                 }]
@@ -176,11 +196,15 @@ syswarn_parser = subparsers.add_parser("syswarn", help="Send a notification that
 syswarn_parser.add_argument("resource", help="Human-readable resource name, e.g. RAM or 'Disk (/)'")
 syswarn_parser.add_argument("used", type=float, help="Current usage as a fraction in [0, 1]")
 syswarn_parser.add_argument("threshold", type=float, help="The configured warn threshold as a fraction in [0, 1]")
-checkmc_parser = subparsers.add_parser("checkmc", help="Send a notification that g_check_mc found a discrepancy between its source and destination")
-checkmc_parser.add_argument("source_path", help="The source path (folder, not files) that was checked")
-checkmc_parser.add_argument("dest_path", help="The destination path (folder, not files) that was checked")
-checkmc_parser.add_argument("problems", help="JSON-encoded list of human-readable problem messages")
-checkmc_parser.add_argument("failed_files", help="JSON-encoded list of paths that failed the check")
+checkmc_parser = subparsers.add_parser("checkmc", help="Send a notification from one of g_check_mc's checks")
+checkmc_subparsers = checkmc_parser.add_subparsers(help="Which check found something", required=True, dest="checkmc_check")  # Must call it 'checkmc_check' as 'action' is used for `subparsers` object
+checkmc_config_parser = checkmc_subparsers.add_parser("config", help="Send a notification that g_check_mc found a discrepancy between its source and destination")
+checkmc_config_parser.add_argument("source_path", help="The source path (folder, not files) that was checked")
+checkmc_config_parser.add_argument("dest_path", help="The destination path (folder, not files) that was checked")
+checkmc_config_parser.add_argument("problems", help="JSON-encoded list of human-readable problem messages")
+checkmc_config_parser.add_argument("failed_files", help="JSON-encoded list of paths that failed the check")
+checkmc_jdk_parser = checkmc_subparsers.add_parser("jdk", help="Send a notification that g_check_mc found a JDK update is available")
+checkmc_jdk_parser.add_argument("packages", help="JSON-encoded list of {package, installed, candidate} objects for each upgradable openjdk package")
 test_parser = subparsers.add_parser("test", help="Test that the webhooks are working")
 args = parser.parse_args()
 
@@ -221,7 +245,12 @@ elif args.action == "syswarn":
     send(webhook_getters["SYSWARN"](), generate_syswarn(resource, used, threshold))
 elif args.action == "checkmc":
     # Send webhook
-    send(webhook_getters["CHECKMC"](), generate_checkmc(args.source_path, args.dest_path, json.loads(args.problems), json.loads(args.failed_files)))
+    if args.checkmc_check == "config":
+        send(webhook_getters["CHECKMC"](), generate_checkmc_config(args.source_path, args.dest_path, json.loads(args.problems), json.loads(args.failed_files)))
+    elif args.checkmc_check == "jdk":
+        send(webhook_getters["CHECKMC"](), generate_checkmc_jdk(json.loads(args.packages)))
+    else:
+        raise Exception(f"Unknown checkmc check {args.checkmc_check}")
 
 elif args.action == "test":
     # Just try and call all webhooks

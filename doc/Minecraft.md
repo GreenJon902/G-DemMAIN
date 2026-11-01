@@ -78,8 +78,26 @@ I have some notes:
 ## Config notes
 We omit the marker on certain files who's consumers do not support, or would remove, the marker.
 
-### Nightly drift check
-`scripts/g_check_mc/main.py` runs nightly (see [Services.md](Services.md)) and recursively re-checks `config/prod/g_mc` against `/var/lib/g_mc` using the same comparison logic as `sync_static_config`. No writes occur, this is only to check that config has not driffted (e.g. use of an ingame config command making (meant to be) permanant changes that the repo doesn't know about).
+### Nightly checks (`g_check_mc`)
+`scripts/g_check_mc/main.py` runs nightly (see [Services.md](Services.md)) and runs two checks, each in its own file. Both send their webhook to the `CHECK_MC_WEBHOOK` url, and both always run - if one crashes the other still runs, and the service then fails (triggering `OnFailure`).
+
+#### Config drift (`check_config.py`)
+Recursively re-checks `config/prod/g_mc` against `/var/lib/g_mc` using the same comparison logic as `sync_static_config`. No writes occur, this is only to check that config has not driffted (e.g. use of an ingame config command making (meant to be) permanant changes that the repo doesn't know about).
+
+#### Java updates (`check_jdk.py`)
+Runs `apt-get -s upgrade` (a simulation, so no root is needed and nothing changes) and sends a webhook if any `openjdk-*` package is upgradable. The webhook is sent every night until Java is updated.
+
+Java is blacklisted from unattended-upgrades (`config/prod/apt/51-g-demmain-unattended-upgrades.conf`), so must be updated by hand. Important for security ig. 
+
+**You must stop `g_mc` before updating Java, and start it again afterwards:**
+```
+systemctl stop g_mc &&
+apt update && apt upgrade &&
+systemctl start g_mc
+```
+Updating Java while g_mc is running breaks fuse as it is no longer able to communicate with the fuse provider due to forking being weird or something.
+
+This only knows about updates apt already knows about, so it can lag behind a release by up to the time between apt list refreshes (`apt-daily.timer`).
 
 ## `g_copy_mc_stats` - Nightly stats snapshot
 `scripts/g_copy_mc_stats/main.py` runs nightly (2am, see [Services.md](Services.md)) and copies `/var/lib/g_mc/world/players/stats/*.json` into a new timestamped folder under `/var/lib/g_mc-stats`. 
