@@ -19,7 +19,7 @@ SYSWARN_WEBHOOK
 # This should be formatted something like https://discord.com/api/webhooks/___/___.
 
 CHECK_MC_WEBHOOK
-# The webhook url for sending notifications when g_check_mc fails.
+# The webhook url for sending notifications when g_check_mc finds config drift or an available Java update.
 # This should be formatted something like https://discord.com/api/webhooks/___/___.
 
 G_DEMMAIN_ROOT prod="/opt/infra" !dev
