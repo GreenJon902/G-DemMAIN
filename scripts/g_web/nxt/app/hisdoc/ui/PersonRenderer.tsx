@@ -49,7 +49,7 @@ export default function PersonRenderer({
                 viewer.dispose();
             };
         } catch {
-            console.warn(`Failed to make renderer for ${playerdata}`)
+            console.warn(`Failed to make renderer for ${playerdata}`);
         }
     }, [playerdata, interactive]);
 

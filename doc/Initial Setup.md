@@ -77,8 +77,9 @@ We use the distribution's copy of Node (managed by apt).
 sudo rsync -av --delete /opt/infra/scripts/g_web/ /var/lib/g_web
 cd /var/lib/g_web
 sudo chown -R g_web:g_web /var/lib/g_web
-sudo -u g_web HOME=/var/lib/g_web npm install-scripts approve @prisma/engines argon2 esbuild prisma unrs-resolver
 sudo -u g_web HOME=/var/lib/g_web npm ci
+sudo -u g_web HOME=/var/lib/g_web npm install-scripts approve @prisma/engines argon2 esbuild prisma unrs-resolver
+sudo -u g_web HOME=/var/lib/g_web npm i
 sudo -u g_web HOME=/var/lib/g_web NODE_OPTIONS='--enable-source-maps' npm run build
 sudo -u g_web HOME=/var/lib/g_web npm prune --omit=dev
 sudo chown -R g_web:g_web /var/lib/g_web
